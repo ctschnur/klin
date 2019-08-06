@@ -107,35 +107,41 @@ Argument KEY is the bibtex key."
 
 ;; (define-key org-mode-map (kbd "C-c o") 'read-point-string-and-trigger-opening)
 
-(defun get-description-at-point ()
-  (interactive)
-  (setq link (org-element-context))
-  (setq buf-substr (buffer-substring-no-properties
-                    (org-element-property :contents-begin link)
-                    (org-element-property :contents-end link)))))
+(defun get-link-text-at-point ()
+  (setq type (org-element-context))
+  (if (eq (car (org-element-context)) 'link)
+      (progn
+        (setq buf-substr (buffer-substring-no-properties
+               (org-element-property :begin type) (org-element-property :end type))))))
 
-(defun get-link-text-from-under-cursor ()
+(defun get-link-info-nearest-to-point ()
+  " This could be done easier: if it's not on a link, go to previous/next link then extract
+    or if it's on a link, do nothing but extract"
+  ;; check if at point there is a link
   (setq re "\\[\\[\\(.*?\\):\\(.*?\\)\\]\\[\\(.*?\\)\\]\\]")
-  (setq poscur (point))
-  (save-excursion
-    (re-search-forward re nil t 1)
-    (setq nextlink-match-beginning (match-beginning 0))
-    (setq nextlink-match-end (match-end 0))
-    (setq nextlink-match-string (match-string-no-properties 0)))
-  (save-excursion
-    (re-search-backward re nil t 1)
-    (setq prevlink-match-beginning (match-beginning 0))
-    (setq prevlink-match-end (match-end 0))
-    (setq prevlink-match-string (match-string-no-properties 0)))
+  (setq nearestlink-string (get-link-text-at-point))
+  (if (not nearestlink-string)
+    (progn
+      (setq poscur (point))
+      (save-excursion
+        (re-search-forward re nil t 1)
+        (setq nextlink-match-beginning (match-beginning 0))
+        (setq nextlink-match-end (match-end 0))
+        (setq nextlink-match-string (match-string-no-properties 0)))
+      (save-excursion
+        (re-search-backward re nil t 1)
+        (setq prevlink-match-beginning (match-beginning 0))
+        (setq prevlink-match-end (match-end 0))
+        (setq prevlink-match-string (match-string-no-properties 0)))
 
-   ;; find the nearest one
-   (if (< (abs (- prevlink-match-end poscur)) (abs (- nextlink-match-beginning poscur)))
-       (progn
-         (setq nearestlink-beginning prevlink-match-beginning)
-         (setq nearestlink-string prevlink-match-string))
-     (progn
-       (setq nearestlink-beginning nextlink-match-beginning)
-       (setq nearestlink-string nextlink-match-string)))
+       ;; find the nearest one
+       (if (< (abs (- prevlink-match-end poscur)) (abs (- nextlink-match-beginning poscur)))
+           (progn
+             (setq nearestlink-beginning prevlink-match-beginning)
+             (setq nearestlink-string prevlink-match-string))
+         (progn
+           (setq nearestlink-beginning nextlink-match-beginning)
+           (setq nearestlink-string nextlink-match-string)))))
 
    ;; apply the regex again to the nearest string and copy the data
    (string-match re nearestlink-string)
@@ -161,11 +167,10 @@ Argument KEY is the bibtex key."
  (setq page-str (match-string 1 description))
  (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
 
-(defun search-next-link-and-open ()
-  (setq link-text-under-cursor (get-link-text-from-under-cursor))
-  (openlink link-text-under-cursor))
+(defun search-nearest-link-and-open ()
+  (openlink (get-link-info-nearest-to-point)))
 
-(progn
-  (string-match "p\\.\\s-*\\([0-9]*\\)" description)
-  (setq page-str (match-string 1 description))
-  (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
+;; (progn
+;;   (string-match "p\\.\\s-*\\([0-9]*\\)" description)
+;;   (setq page-str (match-string 1 description))
+;;   (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))

@@ -8,7 +8,7 @@ bibliography:book.bib
 
 cite:elb05:30
 
-Some [[linktype:elb05][p.22]] links [[cite:elb05][p.23]] embedded [[linktype:elb05][p.24]] in [[linktype:bibtexkey][p.25]] a tex
+Some [[linktype:elb05][p.22]] links [[linktype:elb05][p.23]] embedded [[linktype:elb05][p.24]] in [[linktype:elb05][p.25]] a [[linktype:xee2019][p.2]] 
 
 a a a baa ba ba aa aba a 
 
@@ -26,7 +26,7 @@ I did that afterwards, since I knew somebody who I knew that he could use it.
 
 I do go up to people whom I know things about and I pray for them about the things I know. But also once I went up to somebody and told him not always so general things about his life, assuming things without knowing if it would apply in his life. And prior to starting to pray I also didn't know what I would say. That readiness and courage seems magical to me, but it's not necessarily so.
 
-** Am I truthful to my friends when someone is asking weather I communicate with god?
+* ** Am I truthful to my friends when someone is asking weather I communicate with god?
 I said that I have had an exchange of information with god happen. For example: 
 
 - He speaks to me through the words in the bible, I am the one reading the bible, and I see great wisdom in what it says (that's one-way communication)
