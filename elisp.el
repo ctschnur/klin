@@ -103,7 +103,7 @@ Argument KEY is the bibtex key."
 
 (defun read-point-string-and-trigger-opening ()
   (setq cite-str (concat "cite:" (org-ref-get-bibtex-key-under-cursor)))
-  (open-bibtex-pdf-at-point cite-str)
+  (open-bibtex-pdf-at-point cite-str))
 
 ;; (define-key org-mode-map (kbd "C-c o") 'read-point-string-and-trigger-opening)
 

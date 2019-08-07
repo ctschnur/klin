@@ -1,0 +1,55 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 2.9 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global}
+    \entry{elb05}{book}{}
+      \name{author}{1}{}{%
+        {{hash=c920f948b99166f2cb6d9ca6e2d0f40b}{%
+           family={Poseck},
+           familyi={P\bibinitperiod},
+           given={Julius\bibnamedelima Anton},
+           giveni={J\bibinitperiod\bibinitdelim A\bibinitperiod},
+           prefix={von},
+           prefixi={v\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {eBible.org}%
+      }
+      \strng{namehash}{c920f948b99166f2cb6d9ca6e2d0f40b}
+      \strng{fullhash}{c920f948b99166f2cb6d9ca6e2d0f40b}
+      \strng{bibnamehash}{c920f948b99166f2cb6d9ca6e2d0f40b}
+      \strng{authorbibnamehash}{c920f948b99166f2cb6d9ca6e2d0f40b}
+      \strng{authornamehash}{c920f948b99166f2cb6d9ca6e2d0f40b}
+      \strng{authorfullhash}{c920f948b99166f2cb6d9ca6e2d0f40b}
+      \field{labelalpha}{Pos05}
+      \field{sortinit}{P}
+      \field{sortinithash}{8d51b3d5b78d75b54308d706b9bbe285}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Darby Unrevidierte Elberfelder}
+      \field{year}{1905}
+      \verb{file}
+      \verb "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf"
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

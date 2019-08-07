@@ -1,10 +1,10 @@
 (TeX-add-style-hook
- "book"
+ "main"
  (lambda ()
    (TeX-add-to-alist 'LaTeX-provided-class-options
                      '(("article" "11pt")))
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem") ("biblatex" "backend=biber" "style=alphabetic" "sorting=nyt")))
+                     '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem") ("biblatex" "backend=biber" "style=alphabetic" "sorting=nyt") ("babel" "ngerman" "english")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
@@ -18,6 +18,7 @@
     "art11"
     "inputenc"
     "fontenc"
+    "fontspec"
     "graphicx"
     "grffile"
     "longtable"
@@ -29,7 +30,8 @@
     "amssymb"
     "capt-of"
     "hyperref"
-    "biblatex")
+    "biblatex"
+    "babel")
    (LaTeX-add-bibliographies
     "bibliography"))
  :latex)
