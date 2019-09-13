@@ -1,3 +1,5 @@
+(require 'frame-cmds)
+
 ;; TODO:
 ;; I am in an org file and want to cite something, that is not in crossref
 ;; It needs a bibtex entry, to create that, I call
@@ -174,3 +176,36 @@ Argument KEY is the bibtex key."
 ;;   (string-match "p\\.\\s-*\\([0-9]*\\)" description)
 ;;   (setq page-str (match-string 1 description))
 ;;   (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
+
+
+;; (defun write-desktop-file ()
+;;   (if (make-directory (concat projectile-project-root "emacs-desktop") 'parents)
+;;       (desktop-save desktop-dirname)
+;;   )
+
+(defun open-pdf-in-new-frame-if-not-already-open ()
+  ;; useful functions
+  ;; (find-file-existing (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf")))
+  ;; (iconify-frame (nth 0 (frame-list)))
+  ;; (buffer-list)
+  ;; (visible-frame-list)
+
+  (setq buffer (get-buffer "elberfelder-1905-deuelo_a4.pdf"))
+  (setq buffer-window (get-buffer-window buffer 0))
+
+  (if buffer
+      (if buffer-window
+          (progn
+            (setq framewithpdf (window-frame buffer-window))
+            (if (frcmds-frame-iconified-p framewithpdf)
+                (raise-frame framewithpdf))
+            (make-frame-visible framewithpdf)
+            (raise-frame framewithpdf))
+        (switch-to-buffer-other-frame))
+    (find-file-other-frame (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf"))))
+  )
+
+;; TODO: because un-iconify for some reason doesn't work
+;; in gnome through and Emacs 25, 26 (at least through raise-frame)
+;; i do it only with visible and invisible frames, (which btw. don't show up in
+;; gnome's window switcher.)
