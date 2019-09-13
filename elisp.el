@@ -197,7 +197,7 @@ Argument KEY is the bibtex key."
       (if buffer-window
           (progn
             (setq framewithpdf (window-frame buffer-window))
-            (if (frcmds-frame-iconified-p framewithpdf)
+            (if (frame-visible-p framewithpdf)
                 (raise-frame framewithpdf))
             (make-frame-visible framewithpdf)
             (raise-frame framewithpdf))
@@ -209,3 +209,61 @@ Argument KEY is the bibtex key."
 ;; in gnome through and Emacs 25, 26 (at least through raise-frame)
 ;; i do it only with visible and invisible frames, (which btw. don't show up in
 ;; gnome's window switcher.)
+
+(defun make-invisible ()
+  (interactive)
+  (make-frame-invisible (window-frame (get-buffer-window (current-buffer) t)))
+  )
+
+(defun make-visible (&optional bufname)
+  (interactive)
+  (unless bufname (setq bufname "elberfelder-1905-deuelo_a4.pdf"))
+  (setq buffer (get-buffer bufname))
+  (setq bufwindow (get-buffer-window buffer t))
+  (if bufwindow
+      (make-frame-visible (window-frame bufwindow))
+    ;; (setq newframe (make-frame))
+    ;; (select-frame newframe)
+    ;; (when (display-graphic-p frame)
+    ;; (switch-to-buffer buffer)
+    (switch-to-buffer-other-frame bufname)
+    ;; (message (concat "current buffer: " (buffer-name (current-buffer))))
+    (pdf-view-redisplay) ;; That fixed the raw-pdf "fundamentalmode" stalling for me in emacs 25.2.2 and pdf-tools 1.0
+    ;; (message (concat "i tried pdf-view-redisplay"))
+    )
+  )
+
+(global-set-key (kbd "C-, i") 'make-invisible)
+(global-set-key (kbd "C-, v") 'make-visible)
+
+
+;; make a helm selection list of all open buffers, if it's a pdf buffer you select, you open it in it's window's frame.
+
+(defun get-all-pdf-buffers ()
+  (interactive)
+  (setq pdfbuffers (make-list 0 0))
+  (setq i 0)
+  (while (< i (length (buffer-list)))
+    (setq bufname (buffer-name (nth i (buffer-list))))
+    (if (and (string-match-p (regexp-quote ".pdf") bufname)
+             (not (string-match-p (regexp-quote "\*") bufname)))
+        (setq pdfbuffers (append pdfbuffers `(,bufname))))
+    (setq i (+ i 1))
+    )
+  pdfbuffers)
+
+(setq some-helm-source
+      '((name . "make visible and bring to front PDF buffer(s)")
+        (candidates . get-all-pdf-buffers)
+        (action . (lambda (candidate)
+                    (make-visible candidate)
+                    ;; (message-box "%s" candidate)
+                    ))))
+
+;; browse pdf buffers
+(global-set-key (kbd "C-, p") 'helm-browse-pdf-buffers)
+
+(defun helm-browse-pdf-buffers ()
+  (interactive)
+  (helm :sources '(some-helm-source))
+  )
