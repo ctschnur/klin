@@ -91,21 +91,21 @@ Argument KEY is the bibtex key."
 ;; (setq pdf-filepath (org-ref-get-zotero-pdf-filename "elb05"))
 ;; great, this works
 
-(defun open-bibtex-pdf-at-point (cite-str)
-  (setq strparts (split-string cite-str ":"))
-  (setq key (nth 1 strparts))
-  (setq page (string-to-number (nth 2 strparts)))
-  (setq file-page-offset (string-to-number (org-ref-get-zotero-pdf-page-offset key)))
-  (setq pdf-filepath (org-ref-get-zotero-pdf-filename key))
-  (progn
-    (find-file-other-frame pdf-filepath)
-    (pdf-view-goto-page (- (+ page file-page-offset) 1))))
+;; (defun open-bibtex-pdf-at-point (cite-str)
+;;   (setq strparts (split-string cite-str ":"))
+;;   (setq key (nth 1 strparts))
+;;   (setq page (string-to-number (nth 2 strparts)))
+;;   (setq file-page-offset (string-to-number (org-ref-get-zotero-pdf-page-offset key)))
+;;   (setq pdf-filepath (org-ref-get-zotero-pdf-filename key))
+;;   (progn
+;;     (find-file-other-frame pdf-filepath)
+;;     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
 
- ; (open-bibtex-pdf-at-point "cite:elb05:30")
+;; (open-bibtex-pdf-at-point "cite:elb05:30")
 
-(defun read-point-string-and-trigger-opening ()
-  (setq cite-str (concat "cite:" (org-ref-get-bibtex-key-under-cursor)))
-  (open-bibtex-pdf-at-point cite-str))
+;; (defun read-point-string-and-trigger-opening ()
+;;   (setq cite-str (concat "cite:" (org-ref-get-bibtex-key-under-cursor)))
+;;   (open-bibtex-pdf-at-point cite-str))
 
 ;; (define-key org-mode-map (kbd "C-c o") 'read-point-string-and-trigger-opening)
 
@@ -158,9 +158,6 @@ Argument KEY is the bibtex key."
     (find-file-other-frame pdf-filepath)
     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
 
-(defun printlist (mylist)
-  (setq hi (nth 0 mylist)))
-
 (defun openlink (mylist)
  (setq linktyp (nth 0 mylist))
  (setq bibtexkey (nth 1 mylist))
@@ -170,6 +167,7 @@ Argument KEY is the bibtex key."
  (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
 
 (defun search-nearest-link-and-open ()
+  (interactive)
   (openlink (get-link-info-nearest-to-point)))
 
 ;; (progn
@@ -183,27 +181,27 @@ Argument KEY is the bibtex key."
 ;;       (desktop-save desktop-dirname)
 ;;   )
 
-(defun open-pdf-in-new-frame-if-not-already-open ()
-  ;; useful functions
-  ;; (find-file-existing (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf")))
-  ;; (iconify-frame (nth 0 (frame-list)))
-  ;; (buffer-list)
-  ;; (visible-frame-list)
-
-  (setq buffer (get-buffer "elberfelder-1905-deuelo_a4.pdf"))
-  (setq buffer-window (get-buffer-window buffer 0))
-
-  (if buffer
-      (if buffer-window
-          (progn
-            (setq framewithpdf (window-frame buffer-window))
-            (if (frame-visible-p framewithpdf)
-                (raise-frame framewithpdf))
-            (make-frame-visible framewithpdf)
-            (raise-frame framewithpdf))
-        (switch-to-buffer-other-frame))
-    (find-file-other-frame (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf"))))
-  )
+;; (defun open-pdf-in-new-frame-if-not-already-open ()
+;;   ;; useful functions
+;;   ;; (find-file-existing (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf")))
+;;   ;; (iconify-frame (nth 0 (frame-list)))
+;;   ;; (buffer-list)
+;;   ;; (visible-frame-list)
+;; 
+;;   (setq buffer (get-buffer "elberfelder-1905-deuelo_a4.pdf"))
+;;   (setq buffer-window (get-buffer-window buffer 0))
+;; 
+;;   (if buffer
+;;       (if buffer-window
+;;           (progn
+;;             (setq framewithpdf (window-frame buffer-window))
+;;             (if (frame-visible-p framewithpdf)
+;;                 (raise-frame framewithpdf))
+;;             (make-frame-visible framewithpdf)
+;;             (raise-frame framewithpdf))
+;;         (switch-to-buffer-other-frame))
+;;     (find-file-other-frame (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf"))))
+;;   )
 
 ;; TODO: because un-iconify for some reason doesn't work
 ;; in gnome through and Emacs 25, 26 (at least through raise-frame)
@@ -233,10 +231,6 @@ Argument KEY is the bibtex key."
     )
   )
 
-(global-set-key (kbd "C-, i") 'make-invisible)
-(global-set-key (kbd "C-, v") 'make-visible)
-
-
 ;; make a helm selection list of all open buffers, if it's a pdf buffer you select, you open it in it's window's frame.
 
 (defun get-all-pdf-buffers ()
@@ -260,10 +254,35 @@ Argument KEY is the bibtex key."
                     ;; (message-box "%s" candidate)
                     ))))
 
-;; browse pdf buffers
-(global-set-key (kbd "C-, p") 'helm-browse-pdf-buffers)
-
 (defun helm-browse-pdf-buffers ()
   (interactive)
   (helm :sources '(some-helm-source))
   )
+
+
+(defun override-org-pdfview-store ()
+  (interactive)
+  (eval-after-load "org-pdfview" ;; package org-pdfview with org-pdfview.el
+    (defun org-pdfview-store-link ()  ;; override a function there
+      (when (eq major-mode 'pdf-view-mode)
+        (let* ((type "cite")
+               (filename (file-name-nondirectory (buffer-file-name)))
+               ;; make sure there is a proper bibtex file associated with it, otherwise create it
+               ;; (bibtexkey )
+       	       (link (concat type ":" bibtexkey))
+               ;; todo: put a hidden .bib file for every book in your pdf directory, with page-offset
+               (page-offset 0)
+               (page-in-pdf (pdf-view-current-page))
+               (page-in-print (- page-in-pdf page-offset))
+               (description (concat "p." (number-to-string page-in-print)))
+              )
+          (org-store-link-props
+           :type type
+           :link link
+           :description description))))))
+
+
+(global-set-key (kbd "C-, o") 'search-nearest-link-and-open)
+(global-set-key (kbd "C-, p") 'helm-browse-pdf-buffers)
+(global-set-key (kbd "C-, i") 'make-invisible)
+(global-set-key (kbd "C-, v") 'make-visible)

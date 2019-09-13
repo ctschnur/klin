@@ -9,7 +9,7 @@
 Some [[cite:elb05][p.22]] links [[cite:elb05][p.23]] embedded [[cite:elb05][p.24]] in [[cite:elb05][p.25]] a.
 #+BEGIN_QUOTE
  Lebensjahre Ismaels: hundertsiebenunddreißig Jahre; und er verschied und starb und wurde versammelt zu seinen Völkern. ${}^{18}$ Und sie wohnten von Hawila bis Sur, das vor Ägypten liegt. 
--- Elberfelder Bibel [[cite:elb05][p.24]]
+-- Elberfelder Bibel [[cite:elb05][p.24]] [[pdfview:/home/chris/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf::28][elberfelder::28]
 #+END_QUOTE
 
 What in the past was often described as magic (thunder, clouds, the stars), can in many cases be explained and simulated now, using the tools of mathematics, logic and our ability to make abstractions and categorizations and build theoretic models that are backed up by experimental evidence in accordance with the scientific method. Science relies on observations and mathematics to build a model that reproduces these observations, where the substructural axioms of that model are always chosen to be as simple as possible. 
