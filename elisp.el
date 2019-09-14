@@ -281,8 +281,78 @@ Argument KEY is the bibtex key."
            :link link
            :description description))))))
 
+(defun make-bibtex-file-for-pdf (&optional pdfpath isbn doi)
+  (interactive)
+  (unless pdfpath (setq pdfpath (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
+  (unless isbn (setq isbn "0-7382-0052-2"))
+  (let* ((basedir (file-name-directory pdfpath))
+         (filename (file-name-nondirectory pdfpath))
+         (bibtexfilename (concat "." filename ".bib")) ;; "hidden" file
+         (bibfilepath (concat basedir "/" bibtexfilename))
+         )
+    (unless (file-exists-p pdfpath)
+      (unless (yes-or-no-p "pdf file doesn't exist, continue anyway?")
+        (error "pdf file doesn't exist, chose to quit")
+        ))
+    (if (file-exists-p bibfilepath)
+        (unless (yes-or-no-p (concat "bib file already exists at " bibfilepath ". Would you like a side by side view to edit it?"))
+          )
+      (if isbn
+          (isbn-to-bibtex isbn nil)
+        )
+      )
+    )
+  )
 
+(defun side-by-side-bibtex-edit (&optional existing-bibfile-path alternative-bibtex-entry-str)
+  "bib file already exists somewhere, don't overwrite it, complete it with another
+   alternative bibtex entry delivered to the function"
+  (interactive)
+  (unless existing-bibfile-path (setq existing-bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.bib")))
+  (let* ((tmpfilepath (make-temp-file "alternative-bibtex-entry")))
+    (find-file-other-frame existing-bibfile-path)
+    ;; (if (not (member (get-buffer-window (get-buffer (file-name-nondirectory existing-bibfile-path)))
+    ;;                  (window-list (selected-frame))))
+    (progn
+      (if (<= (length (window-list)) 1)
+          (split-window-vertically)
+          )
+      (other-window 1)
+      )
+    ;;  )
+    (if alternative-bibtex-entry-str
+        (progn
+          (find-file tmpfilepath)
+          (insert alternative-bibtex-entry-str))
+      (isbn-to-bibtex isbn tmpfilepath)
+      (setq alternative-bibtex-entry-str (buffer-string))
+      (if (and (/= 0 (length alternative-bibtex-entry-str))
+               (= 0 (length
+                     (with-current-buffer
+                         (get-buffer (file-name-nondirectory existing-bibfile-path))
+                       (buffer-string)))))
+          (progn
+            (if (yes-or-no-p
+                 (concat existing-bibfile-path "'s shown buffer is empty. Fill it with the standard suggestion?"))
+                (progn
+                  (switch-to-buffer (get-buffer (file-name-nondirectory existing-bibfile-path))) ;; or (other-window -1)
+                  (insert alternative-bibtex-entry-str)
+                  (other-window -1)
+                  )
+              )
+              ;; check if page-offset field is already included
+            )
+        )
+      )
+    )
+  )
+
+
+
+(global-set-key (kbd "C-, m") 'make-bibtex-file-for-pdf)
+(global-set-key (kbd "C-, i") 'make-invisible)
 (global-set-key (kbd "C-, o") 'search-nearest-link-and-open)
 (global-set-key (kbd "C-, p") 'helm-browse-pdf-buffers)
 (global-set-key (kbd "C-, i") 'make-invisible)
 (global-set-key (kbd "C-, v") 'make-visible)
+(global-set-key (kbd "C-2") 'helm-mini)  ;; select buffers with C-Space, delete selection with M-S-d
