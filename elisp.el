@@ -50,6 +50,67 @@
 ;; (setq results (org-ref-get-bibtex-key-and-file key))
 ;; (setq bibfile (cdr results))
 
+;; --- other stuff (testing) -----
+;; (setq file-page-offset (klin-get-pdf-page-offset "elb05"))
+;; (setq pdf-filepath (klin-get-pdf-filename "elb05"))
+;; great, this works
+
+;; (defun open-bibtex-pdf-at-point (cite-str)
+;;   (setq strparts (split-string cite-str ":"))
+;;   (setq key (nth 1 strparts))
+;;   (setq page (string-to-number (nth 2 strparts)))
+;;   (setq file-page-offset (string-to-number (klin-get-pdf-page-offset key)))
+;;   (setq pdf-filepath (klin-get-pdf-filename key))
+;;   (progn
+;;     (find-file-other-frame pdf-filepath)
+;;     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
+
+;; (open-bibtex-pdf-at-point "cite:elb05:30")
+
+;; (defun read-point-string-and-trigger-opening ()
+;;   (setq cite-str (concat "cite:" (org-ref-get-bibtex-key-under-cursor)))
+;;   (open-bibtex-pdf-at-point cite-str))
+
+;; (define-key org-mode-map (kbd "C-c o") 'read-point-string-and-trigger-opening)
+
+;; --- even more stuff (testing) ----
+;; (progn
+;;   (string-match "p\\.\\s-*\\([0-9]*\\)" description)
+;;   (setq page-str (match-string 1 description))
+;;   (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
+
+
+;; (defun write-desktop-file ()
+;;   (if (make-directory (concat projectile-project-root "emacs-desktop") 'parents)
+;;       (desktop-save desktop-dirname)
+;;   )
+
+;; (defun open-pdf-in-new-frame-if-not-already-open ()
+;;   ;; useful functions
+;;   ;; (find-file-existing (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf")))
+;;   ;; (iconify-frame (nth 0 (frame-list)))
+;;   ;; (buffer-list)
+;;   ;; (visible-frame-list)
+;;
+;;   (setq buffer (get-buffer "elberfelder-1905-deuelo_a4.pdf"))
+;;   (setq buffer-window (get-buffer-window buffer 0))
+;;
+;;   (if buffer
+;;       (if buffer-window
+;;           (progn
+;;             (setq framewithpdf (window-frame buffer-window))
+;;             (if (frame-visible-p framewithpdf)
+;;                 (raise-frame framewithpdf))
+;;             (make-frame-visible framewithpdf)
+;;             (raise-frame framewithpdf))
+;;         (switch-to-buffer-other-frame))
+;;     (find-file-other-frame (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf"))))
+;;   )
+
+;; TODO: because un-iconify for some reason doesn't work
+;; in gnome through and Emacs 25, 26 (at least through raise-frame)
+;; i do it only with visible and invisible frames, (which btw. don't show up in
+;; gnome's window switcher.)
 
 (defun klin-get-pdf-filename (key)
     "Return the pdf filename indicated by zotero file field.
@@ -85,28 +146,6 @@ Argument KEY is the bibtex key."
                 (let ((first-file (car (split-string clean-field ";" t))))
                   (concat org-ref-pdf-directory first-file)))
             (message "PDF offset not found."))))))
-
-;; (setq file-page-offset (klin-get-pdf-page-offset "elb05"))
-;; (setq pdf-filepath (klin-get-pdf-filename "elb05"))
-;; great, this works
-
-;; (defun open-bibtex-pdf-at-point (cite-str)
-;;   (setq strparts (split-string cite-str ":"))
-;;   (setq key (nth 1 strparts))
-;;   (setq page (string-to-number (nth 2 strparts)))
-;;   (setq file-page-offset (string-to-number (klin-get-pdf-page-offset key)))
-;;   (setq pdf-filepath (klin-get-pdf-filename key))
-;;   (progn
-;;     (find-file-other-frame pdf-filepath)
-;;     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
-
-;; (open-bibtex-pdf-at-point "cite:elb05:30")
-
-;; (defun read-point-string-and-trigger-opening ()
-;;   (setq cite-str (concat "cite:" (org-ref-get-bibtex-key-under-cursor)))
-;;   (open-bibtex-pdf-at-point cite-str))
-
-;; (define-key org-mode-map (kbd "C-c o") 'read-point-string-and-trigger-opening)
 
 (defun get-link-text-at-point ()
   (setq type (org-element-context))
@@ -168,44 +207,6 @@ Argument KEY is the bibtex key."
 (defun search-nearest-link-and-open ()
   (interactive)
   (openlink (get-link-info-nearest-to-point)))
-
-;; (progn
-;;   (string-match "p\\.\\s-*\\([0-9]*\\)" description)
-;;   (setq page-str (match-string 1 description))
-;;   (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
-
-
-;; (defun write-desktop-file ()
-;;   (if (make-directory (concat projectile-project-root "emacs-desktop") 'parents)
-;;       (desktop-save desktop-dirname)
-;;   )
-
-;; (defun open-pdf-in-new-frame-if-not-already-open ()
-;;   ;; useful functions
-;;   ;; (find-file-existing (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf")))
-;;   ;; (iconify-frame (nth 0 (frame-list)))
-;;   ;; (buffer-list)
-;;   ;; (visible-frame-list)
-;; 
-;;   (setq buffer (get-buffer "elberfelder-1905-deuelo_a4.pdf"))
-;;   (setq buffer-window (get-buffer-window buffer 0))
-;; 
-;;   (if buffer
-;;       (if buffer-window
-;;           (progn
-;;             (setq framewithpdf (window-frame buffer-window))
-;;             (if (frame-visible-p framewithpdf)
-;;                 (raise-frame framewithpdf))
-;;             (make-frame-visible framewithpdf)
-;;             (raise-frame framewithpdf))
-;;         (switch-to-buffer-other-frame))
-;;     (find-file-other-frame (setq filename (expand-file-name "~/Dropbox/2TextBooks/1-Bible/elberfelder-1905-deuelo_a4.pdf"))))
-;;   )
-
-;; TODO: because un-iconify for some reason doesn't work
-;; in gnome through and Emacs 25, 26 (at least through raise-frame)
-;; i do it only with visible and invisible frames, (which btw. don't show up in
-;; gnome's window switcher.)
 
 (defun make-invisible ()
   (interactive)
