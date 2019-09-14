@@ -288,19 +288,28 @@ Argument KEY is the bibtex key."
   (let* ((basedir (file-name-directory pdfpath))
          (filename (file-name-nondirectory pdfpath))
          (bibtexfilename (concat "." filename ".bib")) ;; "hidden" file
-         (bibfilepath (concat basedir "/" bibtexfilename))
+         (bibfilepath (concat basedir bibtexfilename))
          )
     (unless (file-exists-p pdfpath)
       (unless (yes-or-no-p "pdf file doesn't exist, continue anyway?")
         (error "pdf file doesn't exist, chose to quit")
         ))
-    (if (file-exists-p bibfilepath)
-        (unless (yes-or-no-p (concat "bib file already exists at " bibfilepath ". Would you like a side by side view to edit it?"))
-          )
-      (if isbn
-          (isbn-to-bibtex isbn nil)
-        )
-      )
+    ;; (if (file-exists-p bibfilepath)
+    ;;     (unless (yes-or-no-p (concat "bib file already exists at " bibfilepath ". Would you like a side by side view to edit it?"))
+    ;;       )
+    ;;   (if isbn
+    ;;       (isbn-to-bibtex isbn nil)
+    ;;     )
+    ;;   )
+
+    ;; create a bib file if it's not already there
+    ;; (with-temp-buffer (write-file bibfilepath)) ;; this actually clears the content
+    ;; (with-temp-buffer (write-file (expand-file-name "~/Dropbox/stuff/1Book/testfile.txt")))
+
+    ;; this appends to a file (and creates one if there is none)
+    (unless bibfilepath (setq bibfilepath (expand-file-name "~/Dropbox/stuff/1Book/testfile.txt")))
+    (with-temp-buffer (write-region "" nil bibfilepath 'append))
+    (side-by-side-bibtex-edit bibfilepath)
     )
   )
 
@@ -308,7 +317,7 @@ Argument KEY is the bibtex key."
   "bib file already exists somewhere, don't overwrite it, complete it with another
    alternative bibtex entry delivered to the function"
   (interactive)
-  (unless existing-bibfile-path (setq existing-bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.bib")))
+  ;; (unless existing-bibfile-path (setq existing-bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
   (let* ((tmpfilepath (make-temp-file "alternative-bibtex-entry")))
     (find-file-other-frame existing-bibfile-path)
     ;; (if (not (member (get-buffer-window (get-buffer (file-name-nondirectory existing-bibfile-path)))
@@ -334,10 +343,11 @@ Argument KEY is the bibtex key."
           (progn
             (if (yes-or-no-p
                  (concat existing-bibfile-path "'s shown buffer is empty. Fill it with the standard suggestion?"))
-                (progn
-                  (switch-to-buffer (get-buffer (file-name-nondirectory existing-bibfile-path))) ;; or (other-window -1)
+                (progn                  ;
+                  (switch-to-buffer-other-window
+                   (get-buffer (file-name-nondirectory existing-bibfile-path))) ;; or (other-window -1)
                   (insert alternative-bibtex-entry-str)
-                  (other-window -1)
+                  ;; (other-window -1)
                   )
               )
               ;; check if page-offset field is already included
@@ -345,6 +355,13 @@ Argument KEY is the bibtex key."
         )
       )
     )
+  )
+
+(defun diagnose-file-page-offset-field-in-bibfile (&optional bibfile-path pdf-path)
+  "check if there's a field like that in the bib file with some value"
+  (unless bibfile-path (setq bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
+  (unless pdf-path (setq pdf-path (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
+  ;; check if it has a field
   )
 
 
