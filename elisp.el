@@ -51,7 +51,7 @@
 ;; (setq bibfile (cdr results))
 
 
-(defun org-ref-get-zotero-pdf-filename (key)
+(defun klin-get-pdf-filename (key)
     "Return the pdf filename indicated by zotero file field.
 Argument KEY is the bibtex key."
     (let* ((results (org-ref-get-bibtex-key-and-file key))
@@ -69,14 +69,13 @@ Argument KEY is the bibtex key."
                   (concat org-ref-pdf-directory first-file)))
             (message "PDF filename not found."))))))
 
-(defun org-ref-get-zotero-pdf-page-offset (key)
-    "Return the pdf's page offset (from where arabic numbering starts) indicated by zotero file field.
-Argument KEY is the bibtex key."
+(defun klin-get-pdf-page-offset (key &optional bibfile-path)
+    "Return the pdf's page offset (from where arabic numbering starts) indicated by file-page-offset field. Argument KEY is the bibtex key."
     (let* ((results (org-ref-get-bibtex-key-and-file key))
-           (bibfile (cdr results))
+           (bibfile-path (cdr results))
            entry)
       (with-temp-buffer
-        (insert-file-contents bibfile)
+        (insert-file-contents bibfile-path)
         (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
         (bibtex-search-entry key nil 0)
         (setq entry (bibtex-parse-entry))
@@ -87,16 +86,16 @@ Argument KEY is the bibtex key."
                   (concat org-ref-pdf-directory first-file)))
             (message "PDF offset not found."))))))
 
-;; (setq file-page-offset (org-ref-get-zotero-pdf-page-offset "elb05"))
-;; (setq pdf-filepath (org-ref-get-zotero-pdf-filename "elb05"))
+;; (setq file-page-offset (klin-get-pdf-page-offset "elb05"))
+;; (setq pdf-filepath (klin-get-pdf-filename "elb05"))
 ;; great, this works
 
 ;; (defun open-bibtex-pdf-at-point (cite-str)
 ;;   (setq strparts (split-string cite-str ":"))
 ;;   (setq key (nth 1 strparts))
 ;;   (setq page (string-to-number (nth 2 strparts)))
-;;   (setq file-page-offset (string-to-number (org-ref-get-zotero-pdf-page-offset key)))
-;;   (setq pdf-filepath (org-ref-get-zotero-pdf-filename key))
+;;   (setq file-page-offset (string-to-number (klin-get-pdf-page-offset key)))
+;;   (setq pdf-filepath (klin-get-pdf-filename key))
 ;;   (progn
 ;;     (find-file-other-frame pdf-filepath)
 ;;     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
@@ -152,8 +151,8 @@ Argument KEY is the bibtex key."
          (match-string 3 nearestlink-string)))
 
 (defun open-bibtex-document-on-page (bibtexkey page)
-  (setq file-page-offset (string-to-number (org-ref-get-zotero-pdf-page-offset bibtexkey)))
-  (setq pdf-filepath (org-ref-get-zotero-pdf-filename bibtexkey))
+  (setq file-page-offset (string-to-number (klin-get-pdf-page-offset bibtexkey)))
+  (setq pdf-filepath (klin-get-pdf-filename bibtexkey))
   (progn
     (find-file-other-frame pdf-filepath)
     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
