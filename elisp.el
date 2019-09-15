@@ -51,16 +51,16 @@
 ;; (setq bibfile (cdr results))
 
 ;; --- other stuff (testing) -----
-;; (setq file-page-offset (klin-get-pdf-page-offset "elb05"))
-;; (setq pdf-filepath (klin-get-pdf-filename "elb05"))
+;; (setq file-page-offset (string-to-number (klin-bibtex-get-field "file-page-offset" nil "elb05")))
+;; (setq pdf-filepath (klin-bibtex-get-field "filepath" "elb05"))
 ;; great, this works
 
 ;; (defun open-bibtex-pdf-at-point (cite-str)
 ;;   (setq strparts (split-string cite-str ":"))
 ;;   (setq key (nth 1 strparts))
 ;;   (setq page (string-to-number (nth 2 strparts)))
-;;   (setq file-page-offset (string-to-number (klin-get-pdf-page-offset key)))
-;;   (setq pdf-filepath (klin-get-pdf-filename key))
+;;   (setq file-page-offset (string-to-number (klin-bibtex-get-field "file-page-offset" key)))
+;;   (setq pdf-filepath (klin-bibtex-get-field "filepath" key))
 ;;   (progn
 ;;     (find-file-other-frame pdf-filepath)
 ;;     (pdf-view-goto-page (- (+ page file-page-offset) 1))))
@@ -112,40 +112,46 @@
 ;; i do it only with visible and invisible frames, (which btw. don't show up in
 ;; gnome's window switcher.)
 
-(defun klin-get-pdf-filename (key)
-    "Return the pdf filename indicated by zotero file field.
-Argument KEY is the bibtex key."
-    (let* ((results (org-ref-get-bibtex-key-and-file key))
-           (bibfile (cdr results))
-           entry)
-      (with-temp-buffer
-        (insert-file-contents bibfile)
-        (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
-        (bibtex-search-entry key nil 0)
-        (setq entry (bibtex-parse-entry))
-        (let ((e (org-ref-reftex-get-bib-field "file" entry)))
-          (if (> (length e) 4)
-              (let ((clean-field (replace-regexp-in-string "/+" "/" e)))
-                (let ((first-file (car (split-string clean-field ";" t))))
-                  (concat org-ref-pdf-directory first-file)))
-            (message "PDF filename not found."))))))
+(defun klin-bibtex-get-field (field &optional key bibfile-path)
+  "Returns the value of the key value pair (FIELD, value) of a bibtex entry.
+   When called from an org-mode buffer with org-ref installed,
+   it only needs the bibtex KEY if an org-ref -style bibliography link
+   in the org buffer links to a collective .bib file.
+   Otherwise, it needs an explicit bibfile-path.
+   If it's just a single entry, the KEY is optional."
 
-(defun klin-get-pdf-page-offset (key &optional bibfile-path)
-    "Return the pdf's page offset (from where arabic numbering starts) indicated by file-page-offset field. Argument KEY is the bibtex key."
-    (let* ((results (org-ref-get-bibtex-key-and-file key))
-           (bibfile-path (cdr results))
-           entry)
-      (with-temp-buffer
-        (insert-file-contents bibfile-path)
-        (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
-        (bibtex-search-entry key nil 0)
-        (setq entry (bibtex-parse-entry))
-        (let ((e (org-ref-reftex-get-bib-field "file-page-offset" entry)))
-          (if t
-              (let ((clean-field (replace-regexp-in-string "/+" "/" e)))
-                (let ((first-file (car (split-string clean-field ";" t))))
-                  (concat org-ref-pdf-directory first-file)))
-            (message "PDF offset not found."))))))
+  (unless key (setq key "negele98_quant"))
+  (unless bibfile-path (setq bibfile-path (cdr (org-ref-get-bibtex-key-and-file key))))
+  (unless bibfile-path (setq bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
+
+  (let* (entry)
+    (with-temp-buffer
+      (bibtex-mode)
+      (insert-file-contents bibfile-path)
+      (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+      ;; refresh the parsing of the keys
+      (bibtex-parse-keys)
+      ;; if just one, get it's key
+      (unless key
+        (if (= 1 (length (bibtex-global-key-alist)))
+            (setq key (car (nth 0 (bibtex-global-key-alist)))))
+        )
+      (unless key (setq key "negele98_quanti")) ;; debugging
+
+      (if (not (bibtex-search-entry key nil 0)) ;; find the one you are looking for
+          (progn
+            (message (concat "no key " key " found in " bibfile-path)) nil)
+        (setq entry (bibtex-parse-entry)) ;; sets cursor at the end of entry's last field
+        (let ((field-value (org-ref-reftex-get-bib-field field entry)))
+          (if (>= (length field-value) 1)
+              (progn
+                ;; (replace-regexp-in-string "/+" "/" field-value) ;; clean it up (?)
+                field-value
+                )
+            (message "no field " field " found in " bibfile-path " -> " key) nil))
+          ) ;; sets cursor at the beginning of the entry's line
+      )))
+
 
 (defun get-link-text-at-point ()
   (setq type (org-element-context))
@@ -155,8 +161,8 @@ Argument KEY is the bibtex key."
                (org-element-property :begin type) (org-element-property :end type))))))
 
 (defun get-link-info-nearest-to-point ()
-  " This could be done easier: if it's not on a link, go to previous/next link then extract
-    or if it's on a link, do nothing but extract"
+  "This could be done easier: if it's not on a link, go to previous/next link then extract
+   or if it's on a link, do nothing but extract"
   ;; check if at point there is a link
   (setq re "\\[\\[\\(.*?\\):\\(.*?\\)\\]\\[\\(.*?\\)\\]\\]")
   (setq nearestlink-string (get-link-text-at-point))
@@ -189,24 +195,35 @@ Argument KEY is the bibtex key."
          (match-string 2 nearestlink-string)
          (match-string 3 nearestlink-string)))
 
-(defun open-bibtex-document-on-page (bibtexkey page)
-  (setq file-page-offset (string-to-number (klin-get-pdf-page-offset bibtexkey)))
-  (setq pdf-filepath (klin-get-pdf-filename bibtexkey))
+(defun open-pdf-document-new-frame (&optional filepath page)
+  "open a pdf file in a new frame"
+  (unless page (setq page 1))
+  (unless filepath (setq filepath (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
   (progn
-    (find-file-other-frame pdf-filepath)
-    (pdf-view-goto-page (- (+ page file-page-offset) 1))))
+    (find-file-other-frame filepath)
+    (pdf-view-goto-page page)))
+
+(defun open-bibtex-document-on-page (bibtexkey page)
+  (let* ((file-page-offset (string-to-number (klin-bibtex-get-field "file-page-offset" bibtexkey)))
+         (filepath (klin-bibtex-get-field "filepath" bibtexkey))
+         (page (- (+ page file-page-offset) 1)))
+    (open-pdf-document-new-frame filepath page)
+    )
+  )
 
 (defun openlink (mylist)
- (setq linktyp (nth 0 mylist))
- (setq bibtexkey (nth 1 mylist))
- (setq description (nth 2 mylist))
- (string-match "p\\.\\s-*\\([0-9]*\\)" description)
- (setq page-str (match-string 1 description))
- (open-bibtex-document-on-page bibtexkey (string-to-number page-str)))
+  (setq linktyp (nth 0 mylist))
+  (setq bibtexkey (nth 1 mylist))
+  (setq description (nth 2 mylist))
+  (string-match "p\\.\\s-*\\([0-9]*\\)" description)
+  (setq page-str (match-string 1 description))
+  (open-bibtex-document-on-page bibtexkey (string-to-number page-str))
+  )
 
 (defun search-nearest-link-and-open ()
   (interactive)
-  (openlink (get-link-info-nearest-to-point)))
+  (openlink (get-link-info-nearest-to-point))
+  )
 
 (defun make-invisible ()
   (interactive)
@@ -357,13 +374,129 @@ Argument KEY is the bibtex key."
     )
   )
 
-(defun diagnose-file-page-offset-field-in-bibfile (&optional bibfile-path pdf-path)
-  "check if there's a field like that in the bib file with some value"
-  (unless bibfile-path (setq bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
-  (unless pdf-path (setq pdf-path (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
-  ;; check if it has a field
+(defun bibtex-get-field-from-entry-under-cursor (field)
+  (with-current-buffer "bibliography.bib"
+    (save-excursion
+      (bibtex-beginning-of-entry)
+      (let* ((entry (bibtex-parse-entry t))
+             (field-value (org-ref-reftex-get-bib-field field entry)))
+        field-value
+        )
+      )
+    )
   )
 
+(defun ff (arg)
+  "Prompt user to enter a string, with input history support."
+  (interactive
+   (list
+    (read-number "pdf page offset number: ")))
+  (message "number is %s." (number-to-string arg))
+  arg)
+
+
+(defun diagnose-bib-entry-file-page-offset (&optional bibtexkey page)
+  (interactive)
+  "run in the context of a bib-buffer
+   TODO check if there's a file-page-offset field in the bib entry you're hovering over.
+   If not, or if it doesn't contain a value, ask to diagonose the pdf manually
+   by opening it and asking for the value.
+   There's probably also a way to do it automatically and semi-reliably... "
+  ;; (unless bibfile-path (setq bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
+  ;; (unless pdf-path (setq pdf-path (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
+  (let* ((key (bibtex-get-field-from-entry-under-cursor "=key="))
+         (file-page-offset-str (bibtex-get-field-from-entry-under-cursor "file-page-offset"))
+         ;; returns "" if file-page-offset field is not there or has no value
+         (file-page-offset (if (string= "" file-page-offset-str)
+                               nil
+                             (string-to-number file-page-offset-str)))
+         )
+    (if file-page-offset
+        (progn
+          (if (yes-or-no-p
+               (concat "file-page-offset is set to " file-page-offset-str))
+              (save-excursion
+                (progn
+                  ;; open up the pdf in a new frame on page 1 (first pdf page)
+                  (let* ((filepath (bibtex-get-field-from-entry-under-cursor "filepath"))
+                         red-string
+                         number
+                         (old-buffer (current-buffer)))
+                    (if filepath
+                        (progn
+                          (open-pdf-document-new-frame filepath file-page-offset)
+                          (setq number (call-interactively 'ff))
+                          (delete-frame (selected-frame))
+                          (switch-to-buffer-other-frame old-buffer)
+                          (bibtex-set-field "file-page-offset" (number-to-string number))
+                          )
+                      (message "no filepath declared for " key)
+                      )
+                    )
+                  )
+                  )
+                )
+              )
+      ;; else, ask to open the pdf to see
+      (if (yes-or-no-p
+           (concat "There's no file-page-offset field in " key
+                   ". How 'bout opening up the PDF to manually find the offset?"))
+          (save-excursion
+            (progn
+              ;; open up the pdf in a new frame on page 1 (first pdf page)
+              (let* ((filepath (bibtex-get-field-from-entry-under-cursor "filepath"))
+                     red-string
+                     (old-buffer (current-buffer)))
+                (if filepath
+                    (progn
+                      (open-pdf-document-new-frame filepath 1)
+                      (setq number (call-interactively 'ff))
+                      (delete-frame (selected-frame))
+                      (switch-to-buffer-other-frame old-buffer)
+                      (bibtex-set-field "file-page-offset" (number-to-string number))
+                      )
+                  (message "no filepath declared for " key)
+                  )
+                )
+              )
+              )
+            )
+      )
+    )
+  )
+
+(defun org-ref-find-bibliography-fullfilenames (&optional org-buffer)
+  "to be applied inside an org buffer"
+  (interactive)
+  (if (not org-buffer)
+      (progn
+        ;; if the current buffer from wich this function is called is an org buffer, then use that one
+        (if (string= "org" (file-name-extension (buffer-name)))
+            (setq org-buffer (current-buffer))
+          (message this-command "not called from an org file and option org-buffer not provided. "
+                   "No clue given what org-buffer to use."))
+        ))
+
+  ;; (unless org-buffer (setq org-buffer (get-buffer "main.org"))) ;; debugging
+
+  ;; find partial filenames relative to org buffer in which e.g. addbibresources are defined
+  (with-current-buffer org-buffer
+    (let ((i 0)
+          (list-of-property-strings (org-ref-find-bibliography))
+          list-of-full-referenced-bibtex-filepaths)
+      (while (< i (length list-of-property-strings))
+        (let* ((bibresource-file-name (substring-no-properties (nth i list-of-property-strings)))
+               (bibresource-base-dir (file-name-directory (buffer-file-name)))
+               (full-referenced-bibtex-filepath (concat bibresource-base-dir bibresource-file-name)))
+          (setq list-of-full-referenced-bibtex-filepaths
+                (append list-of-full-referenced-bibtex-filepaths `(,full-referenced-bibtex-filepath)))
+          )
+        (setq i (+ i 1))
+        )
+      list-of-full-referenced-bibtex-filepaths
+      )
+    )
+  )
 
 
 (global-set-key (kbd "C-, m") 'make-bibtex-file-for-pdf)
@@ -373,3 +506,52 @@ Argument KEY is the bibtex key."
 (global-set-key (kbd "C-, i") 'make-invisible)
 (global-set-key (kbd "C-, v") 'make-visible)
 (global-set-key (kbd "C-2") 'helm-mini)  ;; select buffers with C-Space, delete selection with M-S-d
+
+
+(defun bibtex-next-entry (&optional n)
+  "Jump to the beginning of the next bibtex entry. N is a prefix
+argument. If it is numeric, jump that many entries
+forward. Negative numbers do nothing."
+  (interactive "P")
+  ;; Note if we start at the beginning of an entry, nothing
+  ;; happens. We need to move forward a char, and call again.
+  (when (= (point) (save-excursion
+                     (bibtex-beginning-of-entry)))
+    (forward-char)
+    (bibtex-next-entry))
+
+  ;; search forward for an entry 
+  (when 
+      (re-search-forward bibtex-entry-head nil t (and (numberp n) n))
+    ;; go to beginning of the entry
+    (bibtex-beginning-of-entry)))
+
+
+(defun bibtex-previous-entry (&optional n)
+  "Jump to beginning of the previous bibtex entry. N is a prefix
+argument. If it is numeric, jump that many entries back."
+  (interactive "P")
+  (bibtex-beginning-of-entry)
+ (when 
+     (re-search-backward bibtex-entry-head nil t (and (numberp n) n))
+   (bibtex-beginning-of-entry)))
+
+(defun jmax-bibtex-get-fields ()
+  "Get a list of fields in a bibtex entry."
+  (bibtex-beginning-of-entry)
+  (remove "=type="
+          (remove "=key="
+                  (mapcar 'car (bibtex-parse-entry)))))
+
+(defun jmax-bibtex-jump-to-field (field)
+  "Jump to FIELD in the current bibtex entry"
+  (interactive
+   (list
+    (ido-completing-read "Field: " (jmax-bibtex-get-fields))))
+  (save-restriction
+    (bibtex-narrow-to-entry)
+    (bibtex-beginning-of-entry)
+    (when
+        ;; fields start with spaces, a field name, possibly more
+        ;; spaces, then =
+        (re-search-forward (format "^\\s-*%s\\s-*=" field) nil t))))
