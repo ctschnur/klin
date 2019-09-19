@@ -300,28 +300,19 @@
 
 (defun make-bibtex-file-for-pdf (&optional pdfpath isbn doi)
   (interactive)
-  (unless pdfpath (setq pdfpath (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
-  (unless isbn (setq isbn "0-7382-0052-2"))
+  ;; (unless pdfpath (setq pdfpath (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
+  ;; (unless isbn (setq isbn "0-7382-0052-2"))
   (let* ((basedir (file-name-directory pdfpath))
          (filename (file-name-nondirectory pdfpath))
          (bibtexfilename (concat "." filename ".bib")) ;; "hidden" file
          (bibfilepath (concat basedir bibtexfilename))
          )
+
+    ;; check if pdf actually exists
     (unless (file-exists-p pdfpath)
       (unless (yes-or-no-p "pdf file doesn't exist, continue anyway?")
         (error "pdf file doesn't exist, chose to quit")
         ))
-    ;; (if (file-exists-p bibfilepath)
-    ;;     (unless (yes-or-no-p (concat "bib file already exists at " bibfilepath ". Would you like a side by side view to edit it?"))
-    ;;       )
-    ;;   (if isbn
-    ;;       (isbn-to-bibtex isbn nil)
-    ;;     )
-    ;;   )
-
-    ;; create a bib file if it's not already there
-    ;; (with-temp-buffer (write-file bibfilepath)) ;; this actually clears the content
-    ;; (with-temp-buffer (write-file (expand-file-name "~/Dropbox/stuff/1Book/testfile.txt")))
 
     ;; this appends to a file (and creates one if there is none)
     (unless bibfilepath (setq bibfilepath (expand-file-name "~/Dropbox/stuff/1Book/testfile.txt")))
@@ -332,42 +323,60 @@
 
 (defun side-by-side-bibtex-edit (&optional existing-bibfile-path alternative-bibtex-entry-str)
   "bib file already exists somewhere, don't overwrite it, complete it with another
-   alternative bibtex entry delivered to the function"
+   alternative bibtex entry delivered to the function.
+   removes the existing-bibfile if it remains empty
+   "
   (interactive)
   ;; (unless existing-bibfile-path (setq existing-bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
+
+  ;; open the existing bibfile
   (let* ((tmpfilepath (make-temp-file "alternative-bibtex-entry")))
     (find-file-other-frame existing-bibfile-path)
-    ;; (if (not (member (get-buffer-window (get-buffer (file-name-nondirectory existing-bibfile-path)))
-    ;;                  (window-list (selected-frame))))
+    ;; split it in two to get side-by-side view with another buffer
     (progn
       (if (<= (length (window-list)) 1)
-          (split-window-vertically)
-          )
-      (other-window 1)
-      )
-    ;;  )
+          (split-window-vertically))
+      (other-window 1))
+
     (if alternative-bibtex-entry-str
+        ;; if some text was given, open a temp file and insert it
         (progn
           (find-file tmpfilepath)
           (insert alternative-bibtex-entry-str))
-      (isbn-to-bibtex isbn tmpfilepath)
-      (setq alternative-bibtex-entry-str (buffer-string))
-      (if (and (/= 0 (length alternative-bibtex-entry-str))
-               (= 0 (length
-                     (with-current-buffer
-                         (get-buffer (file-name-nondirectory existing-bibfile-path))
-                       (buffer-string)))))
-          (progn
-            (if (yes-or-no-p
-                 (concat existing-bibfile-path "'s shown buffer is empty. Fill it with the standard suggestion?"))
-                (progn                  ;
-                  (switch-to-buffer-other-window
-                   (get-buffer (file-name-nondirectory existing-bibfile-path))) ;; or (other-window -1)
-                  (insert alternative-bibtex-entry-str)
-                  ;; (other-window -1)
-                  )
+      ;; else ask for the isbn and populate the suggestion field with a bibtex entry
+      ;; based on that it
+      (let* ((isbn (read-string "ISBN? (return to continue):")))
+        (isbn-to-bibtex isbn tmpfilepath) ;; goes to the internet
+        )
+      ;; parse the suggestion
+      (let* ((suggested-bibtex-entry-str (buffer-string))
+             )
+        (if (and (/= 0 (length suggested-bibtex-entry-str))
+                 (= 0 (length
+                       (with-current-buffer
+                           (get-buffer (file-name-nondirectory existing-bibfile-path))
+                         (buffer-string)))))
+            (progn
+              (if (yes-or-no-p
+                   (concat existing-bibfile-path
+                           "'s shown buffer is empty. Fill it with the standard suggestion?"))
+                  (progn
+                    (switch-to-buffer-other-window
+                     (get-buffer (file-name-nondirectory existing-bibfile-path)))
+                    (insert suggested-bibtex-entry-str)
+                    ;; (other-window -1)
+                    )
+                )
               )
-              ;; check if page-offset field is already included
+          )
+        )
+      )
+    ;; delete the existing-bib-file if it remained empty
+    (let ((existing-bibfile-buffer (get-buffer (file-name-nondirectory existing-bibfile-path))))
+      (if (= 0 (length (with-current-buffer existing-bibfile-buffer (buffer-string))))
+          (progn
+            (kill-buffer existing-bibfile-buffer)
+            (delete-file existing-bibfile-path)
             )
         )
       )
@@ -499,15 +508,6 @@
   )
 
 
-(global-set-key (kbd "C-, m") 'make-bibtex-file-for-pdf)
-(global-set-key (kbd "C-, i") 'make-invisible)
-(global-set-key (kbd "C-, o") 'search-nearest-link-and-open)
-(global-set-key (kbd "C-, p") 'helm-browse-pdf-buffers)
-(global-set-key (kbd "C-, i") 'make-invisible)
-(global-set-key (kbd "C-, v") 'make-visible)
-(global-set-key (kbd "C-2") 'helm-mini)  ;; select buffers with C-Space, delete selection with M-S-d
-
-
 (defun bibtex-next-entry (&optional n)
   "Jump to the beginning of the next bibtex entry. N is a prefix
 argument. If it is numeric, jump that many entries
@@ -520,8 +520,8 @@ forward. Negative numbers do nothing."
     (forward-char)
     (bibtex-next-entry))
 
-  ;; search forward for an entry 
-  (when 
+  ;; search forward for an entry
+  (when
       (re-search-forward bibtex-entry-head nil t (and (numberp n) n))
     ;; go to beginning of the entry
     (bibtex-beginning-of-entry)))
@@ -532,7 +532,7 @@ forward. Negative numbers do nothing."
 argument. If it is numeric, jump that many entries back."
   (interactive "P")
   (bibtex-beginning-of-entry)
- (when 
+ (when
      (re-search-backward bibtex-entry-head nil t (and (numberp n) n))
    (bibtex-beginning-of-entry)))
 
@@ -555,3 +555,93 @@ argument. If it is numeric, jump that many entries back."
         ;; fields start with spaces, a field name, possibly more
         ;; spaces, then =
         (re-search-forward (format "^\\s-*%s\\s-*=" field) nil t))))
+
+
+
+;; (defun get-all-pdf-files-in-directory ()
+;;   (helm-list-directory (file-name-directory (buffer-file-name)))
+;;   )
+;;
+;; (setq some-helm-source1
+;;       '((name . "get all PDF files in that directory")
+;;         (candidates . get-all-pdf-files-in-directory)
+;;         (action . (lambda (candidate)
+;;                     (find-file candidate)
+;;                     ;; (message-box "%s" candidate)
+;;                     ))))
+;;
+;; (defun helm-browse-pdf-files-in-directory ()
+;;   (interactive)
+;;   (helm :sources '(some-helm-source1))
+;;   )
+
+(defun check-pdfs-for-bib-file (&optional filepaths check-all)
+  "runs diagnose-bib-entry-file-page-offset (&optional bibtexkey page) on files consecutively
+and clears up the windows and buffers
+  if CHECK-ALL is not nil, diagnose every bibtex file"
+  (interactive)
+  "you can mark some files in dired an run it on them"
+  (unless filepaths (setq filepaths (dired-get-marked-files)))
+  (unless check-all (setq check-all nil))
+  (let ((i 0))
+    (while (< i (length filepaths))
+      (let* ((pdf-filepath (nth i filepaths))
+             (pdf-filename (file-name-nondirectory pdf-filepath))
+             (bibtex-filename (concat "." pdf-filename ".bib"))
+             (bibtex-filepath (concat (file-name-directory pdf-filepath) bibtex-filename)))
+        ;; it's just going to be created for now, you must be careful about choosing the pdfs
+        ;; this function deletes .bib files if there's no content in them
+        (make-bibtex-file-for-pdf pdf-filepath))
+      (setq i (+ i 1))
+      )
+    )
+  )
+
+
+;; (defun kill-buffer-ask-if-modified (buf)
+;;   ;; kill-buffer doesn't ask at all (which I dont want)
+;;   ;; kill-buffer-ask ask asks even if it's not modified (which I don't want)
+;;   ;; kill-buffer-if-not-modified doesn't ask if it should kill it anyways (which I want it to ask)
+;;   ;; (interactive)
+;;   ;; (if (buffer-modified-p buf)
+;;   ;;     (if (yes-or-no-p
+;;   ;;          (concat "the buffer " (buffer-name) " has been modified. Kill it anyway?"))
+;;   ;;         (progn
+;;             (kill-buffer buf) ;; returns t if it's killed
+;;   ;;          )
+;;   ;;      nil ;; returns nil if it's not killed
+;;   ;;    )
+;;   ;;  )
+;;   )
+
+(defun kill-frame-and-buffers-within ()
+  (interactive)
+  ;; get the buffers within the currently selected frame
+  (let* ((buffers-within-frame (cl-delete-duplicates (mapcar #'window-buffer (window-list))))
+         (frame (selected-frame))
+         (remaining (delq nil (mapcar (lambda (buf)
+                                        (let ((this-window-buffer (get-buffer-window buf)))
+                                          (if (not (kill-buffer buf))
+                                              buf
+                                            (delete-window this-window-buffer)
+                                            nil)))
+                                        buffers-within-frame)))
+         (intersection (cl-intersection buffers-within-frame remaining))
+         (killed-buffers (cl-set-exclusive-or buffers-within-frame remaining))
+         )
+    (if (> 0 (length remaining))
+      (delete-frame)  ;; defaults to selected frame
+      )
+    )
+  )
+
+
+
+(global-set-key (kbd "C-, k") 'kill-frame-and-buffers-within)
+(global-set-key (kbd "C-, m") 'make-bibtex-file-for-pdf)
+(global-set-key (kbd "C-, i") 'make-invisible)
+(global-set-key (kbd "C-, o") 'search-nearest-link-and-open)
+(global-set-key (kbd "C-, p") 'helm-browse-pdf-buffers)
+(global-set-key (kbd "C-, i") 'make-invisible)
+(global-set-key (kbd "C-, v") 'make-visible)
+(global-set-key (kbd "C-2") 'helm-mini)  ;; select buffers with C-Space, delete selection with M-S-d
