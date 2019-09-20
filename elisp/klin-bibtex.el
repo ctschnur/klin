@@ -305,33 +305,31 @@ argument. If it is numeric, jump that many entries back."
         (re-search-forward (format "^\\s-*%s\\s-*=" field) nil t))))
 
 (defun check-pdfs-for-bib-file (&optional filepaths check-all)
-  "runs diagnose-bib-entry-file-page-offset (&optional bibtexkey page) on files consecutively
-and clears up the windows and buffers
+  "runs side-by-side-view on files consecutively
   if CHECK-ALL is not nil, diagnose every bibtex file"
   (interactive)
   "you can mark some files in dired an run it on them"
   (unless filepaths (setq filepaths (dired-get-marked-files)))
+  (unless check-all (setq check-all nil))
 
   (if (> (length bib-processing-bibfiles-frames) 0)
-      (if (yes-or-no-p ("some bib files are still waiting to be processed. Skip them?"))
-          (progn
-            (setq bib-processing-bibfiles-frames nil)
-            )
-        )
-
-      (unless check-all (setq check-all nil))
-      (let ((i 0))
-        (while (< i (length filepaths))
-          (let* ((pdf-filepath (nth i filepaths))
-                 (pdf-filename (file-name-nondirectory pdf-filepath))
-                 (bibtex-filename (concat "." pdf-filename ".bib"))
-                 (bibtex-filepath (concat (file-name-directory pdf-filepath) bibtex-filename)))
-            ;; it's just going to be created for now, you must be careful about choosing the pdfs
-            ;; this function deletes .bib files if there's no content in them
-            (make-bibtex-file-for-pdf pdf-filepath)
-            (setq i (+ i 1))
-            )
+      (progn
+        (if (yes-or-no-p ("some bib files are still waiting to be processed. Skip them?"))
+            (progn
+              (setq bib-processing-bibfiles-frames nil)
+              )
           )
         )
-      )
+    )
+  ;; setup the global bib-processing-bibfiles-frames list with the filepaths
+
+  ;; start with the first one, that initiates it; after closing that one,
+  ;; there is a hook to open the 2nd one and so on.
+  (let* ((pdf-filepath (nth 0 filepaths))
+         ;; (pdf-filename (file-name-nondirectory pdf-filepath))
+         ;; (bibtex-filename (concat "." pdf-filename ".bib"))
+         ;; (bibtex-filepath (concat (file-name-directory pdf-filepath) bibtex-filename))
+         )
+    (make-bibtex-file-for-pdf pdf-filepath)
+    )
   )
