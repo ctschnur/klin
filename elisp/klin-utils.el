@@ -1,4 +1,19 @@
 
+(defun klin-pdf-filename-to-bibtex-filename (pdf-filename)
+  (interactive)
+  (concat "." pdf-filename ".bib")
+  )
+
+(defun klin-pdf-filepath-to-bibtex-filepath (pdf-filepath)
+  (interactive)
+  (let* ((pdf-filename (file-name-nondirectory pdf-filepath))
+         (bibtex-filename (klin-pdf-filename-to-bibtex-filename pdf-filename))
+         (bibtex-filepath (concat (file-name-directory pdf-filepath) bibtex-filename))
+         )
+    bibtex-filepath
+    )
+  )
+
 (defun klin-ask-pdf-offset-number (arg)
   "Prompt user to enter a string, with input history support."
   (interactive

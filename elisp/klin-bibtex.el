@@ -1,7 +1,6 @@
 
 ;; for consecutive processing of individual bibtex files assoc. to single pdfs
 (setq bib-processing-bibfiles-frames nil)
-
 (setq bib-processing-currently-processing nil)
 
 (defun bibtex-get-field-from-entry-under-cursor (field)
@@ -94,6 +93,7 @@
   "If the current frame of the bibtex batch processing is closed, you move on
    to the next frame in the list. FRAME is the frame that is about to be deleted"
   (interactive)
+  (message "calling -------------- on-bibtex-processing-frame-close-hf")
   (let* ((fitting-tuple (car (rassoc frame bib-processing-bibfiles-frames))))
     ;; if that frame is inside the bib-processing-bibfiles-frames, delete the tuple from the list
     (if fitting-tuple
@@ -143,45 +143,81 @@
           (insert alternative-bibtex-entry-str))
       ;; else: ask for the isbn and populate the suggestion field with a bibtex entry
       ;; based on that it
-      (let* ((isbn (read-string "ISBN? (return to continue):")))
-        (isbn-to-bibtex isbn tmpfilepath) ;; goes to the internet
-        )
-      ;; if a suggestion could be found by isbn, and the intended buffer is empty,
-      ;; ask to insert it there
-      (let* ((suggested-bibtex-entry-str (buffer-string))
-             )
-        (if (and (/= 0 (length suggested-bibtex-entry-str))
-                 (= 0 (length
-                       (with-current-buffer
-                           (get-buffer (file-name-nondirectory intended-bibfile-path))
-                         (buffer-string)))))
-            (progn
-              (if (yes-or-no-p
-                   (concat intended-bibfile-path
-                           "'s shown buffer is empty. Fill it with the standard suggestion?"))
-                  (progn
-                    (switch-to-buffer-other-window
-                     (get-buffer (file-name-nondirectory intended-bibfile-path)))
-                    (insert suggested-bibtex-entry-str)
-                    ;; (other-window -1)
-                    )
-                )
+      (let* ((isbn (read-string "ISBN? (return to continue):"))
+             (before-isbncmd-buf (current-buffer))
+             after-isbncmd-buf)
+        ;; goes off to the internet; if sth is delivered back, it creates a new buffer,
+        ;; else, it just keeps the current buffer, but in split view
+        (isbn-to-bibtex isbn tmpfilepath)
+
+        ;; so now, if the buffer has changed, it presumably has gotten sth. back
+        ;; if the buffer has changed, check if it actually contains anything
+        ;; if not, you just close that window
+        (setq after-isbncmd-buf (current-buffer))
+        (if (not (eq after-isbncmd-buf before-isbncmd-buf))
+            (if (string= "" (with-current-buffer after-isbncmd-buf (buffer-string)))
+                (progn
+                  ;; delete that window and that buffer
+                  (delete-window (get-buffer-window after-isbncmd-buf))
+                  (kill-buffer after-isbncmd-buf)
+                  )
+              ;; else, nothing happens
               )
+          ;; else, delete that window and that buffer
+          (delete-window (get-buffer-window after-isbncmd-buf))
+          ;; don't kill the buffer because presumably you want to continue editing it
+          ;; (kill-buffer after-isbncmd-buf)
+          )
+
+        ;; if an actual suggestion could be found by isbn, and the intended buffer is empty,
+        ;; ask to insert it there
+        (let* ((after-isbncmd-suggested-entry-str
+                (with-current-buffer after-isbncmd-buf (buffer-string))))
+            (if (and (/= 0 (length after-isbncmd-suggested-entry-str))
+                     (= 0 (length
+                           (with-current-buffer
+                               (get-buffer (file-name-nondirectory intended-bibfile-path))
+                             (buffer-string)))))
+                (progn
+                  (if (yes-or-no-p
+                       (concat intended-bibfile-path
+                               "'s shown buffer is empty. Fill it with the standard suggestion?"))
+                      (progn
+                        (with-current-buffer before-isbncmd-buf
+                          (insert after-isbncmd-suggested-entry-str)
+                          )
+                        )
+                    )
+                  )
+              )
+            )
+        )
+      )
+
+    ;; for consecutive processing of individual bibtex files assoc. to single pdfs:
+    ;; change the frame value assoc to the current intended-bibfile-path
+    ;; (setq bib-processing-bibfiles-frames
+    ;;       (append bib-processing-bibfiles-frames `(,intended-bibfile-path ,(selected-frame))))
+    (let* ((replace-with-tuple
+            `(,intended-bibfile-path ,(selected-frame)))
+           (mylist bib-processing-bibfiles-frames))
+      (let* ((i 0))
+        (while (< i (length mylist))
+          (if (string= intended-bibfile-path (car (nth i mylist)))
+              (setf (nth i mylist) replace-with-tuple))
+          (setq i (+ i 1))
           )
         )
       )
 
-      ;; for consecutive processing of individual bibtex files assoc. to single pdfs
-      (setq bib-processing-bibfiles-frames
-            (append bib-processing-bibfiles-frames `(,intended-bibfile-path ,(selected-frame))))
-      (setq bib-processing-currently-processing t)
+    (setq bib-processing-currently-processing t)
 
-      ;; add a function to delete-frame-functions that will handle the transition:
-      ;; when kill-frame-and-buffers-within is called at some point, that will call (delete-frame)
-      ;; then, the function added below will run and check if there are some bibfiles
-      ;; left in the queue to be processed. If yes, it will start side-by-side-bibtex-edit
-      ;; for the next intended-bibfile-path
-      (add-to-list 'delete-frame-functions 'on-bibtex-processing-frame-close-hf)
+    ;; add a function to delete-frame-functions that will handle the transition:
+    ;; when kill-frame-and-buffers-within is called at some point, that will call (delete-frame)
+    ;; then, the function added below will run and check if there are some bibfiles
+    ;; left in the queue to be processed. If yes, it will start side-by-side-bibtex-edit
+    ;; for the next intended-bibfile-path
+    (add-to-list 'delete-frame-functions 'on-bibtex-processing-frame-close-hf)
     )
   )
 
@@ -305,31 +341,36 @@ argument. If it is numeric, jump that many entries back."
         (re-search-forward (format "^\\s-*%s\\s-*=" field) nil t))))
 
 (defun check-pdfs-for-bib-file (&optional filepaths check-all)
-  "runs side-by-side-view on files consecutively
-  if CHECK-ALL is not nil, diagnose every bibtex file"
   (interactive)
-  "you can mark some files in dired an run it on them"
   (unless filepaths (setq filepaths (dired-get-marked-files)))
   (unless check-all (setq check-all nil))
 
-  (if (> (length bib-processing-bibfiles-frames) 0)
-      (progn
-        (if (yes-or-no-p ("some bib files are still waiting to be processed. Skip them?"))
-            (progn
-              (setq bib-processing-bibfiles-frames nil)
-              )
-          )
-        )
+  (when (> (length bib-processing-bibfiles-frames) 0)
+    ;; (when (yes-or-no-p "some bib files are still waiting to be processed. Skip them?")
+    (message "some bib files were still in the queue, waiting to be processed. We skip them, reinitializing the processing queue.")
+    (setq bib-processing-bibfiles-frames nil))
+
+  ;; assign the list of bibfiles to process to bib-processing-bibfiles-frames
+  ;; fill frames with nil for the beginning
+  (let* ((as (mapcar (lambda (arg) (klin-pdf-filepath-to-bibtex-filepath arg)) filepaths))
+         (prepared-bibfiles-frames-list
+          (mapcar (lambda (ai)
+                    (let ((temp-as-bs nil))
+                      (setq temp-as-bs (append temp-as-bs `(,ai ,nil)))))
+                  as)))
+    (setq bib-processing-bibfiles-frames
+          (append bib-processing-bibfiles-frames prepared-bibfiles-frames-list))
     )
+
+  ;; (when (> (length bib-processing-bibfiles-frames) 0)
+  ;;     (when (yes-or-no-p "pdf file doesn't exist, continue anyway?")
+  ;;         (message "hi")))
+
   ;; setup the global bib-processing-bibfiles-frames list with the filepaths
 
   ;; start with the first one, that initiates it; after closing that one,
   ;; there is a hook to open the 2nd one and so on.
-  (let* ((pdf-filepath (nth 0 filepaths))
-         ;; (pdf-filename (file-name-nondirectory pdf-filepath))
-         ;; (bibtex-filename (concat "." pdf-filename ".bib"))
-         ;; (bibtex-filepath (concat (file-name-directory pdf-filepath) bibtex-filename))
-         )
+  (let ((pdf-filepath (nth 0 filepaths)))
     (make-bibtex-file-for-pdf pdf-filepath)
     )
   )
