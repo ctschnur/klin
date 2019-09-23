@@ -1,4 +1,108 @@
 
+(defun klin-try-to-fill-all-pdf-stuff-in-1-isbn ()
+  "procedure to fill out a bibtex's entries in terms of
+   pdf data"
+  (interactive)
+
+  ;; re-parse the bib buffer
+  (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+  (bibtex-parse-keys)
+
+  ;; if it's empty, try to find the pdf from the file name first,
+  ;; in order to get to the isbn, which enables you to get the
+  ;; title, author, year, publisher data from the internet
+  (let* (pdf-filepath)
+    (if (eq (length (bibtex-global-key-alist)) 0)
+        (progn
+          (setq pdf-filepath
+                (klin-get-pdf-filepath-for-bibtex-entry))
+          )
+      )
+    ;; now that we have the file path, open the pdf to find the isbn
+    (message "We'll open up the pdf now. You could try to find the isbn.")
+    (sleep-for 2)
+    (find-file-other-frame pdf-filepath)
+    )
+  )
+
+(defun klin-try-to-fill-all-pdf-stuff-in-2-pdfstuff ()
+  "assuming you have now a boilerplate entry, e.g. from
+   (isbn-to-bibtex), you can copy it to your main file;
+   then, this function calls functions to set the pdf
+   related fields of your bibtex entry"
+  (interactive)
+  (let* ((filepath-field-str
+         (bibtex-get-field-from-entry-under-cursor
+          "filepath" (current-buffer)))
+         (file-page-offset-field-str
+          (bibtex-get-field-from-entry-under-cursor
+           "file-page-offset" (current-buffer)))
+         )
+    (unless (or (not (string= "" filepath-field-str)) (not filepath-field-str))
+      (fix-filepath-field))
+    (unless (or (not (string= "" file-page-offset-field-str))
+                (not file-page-offset-field-str))
+      (fix-file-page-offset))
+    )
+  )
+
+(defun klin-get-pdf-filepath-for-bibtex-entry (&optional key)
+  "runs inside a .bib buffer
+   try out a few methods to get to the pdf"
+  (interactive)
+
+  ;; re-parse the bib buffer
+  (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+  (bibtex-parse-keys)
+
+  (setq pdf-filepath
+        (helm-read-file-name
+         (concat "what is the corresponding pdf?"
+                 (progn
+                   (if (or (not (string= "" key)) (not key))
+                       "(key: not set)"
+                     (concat "(key: " key " )")
+                     ))
+                 ": ")
+         :initial-input
+         (let* ((filepath-field
+                 (bibtex-get-field-from-entry-under-cursor
+                  "filepath" (current-buffer)))
+                (filename-guess-from-bibfile-name
+                  (klin-bibtex-filename-to-pdf-filename (buffer-name)))
+                (standard-folder-path
+                 (expand-file-name "~/Dropbox/2TextBooks/"))
+                (filepath-guess-from-bibfile-name-standard-folder
+                 (concat standard-folder-path
+                         filename-guess-from-bibfile-name))
+                )
+
+           (if (and (not (string= filepath-field ""))
+                    (file-exists-p (expand-file-name filepath-field)))
+               (expand-file-name filepath-field)
+             (if (file-exists-p
+                  filepath-guess-from-bibfile-name-standard-folder)
+                 filepath-guess-from-bibfile-name-standard-folder
+               (if (file-exists-p standard-folder-path)
+                   standard-folder-path
+                 ""
+                 )
+               )
+             )
+           )
+         )
+        )
+  )
+
+(defun klin-bibtex-filename-to-pdf-filename (bibtex-filename)
+  (interactive)
+  (let* ( ;; (filename ".myname.pdf.bib") ;; test (checked using re-builder)
+         (filename bibtex-filename)
+         )
+    (string-match "^\.\\(+?.*\\)\.bib$" filename)
+    (match-string 1 filename))
+  )
+
 (defun klin-pdf-filename-to-bibtex-filename (pdf-filename)
   (interactive)
   (concat "." pdf-filename ".bib")

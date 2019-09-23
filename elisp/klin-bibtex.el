@@ -3,8 +3,38 @@
 (setq bib-processing-bibfiles-frames nil)
 (setq bib-processing-currently-processing nil)
 
-(defun bibtex-get-field-from-entry-under-cursor (field)
-  (with-current-buffer "bibliography.bib"
+(defun isbn-to-bibtex-ottobib-insert (isbn)
+  "called within a .bib file, inserts at point"
+  (interactive "sISBN: ")
+  ;; (unless isbn (setq isbn "0195117972"))
+  (let* ((tmpfilename (make-temp-file "ottobib")
+          ;; "/home/chris/Dropbox/stuff/1Book/elisp/bar"
+          )
+         (bibtex-text
+          (let* (beginning
+                 text-inbetween
+                 ending)
+            (url-copy-file (concat "https://www.ottobib.com/isbn/ " isbn "/bibtex") tmpfilename t)
+            (with-temp-buffer
+              (insert-file-contents tmpfilename)
+              (goto-char (point-min))
+              (setq beginning (re-search-forward "textarea.+?>"))
+              (setq ending (progn (re-search-forward "<\/textarea>")
+                                  (re-search-backward "<\/text")))
+              (setq text-inbetween (buffer-substring-no-properties beginning ending))
+              )
+          )
+           )
+         )
+    ;; (with-current-buffer "bar"
+    ;;   (erase-buffer)
+    ;;   (save-buffer))
+         (insert bibtex-text)
+    )
+  )
+
+(defun bibtex-get-field-from-entry-under-cursor (field bibfile-buffer)
+  (with-current-buffer bibfile-buffer
     (save-excursion
       (bibtex-beginning-of-entry)
       (let* ((entry (bibtex-parse-entry t))
@@ -89,17 +119,28 @@
     )
   )
 
-(defun on-bibtex-processing-frame-close-hf (frame)
+(defun on-bibtex-processing-frame-close-hf (&optional frame)
   "If the current frame of the bibtex batch processing is closed, you move on
    to the next frame in the list. FRAME is the frame that is about to be deleted"
   (interactive)
-  (message "calling -------------- on-bibtex-processing-frame-close-hf")
-  (let* ((fitting-tuple (car (rassoc frame bib-processing-bibfiles-frames))))
-    ;; if that frame is inside the bib-processing-bibfiles-frames, delete the tuple from the list
+  (unless frame (setq frame (selected-frame)))
+  (message (concat "calling on-bibtex-processing-frame-close-hf on frame "
+           (prin1-to-string frame)))
+  (let* (;; (fitting-tuple (car (rassoc frame bib-processing-bibfiles-frames)))
+         (fitting-tuple
+          (car (delq nil (mapcar (lambda (cur-tuple)
+                                   (if (eq (nth 1 cur-tuple)
+                                           frame)
+                                       cur-tuple
+                                     nil
+                                     )
+                                   )
+                            bib-processing-bibfiles-frames
+         )))))
+         ;; if that frame is inside the bib-processing-bibfiles-frames,
+         ;; delete the tuple from the list
     (if fitting-tuple
-        (let* ((frame (cdr fitting-tuple))
-               (intended-bibfile-path (car fitting-tuple)))
-
+        (let* ((intended-bibfile-path (car fitting-tuple)))
           ;; close the intended-bibfile-buffer
           (let ((intended-bibfile-buffer (get-buffer (file-name-nondirectory intended-bibfile-path))))
             (if intended-bibfile-buffer
@@ -113,12 +154,55 @@
             )
           )
       )
+    ;; remove the currently processed tuple from the list
+    (setq bib-processing-bibfiles-frames
+          (delq fitting-tuple bib-processing-bibfiles-frames))
+    ;; open up a new frame with side-by-side-bibtex-edit,
+    ;; processing the next (car) tuple
+
+    (if (> (length bib-processing-bibfiles-frames) 0)
+        (let* ((next-tuple (car bib-processing-bibfiles-frames))
+               (bibfile-path (car next-tuple))
+               )
+          ;; open up the next one
+          (side-by-side-bibtex-edit bibfile-path)
+          )
+      ;; if bib-processing-bibfile-frames is empty,
+      ;; set the state variable to not processing any more
+      (setq bib-processing-currently-processing nil)
+      )
     )
-    (setq bib-processing-bibfiles-frames (delq frame bib-processing-bibfiles-frames))
     ;; then, let it proceed to delete the frame
   )
 
-(defun side-by-side-bibtex-edit (&optional intended-bibfile-path alternative-bibtex-entry-str)
+;; (defun after-bibtex-processing-close-hf (frame)
+;;   "runs after the frame has been closed, launching a new frame;
+;;    if the new frame runs an interactive function,
+;;    this could be one way to completely get rid of the old frame
+;;    before the interaction starts"
+;;   (interactive)
+;; 
+;;   (unless frame (setq frame (selected-frame)))
+;;   (message (concat "calling after-bibtex-processing-frame-close-hf on frame "
+;;                    (prin1-to-string frame)))
+;; 
+;;   (if (> (length bib-processing-bibfiles-frames) 0)
+;;       (let* ((next-tuple (car bib-processing-bibfiles-frames))
+;;              (bibfile-path (car next-tuple)))
+;;         ;; open up the next one
+;;         (side-by-side-bibtex-edit bibfile-path)
+;;         )
+;;     ;; else, set it to not processing any more
+;;     (setq bib-processing-currently-processing nil)
+;;     )
+;;   ;; do that only for the relevant frames,
+;;   ;; so remove this same function right away from the hook
+;;   (delete 'after-bibtex-processing-frame-close-hf 'delete-frame-functions)
+;;   )
+
+
+(defun side-by-side-bibtex-edit (&optional intended-bibfile-path
+                                           alternative-bibtex-entry-str)
   "bib file already exists somewhere, don't overwrite it, complete it with another
    alternative bibtex entry delivered to the function.
    removes the existing-bibfile if it remains empty
@@ -130,165 +214,210 @@
   (let* ((tmpfilepath (make-temp-file "alternative-bibtex-entry")))
     (find-file-other-frame intended-bibfile-path)
 
-    ;; split it in two to get side-by-side view with another buffer
-    (progn
-      (if (<= (length (window-list)) 1)
-          (split-window-vertically))
-      (other-window 1))
+    ;; ;; split it in two to get side-by-side view with another buffer
+    ;; (progn
+    ;;   (if (<= (length (window-list)) 1)
+    ;;       (split-window-vertically))
+    ;;   (other-window 1))
 
     (if alternative-bibtex-entry-str
         ;; if some text was given, open a temp file and insert it
         (progn
           (find-file tmpfilepath)
-          (insert alternative-bibtex-entry-str))
-      ;; else: ask for the isbn and populate the suggestion field with a bibtex entry
-      ;; based on that it
-      (let* ((isbn (read-string "ISBN? (return to continue):"))
-             (before-isbncmd-buf (current-buffer))
-             after-isbncmd-buf)
-        ;; goes off to the internet; if sth is delivered back, it creates a new buffer,
-        ;; else, it just keeps the current buffer, but in split view
-        (isbn-to-bibtex isbn tmpfilepath)
-
-        ;; so now, if the buffer has changed, it presumably has gotten sth. back
-        ;; if the buffer has changed, check if it actually contains anything
-        ;; if not, you just close that window
-        (setq after-isbncmd-buf (current-buffer))
-        (if (not (eq after-isbncmd-buf before-isbncmd-buf))
-            (if (string= "" (with-current-buffer after-isbncmd-buf (buffer-string)))
-                (progn
-                  ;; delete that window and that buffer
-                  (delete-window (get-buffer-window after-isbncmd-buf))
-                  (kill-buffer after-isbncmd-buf)
-                  )
-              ;; else, nothing happens
-              )
-          ;; else, delete that window and that buffer
-          (delete-window (get-buffer-window after-isbncmd-buf))
-          ;; don't kill the buffer because presumably you want to continue editing it
-          ;; (kill-buffer after-isbncmd-buf)
+          (insert alternative-bibtex-entry-str)
           )
-
-        ;; if an actual suggestion could be found by isbn, and the intended buffer is empty,
-        ;; ask to insert it there
-        (let* ((after-isbncmd-suggested-entry-str
-                (with-current-buffer after-isbncmd-buf (buffer-string))))
-            (if (and (/= 0 (length after-isbncmd-suggested-entry-str))
-                     (= 0 (length
-                           (with-current-buffer
-                               (get-buffer (file-name-nondirectory intended-bibfile-path))
-                             (buffer-string)))))
-                (progn
-                  (if (yes-or-no-p
-                       (concat intended-bibfile-path
-                               "'s shown buffer is empty. Fill it with the standard suggestion?"))
-                      (progn
-                        (with-current-buffer before-isbncmd-buf
-                          (insert after-isbncmd-suggested-entry-str)
-                          )
-                        )
-                    )
-                  )
-              )
-            )
-        )
+      ;; else: propose the opportunity to manually run isbn-to-bibtex
+      ;; to get a suggestion
+      (message "you can run e.g. ask-for-isbn-suggest-and-insert to get a suggestion")
+      ;; you could run e.g. ask-for-isbn-suggestion-and-insert ()
       )
 
     ;; for consecutive processing of individual bibtex files assoc. to single pdfs:
     ;; change the frame value assoc to the current intended-bibfile-path
-    ;; (setq bib-processing-bibfiles-frames
-    ;;       (append bib-processing-bibfiles-frames `(,intended-bibfile-path ,(selected-frame))))
     (let* ((replace-with-tuple
             `(,intended-bibfile-path ,(selected-frame)))
            (mylist bib-processing-bibfiles-frames))
       (let* ((i 0))
         (while (< i (length mylist))
           (if (string= intended-bibfile-path (car (nth i mylist)))
-              (setf (nth i mylist) replace-with-tuple))
+              (progn
+                (setf (nth i mylist) replace-with-tuple)
+                (setq bib-processing-currently-processing t)
+              )
+            )
           (setq i (+ i 1))
           )
         )
       )
 
-    (setq bib-processing-currently-processing t)
-
     ;; add a function to delete-frame-functions that will handle the transition:
-    ;; when kill-frame-and-buffers-within is called at some point, that will call (delete-frame)
-    ;; then, the function added below will run and check if there are some bibfiles
-    ;; left in the queue to be processed. If yes, it will start side-by-side-bibtex-edit
-    ;; for the next intended-bibfile-path
+    ;; when kill-frame-and-buffers-within is called at some point, that will
+    ;; kill the previous frame and open up the next one in the list
     (add-to-list 'delete-frame-functions 'on-bibtex-processing-frame-close-hf)
     )
   )
 
-(defun diagnose-bib-entry-file-page-offset (&optional bibtexkey page)
+(defun ask-for-isbn-suggestion-and-insert ()
+  "an automated way of filling an empty bib file with an isbn
+   suggestion, if that bibfile is the only window of it's frame"
   (interactive)
-  "run in the context of a bib-buffer
-   TODO check if there's a file-page-offset field in the bib entry you're hovering over.
-   If not, or if it doesn't contain a value, ask to diagonose the pdf manually
-   by opening it and asking for the value.
-   There's probably also a way to do it automatically and semi-reliably... "
-  ;; (unless bibfile-path (setq bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
-  ;; (unless pdf-path (setq pdf-path (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
-  (let* ((key (bibtex-get-field-from-entry-under-cursor "=key="))
-         (file-page-offset-str (bibtex-get-field-from-entry-under-cursor "file-page-offset"))
-         ;; returns "" if file-page-offset field is not there or has no value
-         (file-page-offset (if (string= "" file-page-offset-str)
-                               nil
-                             (string-to-number file-page-offset-str)))
+  (let* (;;(tmpfilepath (make-temp-file "isbn-suggestion"))
+         (isbn (read-string "ISBN? (return to continue):"))
+         (before-isbncmd-buf (current-buffer))
+         after-isbncmd-buf
+         ;;(tmpfile-window (split-window-below))
          )
-    (if file-page-offset
-        (progn
-          (if (yes-or-no-p
-               (concat "file-page-offset is set to " file-page-offset-str))
-              (save-excursion
-                (progn
-                  ;; open up the pdf in a new frame on page 1 (first pdf page)
-                  (let* ((filepath (bibtex-get-field-from-entry-under-cursor "filepath"))
-                         red-string
-                         number
-                         (old-buffer (current-buffer)))
-                    (if filepath
-                        (progn
-                          (open-pdf-document-new-frame filepath file-page-offset)
-                          (setq number (call-interactively 'klin-ask-pdf-offset-number))
-                          (delete-frame (selected-frame))
-                          (switch-to-buffer-other-frame old-buffer)
-                          (bibtex-set-field "file-page-offset" (number-to-string number))
-                          )
-                      (message "no filepath declared for " key)
-                      )
-                    )
-                  )
-                  )
-                )
-              )
-      ;; else, ask to open the pdf to see
-      (if (yes-or-no-p
-           (concat "There's no file-page-offset field in " key
-                   ". How 'bout opening up the PDF to manually find the offset?"))
-          (save-excursion
-            (progn
-              ;; open up the pdf in a new frame on page 1 (first pdf page)
-              (let* ((filepath (bibtex-get-field-from-entry-under-cursor "filepath"))
-                     red-string
-                     (old-buffer (current-buffer)))
-                (if filepath
-                    (progn
-                      (open-pdf-document-new-frame filepath 1)
-                      (setq number (call-interactively 'klin-ask-pdf-offset-number))
-                      (delete-frame (selected-frame))
-                      (switch-to-buffer-other-frame old-buffer)
-                      (bibtex-set-field "file-page-offset" (number-to-string number))
-                      )
-                  (message "no filepath declared for " key)
-                  )
-                )
-              )
-              )
-            )
+
+    ;; goes off to the internet
+    ;; if sth is delivered back, it creates a new buffer,
+    ;; else, it just keeps the current buffer, but in split view
+    (isbn-to-bibtex isbn (buffer-file-name (current-buffer)))
+
+    ;; so now, if the buffer has changed, it presumably has gotten sth. back
+    ;; if the buffer has changed, check if it actually contains anything
+    ;; if not, you just close that window
+    ;; (setq after-isbncmd-buf (current-buffer))
+    ;; (if (not (eq after-isbncmd-buf before-isbncmd-buf))
+    ;;     (if (string= "" (with-current-buffer after-isbncmd-buf (buffer-string)))
+    ;;         (progn
+    ;;           ;; delete that window and that buffer
+    ;;           (delete-window (get-buffer-window after-isbncmd-buf))
+    ;;           (kill-buffer after-isbncmd-buf)
+    ;;           )
+    ;;       ;; else, nothing happens
+    ;;       )
+      ;; else, delete that window and that buffer
+      ;; (delete-window (get-buffer-window after-isbncmd-buf))
+      ;; don't kill the buffer because presumably you want to continue editing it
+      ;; (kill-buffer after-isbncmd-buf)
       )
+
+    ;; if an actual suggestion could be found by isbn, and the intended buffer is empty,
+    ;; ask to insert it there
+    ;; (let* ((after-isbncmd-suggested-entry-str
+    ;;         (with-current-buffer after-isbncmd-buf (buffer-string))))
+    ;;     (if (and (/= 0 (length after-isbncmd-suggested-entry-str))
+    ;;              (= 0 (length
+    ;;                    (with-current-buffer
+    ;;                        (get-buffer (file-name-nondirectory intended-bibfile-path))
+    ;;                      (buffer-string)))))
+    ;;         (progn
+    ;;           (if (yes-or-no-p
+    ;;                (concat intended-bibfile-path
+    ;;                        "'s shown buffer is empty. Fill it with the standard suggestion?"))
+    ;;               (progn
+    ;;                 (with-current-buffer before-isbncmd-buf
+    ;;                   (insert after-isbncmd-suggested-entry-str)
+    ;;                   )
+    ;;                 )
+    ;;             )
+    ;;           )
+    ;;       )
+    ;;     )
+    ;; )
+  )
+
+;; (defun diagnose-bib-entry-file-page-offset (&optional bibtexkey page)
+;;   "run in the context of a bib-buffer"
+;;   (interactive)
+;;   (let* ((bibfile-buffer (current-buffer))
+;;          (key (bibtex-get-field-from-entry-under-cursor "=key=" bibfile-buffer))
+;;          (file-page-offset-str
+;;           (bibtex-get-field-from-entry-under-cursor
+;;            "file-page-offset" bibfile-buffer))
+;;          ;; returns "" if file-page-offset field is not there or has no value
+;;          (file-page-offset (if (string= "" file-page-offset-str)
+;;                                nil
+;;                              (string-to-number file-page-offset-str)))
+;;          )
+;;     (if file-page-offset
+;;       (if (yes-or-no-p
+;;            (concat "There's no file-page-offset field in " key
+;;                    ". How 'bout opening up the PDF to manually find the offset?"))
+;;           (save-excursion
+;;             (progn
+;;               ;; open up the pdf in a new frame on page 1 (first pdf page)
+;;               (let* ((filepath (bibtex-get-field-from-entry-under-cursor
+;;                                 "filepath" bibfile-buffer))
+;;                      red-string)
+;;                 (if (not (string= "" filepath))
+;;                     (fix-file-page-offset-field key)
+;;                   (fix-filepath-field key)
+;;                     )
+;;                   )
+;;                 )
+;;               )
+;;               )
+;;             )
+;;       )
+;;     )
+;; )
+
+(defun fix-file-page-offset (&optional key)
+  "called in a .bib buffer"
+  (interactive)
+  (let* ((bib-buffer (current-buffer))
+         (bib-window (selected-window))
+         pdf-buffer
+         pdf-frame
+         pdf-filepath
+         offset-number)
+    (unless key (setq key (bibtex-get-field-from-entry-under-cursor
+                           "=key=" bib-buffer)))
+    ;; open up a pre-populated helm menu for pdf-filepath
+    ;; in order to open up the pdf for checking
+
+    (setq pdf-filepath
+          (helm-read-file-name
+           (concat "pdf filepath for " key ": ")
+           :initial-input
+           (let* ((filepath-field
+                   (bibtex-get-field-from-entry-under-cursor
+                    "filepath" bib-buffer))
+                  (standard-folder-path
+                   (expand-file-name "~/Dropbox/2TextBooks/")))
+             (if (file-exists-p (expand-file-name filepath-field))
+                 (expand-file-name filepath-field)
+               (if (file-exists-p standard-folder-path)
+                   standard-folder-path
+                 ""
+                 )
+               )
+             )
+           )
+          )
+    
+    (open-pdf-document-new-frame (expand-file-name pdf-filepath) 1)
+    (setq pdf-buffer (current-buffer))
+    (setq pdf-frame (selected-frame))
+
+    (setq offset-number (call-interactively 'klin-ask-pdf-offset-number))
+    (delete-frame pdf-frame)
+    (pop-to-buffer bib-buffer)
+    (bibtex-set-field "file-page-offset" (number-to-string offset-number))
     )
+  (bibtex-clean-entry)
+  (bibtex-fill-entry)
+  )
+
+(defun fix-filepath-field (&optional key)
+  "called in a .bib buffer"
+  (interactive)
+  (let* (filepath)
+    (unless key (setq key (bibtex-get-field-from-entry-under-cursor
+                           "=key=" (current-buffer))))
+      (setq filepath (klin-get-pdf-filepath-for-bibtex-entry))
+      (bibtex-set-field "filepath"
+                        (s-replace
+                         (substitute-in-file-name "$HOME") ;; expl. home dir, to replace
+                         "~" ;; what to replace it with
+                         (substitute-in-file-name
+                          (expand-file-name filepath)) ;; total string
+                         )
+                        )
+    )
+  (bibtex-clean-entry)
+  (bibtex-fill-entry)
   )
 
 
@@ -341,8 +470,14 @@ argument. If it is numeric, jump that many entries back."
         (re-search-forward (format "^\\s-*%s\\s-*=" field) nil t))))
 
 (defun check-pdfs-for-bib-file (&optional filepaths check-all)
+  "mark some pdfs in dired, then"
   (interactive)
-  (unless filepaths (setq filepaths (dired-get-marked-files)))
+  (unless filepaths
+    (setq filepaths (helm-read-file-name
+                     "mark some pdfs: "
+                     :initial-input "~/Dropbox/"
+                     :marked-candidates t)))
+
   (unless check-all (setq check-all nil))
 
   (when (> (length bib-processing-bibfiles-frames) 0)

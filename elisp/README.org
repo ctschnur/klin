@@ -1,5 +1,10 @@
 * klin - functionality for my science writing workflow
 ** misc notes
+TODO: 
+- make buffer-local keys in .bib file to trigger the various functions
+- use the widget-library: show the keybindings in an attached small help buffer
+
+
 #+BEGIN_SRC emacs-lisp
 ;; TODO:
 ;; I am in an org file and want to cite something, that is not in crossref
