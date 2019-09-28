@@ -1,0 +1,11 @@
+* klin - functionality for my science writing workflow
+** misc notes
+
+TODO: 
+- make a minor mode enabled in .bib files that has the functionality i need
+
+TODO: 
+- make buffer-local keys in .bib file to trigger the various function
+- EARLIER: use the widget-library: show the keybindings in an attached small help buffer
+  - ACTUALLY: No, just create a package with some documentation. There, you can write down
+    what functions are useful. 
