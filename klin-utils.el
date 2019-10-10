@@ -24,32 +24,55 @@
 
 ;;; Code:
 
-
-(require 'bibtex)
 (require 'parsebib)
-;; it shouldn't use (require 'klin-bibtex)
+(require 's)
 
-(defun klin-try-to-fill-all-pdf-stuff-in-1-isbn ()
-  "Assist the filling in of pdf-file related fields in .bib entry."
+(defun klin-utils-isbn-to-bibtex-ottobib-insert (isbn)
+  "Insert ottobib bib entry suggestion for ISBN."
+  (interactive "sISBN: ")
+  ;; (unless isbn (setq isbn "0195117972"))
+  (let* ((tmpfilename (make-temp-file "ottobib"))
+         (bibtex-text
+          (let* (beginning
+                 ending)
+            (url-copy-file (concat "https://www.ottobib.com/isbn/ " isbn "/bibtex") tmpfilename t)
+            (with-temp-buffer
+              (insert-file-contents tmpfilename)
+              (goto-char (point-min))
+              (setq beginning (re-search-forward "textarea.+?>"))
+              (setq ending (progn (re-search-forward "<\/textarea>")
+                                  (re-search-backward "<\/text")))
+              (buffer-substring-no-properties beginning ending)))))
+    (insert bibtex-text)))
+
+(defun klin-utils-get-reduced-pdf-file-path (full-filepath)
+  "Get the reduced pdf filepath from FULL-FILEPATH.
+The reduced pdf filepath is of the form ~/... .
+The full-filepath is of the form /home/[USER]/... ."
+  (s-replace (substitute-in-file-name "$HOME")
+             "~"
+             (substitute-in-file-name (expand-file-name full-filepath))))
+
+(defun kill-frame-and-buffers-within ()
+  "Delete all buffers shown in the selected frame.
+In general, buffers aren't strictly associated to
+specific frames.  Also, kill the selected frame."
   (interactive)
-
-  ;; re-parse the bib buffer
-  (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
-  (bibtex-parse-keys)
-
-  ;; if it's empty, try to find the pdf from the file name first,
-  ;; in order to get to the isbn, which enables you to get the
-  ;; title, author, year, publisher data from the internet
-  (let* (pdf-filepath)
-    (if (eq (length (bibtex-global-key-alist)) 0)
-        (setq pdf-filepath (klin-get-pdf-filepath-for-bibtex-entry)))
-    ;; now that we have the file path, open the pdf to find the isbn
-    (message "We'll open up the pdf now. You could try to find the isbn.")
-    (sleep-for 2)
-    (find-file-other-frame pdf-filepath)))
-
-
-
+  ;; get the buffers within the currently selected frame
+  (let* ((buffers-within-frame (cl-delete-duplicates (mapcar #'window-buffer (window-list))))
+         ;; (frame (selected-frame))
+         (remaining (delq nil (mapcar (lambda (buf)
+                                        (let ((this-window-buffer (get-buffer-window buf)))
+                                          (if (not (kill-buffer buf))
+                                              buf
+                                            (delete-window this-window-buffer)
+                                            nil)))
+                                      buffers-within-frame)))
+         ;; (intersection (cl-intersection buffers-within-frame remaining))
+         ;; (killed-buffers (cl-set-exclusive-or buffers-within-frame remaining))
+         )
+    (if (= (length remaining) 0)
+        (delete-frame))))
 
 (provide 'klin-utils)
 ;;; klin-utils.el ends here

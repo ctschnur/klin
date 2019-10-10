@@ -20,15 +20,32 @@
 
 ;;; Commentary:
 
-;;
+;; - function to store a link to the current pdf filepath and page
+;;   in a global variable
 
 ;;; Code:
 
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/lisp/"))
+(require 'frame-cmds)
 (require 'helm)
 (require 'pdf-view)
 
+(cl-defstruct klin-pdf-link-data pdf-filepath pdf-page)
 
-(defun get-all-pdf-buffers ()
+(defvar klin-pdfview-stored-link nil
+  "Store a link to a pdf filepath and a page.")
+
+(defun klin-pdf-pdfview-store-link ()
+  "Store custom link data of currently shown pdf in klin-pdfview-stored-link.
+Run this function from a pdfview buffer."
+  (interactive)
+  (setq klin-pdfview-stored-link
+        (make-klin-pdf-link-data
+         :pdf-filepath (expand-file-name (buffer-file-name))
+         :pdf-page (pdf-view-current-page)))
+  (print klin-pdfview-stored-link))
+
+(defun klin-get-all-pdf-buffers ()
   "Get list of all pdf buffers."
   (interactive)
   (let ((i 0)
@@ -41,65 +58,46 @@
       (setq i (+ i 1)))
     pdfbuffers))
 
-
-(defvar some-helm-source
+(defvar klin-helm-source-make-pdfs-visible
+  "A helm source to get all pdf buffers and make them visible."
       '((name . "make visible and bring to front PDF buffer(s)")
-        (candidates . get-all-pdf-buffers)
+        (candidates . klin-get-all-pdf-buffers)
         (action . (lambda (candidate)
-                    (make-visible candidate)
+                    (klin-pdf-make-pdf-frame-visible candidate)
                     ;; (message-box "%s" candidate)
                     ))))
 
-(make-variable-buffer-local 'some-helm-source)
-
-(defun helm-browse-pdf-buffers ()
+(defun klin-pdf-helm-browse-pdf-buffers ()
   "Use helm to quickly locate pdf buffers."
   (interactive)
-  (helm :sources '(some-helm-source)))
+  (helm :sources '(klin-helm-source-make-pdfs-visible)))
 
 (defun open-pdf-document-new-frame (&optional filepath page)
   "Open the pdf file at FILEPATH in a new frame on a certain PAGE."
   (unless page (setq page 1))
-  (unless filepath (setq filepath (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
   (progn
     (find-file-other-frame filepath)
     (pdf-view-goto-page page)))
 
-(defun kill-frame-and-buffers-within ()
-  "Delete all buffers shown in the selected frame.
-In general, buffers aren't strictly associated to
-specific frames.  Also, kill the selected frame."
-  (interactive)
-  ;; get the buffers within the currently selected frame
-  (let* ((buffers-within-frame (cl-delete-duplicates (mapcar #'window-buffer (window-list))))
-         ;; (frame (selected-frame))
-         (remaining (delq nil (mapcar (lambda (buf)
-                                        (let ((this-window-buffer (get-buffer-window buf)))
-                                          (if (not (kill-buffer buf))
-                                              buf
-                                            (delete-window this-window-buffer)
-                                            nil)))
-                                      buffers-within-frame)))
-         ;; (intersection (cl-intersection buffers-within-frame remaining))
-         ;; (killed-buffers (cl-set-exclusive-or buffers-within-frame remaining))
-         )
-    (if (= (length remaining) 0)
-        (delete-frame))))
-(defun make-invisible ()
+(defun klin-pdf-make-pdf-frame-invisible ()
   "Make the current frame invisible.
 Intended for PDF frame management."
   (interactive)
-  (make-frame-invisible (window-frame (get-buffer-window (current-buffer) t))))
+  (if (string-equal (file-name-extension (buffer-file-name)) "pdf")
+      (make-frame-invisible (selected-frame)))
+  ;; (make-frame-invisible (window-frame (get-buffer-window (current-buffer) t)))
+  )
 
-(defun make-visible (&optional bufname)
+(defun klin-pdf-make-pdf-frame-visible (&optional bufname)
   "Make frame with a certain BUFNAME in it visible."
   (interactive)
-  (unless bufname
-    (setq bufname "elberfelder-1905-deuelo_a4.pdf"))
   (let* ((buffer (get-buffer bufname))
          (bufwindow (get-buffer-window buffer t)))
     (if bufwindow
-        (make-frame-visible (window-frame bufwindow))
+        (progn
+          (make-frame-visible (window-frame bufwindow))
+          (x-focus-frame (window-frame bufwindow)))
+
       ;; (setq newframe (make-frame))
       ;; (select-frame newframe)
       ;; (when (display-graphic-p frame)
@@ -108,7 +106,7 @@ Intended for PDF frame management."
       ;; (message (concat "current buffer: " (buffer-name (current-buffer))))
       (pdf-view-redisplay) ;; That fixed the raw-pdf "fundamentalmode" stalling for me in emacs 25.2.2 and pdf-tools 1.0
       ;; (message (concat "i tried pdf-view-redisplay"))
-      )))
+ )))
 
 (provide 'klin-pdf-frames)
 ;;; klin-pdf-frames.el ends here

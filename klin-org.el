@@ -21,8 +21,9 @@
 ;;; Commentary:
 
 ;; These functions should include:
-;; - function to insert the latest bookmark created from a pdf page as a dynamic link
 ;; - function to highlight and open the next dynamic link to a pdf page
+;;
+;; - function to insert the latest bookmark created from a pdf page as a dynamic link
 ;; (optional:
 ;;  - function to create custom org link as a dynamic link)
 
@@ -32,36 +33,7 @@
 (require 'org)
 (require 'klin-bibtex)
 
-(defun override-org-pdfview-store ()
-  "TODO: Insert a link created the pdfview mode."
-  (interactive)
-  ;; package org-pdfview with org-pdfview.el
-  ;; override a function there
-  (eval-after-load "org-pdfview"
-    (defun org-pdfview-store-link ()
-      (when (eq major-mode 'pdf-view-mode)
-        (let* ((type "cite")
-               ;; (filename (file-name-nondirectory (buffer-file-name)))
-               ;; make sure there is a proper bibtex file associated with it, otherwise create it
-               ;; (bibtexkey )
-               (link (concat type ":" bibtexkey))
-               ;; todo: put a hidden .bib file for every book in your pdf directory, with page-offset
-               ;; then, you search a pdf's bibtex entry in the org document's associated bibtex
-               ;; file (based on filepath).
-               ;; If that filepath is found, take it's bibtexkey.
-               ;; If that filepath is not found, ask for a bibtex file to go check in,
-               ;; with 1st choice based on the pdf's accompanying bib file's path.
-               ;; if none at all is found, ask to create one associated to that pdf.
-               (page-offset 0)
-               (page-in-pdf (pdf-view-current-page))
-               (page-in-print (- page-in-pdf page-offset))
-               (description (concat "p."
-                                    (number-to-string page-in-print))))
-          (org-store-link-props :type type
-                                :link link
-                                :description description))))))
-
-(defun openlink (mylist)
+(defun klin-org-open-link (mylist)
   "Open link with link info stored in MYLIST."
   (let* (; (linktyp (nth 0 mylist))
          (bibtexkey (nth 1 mylist))
@@ -71,23 +43,18 @@
     (setq page-str (match-string 1 description))
     (klin-open-pdf-from-bibtex bibtexkey (string-to-number page-str))))
 
-(defun search-nearest-link-and-open ()
-  "If cursor is somewhere in the text, search the nearest link and open it."
-  (interactive)
-  (openlink (get-link-info-nearest-to-point)))
-
-(defun get-link-text-at-point ()
+(defun klin-org-get-link-text-at-point ()
   "Get the text (description) of the org link at point."
   (let* ((type (org-element-context)))
     (if (eq (car (org-element-context)) 'link)
         (buffer-substring-no-properties (org-element-property :begin type)
                                         (org-element-property :end type)))))
 
-(defun get-link-info-nearest-to-point ()
+(defun klin-org-get-link-data-nearest-to-point ()
   "Get the link info list nearets to point."
   (let* (; check if at point there is a link
          (re "\\[\\[\\(.*?\\):\\(.*?\\)\\]\\[\\(.*?\\)\\]\\]")
-         (nearestlink-string (get-link-text-at-point))
+         (nearestlink-string (klin-org-get-link-text-at-point))
          poscur
          nextlink-match-beginning
          ;; nextlink-match-end
@@ -126,10 +93,9 @@
           (match-string 2 nearestlink-string)
           (match-string 3 nearestlink-string))))
 
-
-(defun org-ref-find-bibliography-fullfilenames (&optional org-buffer)
+(defun klin-org-org-ref-find-bibliography-fullfilenames (&optional org-buffer)
   "Find the bibliography associated to an org file opened in ORG-BUFFER.
-If ORG-BUFFER isn't given, the current buffer is assumed"
+If ORG-BUFFER isn't given, the current buffer is assumed."
   (interactive)
   (unless org-buffer
     (progn
@@ -155,6 +121,110 @@ If ORG-BUFFER isn't given, the current buffer is assumed"
         (setq i (+ i 1)))
       list-of-full-referenced-bibtex-filepaths)))
 
+
+;; --------- org-mode link integration
+
+;; TODO: write my own proper klin link type that integrates
+;; with org-store-link and org-insert-link instead of custom functions
+;; and make that link type work with org-ref, too
+(defun override-org-pdfview-store ()
+  "TODO: Insert a link created the pdfview mode."
+  (interactive)
+  ;; package org-pdfview with org-pdfview.el
+  ;; override a function there
+  (eval-after-load "org-pdfview"
+    (defun org-pdfview-store-link ()
+      (when (eq major-mode 'pdf-view-mode)
+        (let* ((type "cite")
+               ;; (filename (file-name-nondirectory (buffer-file-name)))
+               ;; make sure there is a proper bibtex file associated with it, otherwise create it
+               (bibtexkey klin-bibtex)
+               (link (concat type ":" bibtexkey))
+               ;; - first of all, don't override that function, but make your own
+               ;;   custom function with a global list of stored link property lists
+               ;; - Map the store-link function to it's own global key
+               ;; - on klin-store-link, look if the pdf has a bibtex file sitting in it's folder.
+               ;;   store the path to that bibtex file alongside the link properties in
+               ;;   the datastructure.
+               ;; - on klin-insert-link, open up a helm-source with the candidates from the globally
+               ;;   stored list
+               ;; - then, at insertion, search in the org document's collective bibtex file,
+               ;;   for a corresponding entry with the same pdf filepath as the original pdf
+               ;; - at insertion of a new entry, check if the key is already
+               ;;   used by another entry. If yes,
+               ;;   open the bibfile buffer and search and highlight both entries to manually make
+               ;;   a change.
+               ;;   (can happen for good reason, e.g. if you have the same author publishing
+               ;;   two cited things in the same year).
+               ;; search a pdf's bibtex entry in the org document's associated bibtex
+               ;; file (based on filepath).
+               ;; If that filepath is found, take it's bibtexkey.
+               ;; If that filepath is not found, ask for a bibtex file to go check in,
+               ;; with 1st choice based on the pdf's accompanying bib file's path.
+               ;; if none at all is found, ask to create one associated to that pdf.
+               (page-offset 0)
+               (page-in-pdf (pdf-view-current-page))
+               (page-in-print (- page-in-pdf page-offset))
+               (description (concat "p."
+                                    (number-to-string page-in-print))))
+          (org-store-link-props :type type
+                                :link link
+                                :description description))))))
+
+;; -------- user interaction for citation insertion and opening reference
+
+(defun klin-org-open-link-nearest-to-point ()
+  "If cursor is somewhere in the text, search the nearest link and open it."
+  (interactive)
+  (klin-org-open-link (klin-org-get-link-data-nearest-to-point)))
+
+(defun klin-org-insert-pdf-link ()
+  "Insert a formatted link to a pdf."
+  (interactive)
+  ;; search the org documents bibtex file for an entry with
+  ;; matching filepath
+  (unless (bound-and-true-p klin-pdfview-stored-link)
+    (message "No stored link available for insertion.")
+    nil)
+
+  (let* ((collective-bibtex-filepath
+          (car (klin-org-org-ref-find-bibliography-fullfilenames)))
+         (reduced-pdf-filepath
+          (klin-utils-get-reduced-pdf-file-path (klin-pdf-link-data-pdf-filepath
+                                     klin-pdfview-stored-link)))
+         (pdf-page (klin-pdf-link-data-pdf-page
+                    klin-pdfview-stored-link))
+         key
+         offset
+         print-page
+         ;; link-text
+         pdf-filepath-in-collective-bibfile-p)
+    (with-temp-buffer
+      (insert-file-contents collective-bibtex-filepath)
+      (bibtex-mode)
+      (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+      (bibtex-parse-keys)
+      (goto-char 0)
+
+      (if (not (re-search-forward reduced-pdf-filepath nil t))
+          (klin-bibtex-set-bibfiles-for-pdfs `(,(expand-file-name reduced-pdf-filepath)))
+        (setq pdf-filepath-in-collective-bibfile-p t)
+        (setq key (bibtex-get-field-from-entry-under-cursor "=key="))
+        (setq offset (string-to-number
+                      (bibtex-get-field-from-entry-under-cursor
+                       "file-page-offset")))
+        (setq print-page (- pdf-page offset)))
+      )
+
+    (if pdf-filepath-in-collective-bibfile-p
+        (insert (concat "["
+                        "[cite:" key "]"
+                        "[p." (number-to-string
+                               print-page) "]"
+                               "]"))
+      (insert "[[cite]]"))))
+
+;; --------
 
 (provide 'klin-org)
 ;;; klin-org.el ends here

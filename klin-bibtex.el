@@ -38,16 +38,91 @@
 (require 'org-ref-isbn)
 (require 'helm-mode)
 (require 'klin-utils)
+(require 'parsebib)
 
 (defvar bib-processing-bibfiles-frames nil)
 
 (defvar bib-processing-currently-processing nil)
 
+
+;; -------- tools for higher-level interactive funtions
+
+(defun klin-bibtex-next-entry (&optional n)
+  "Jump to the beginning of the next (N th next) bibtex entry.
+N is a prefix argument.  If it is numeric, jump that many entries
+forward.  Negative numbers do nothing."
+  (interactive "P")
+  ;; Note if we start at the beginning of an entry, nothing
+  ;; happens. We need to move forward a char, and call again.
+  (when (= (point) (save-excursion
+                     (bibtex-beginning-of-entry)))
+    (forward-char)
+    (klin-bibtex-next-entry))
+  ;; search forward for an entry
+  (bibtex-set-dialect (parsebib-find-bibtex-dialect)
+                      t) ; initialize bibtex-entry-head
+  (when (re-search-forward bibtex-entry-head
+                           nil
+                           t
+                           (and (numberp n)
+                                n))
+    ;; go to beginning of the entry
+    (bibtex-beginning-of-entry)))
+
+(defun klin-bibtex-previous-entry (&optional n)
+  "Jump to beginning of the (Nth) previous bibtex entry.
+N is a prefix argument."
+  (interactive "P")
+  (bibtex-beginning-of-entry)
+  (when (re-search-backward bibtex-entry-head
+                            nil
+                            t
+                            (and (numberp n)
+                                 n))
+    (bibtex-beginning-of-entry)))
+
+(defun klin-bibtex-get-pdf-filepath-for-bibtex-entry (&optional key)
+  "Try to find the pdf associated with the bib file.
+KEY can be provided, but if not it will try to figure
+the pdf filename out by the buffer file name."
+  (interactive)
+  ;; re-parse the bib buffer
+  (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+  (bibtex-parse-keys)
+
+  (helm-read-file-name
+   (concat "what is the corresponding pdf?"
+           (if (or (not (string= "" key)) (not key))
+               "(key: not set)"
+             (concat "(key: " key " )"))
+           ": ")
+   :initial-input
+   (let* ((filepath-field
+           (bibtex-get-field-from-entry-under-cursor
+            "filepath" (current-buffer)))
+          (filename-guess-from-bibfile-name
+           (klin-bibtex-filename-to-pdf-filename (buffer-name)))
+          (standard-folder-path
+           (expand-file-name "~/Dropbox/2TextBooks/"))
+          (filepath-guess-from-bibfile-name-standard-folder
+           (concat standard-folder-path
+                   filename-guess-from-bibfile-name)))
+
+     (if (and (not (string= filepath-field ""))
+              (file-exists-p (expand-file-name filepath-field)))
+         (expand-file-name filepath-field)
+       (if (file-exists-p
+            filepath-guess-from-bibfile-name-standard-folder)
+           filepath-guess-from-bibfile-name-standard-folder
+         (if (file-exists-p standard-folder-path)
+             standard-folder-path
+           ""))))))
+
 (defun klin-bibtex-filename-to-pdf-filename (bibtex-filename)
-  "Convert BIBTEX-FILENAME to the standard associated pdf filename."
-  ;; (interactive)
-  (let* ( ;; (filename ".myname.pdf.bib") ;; test (checked using re-builder)
-         (filename bibtex-filename))
+  "Convert BIBTEX-FILENAME to the standard associated pdf filename.
+By convention, here, a pdf file example.pdf should have a standard
+associated bibtex file .example.pdf.bib in the same folder."
+  (let* ((filename bibtex-filename))
     (string-match "^\.\\(+?.*\\)\.bib$" filename)
     (match-string 1 filename)))
 
@@ -57,7 +132,6 @@
 
 (defun klin-pdf-filepath-to-bibtex-filepath (pdf-filepath)
   "Convert PDF-FILEPATH (not pdf-filename) to a bib file's path."
-  (interactive)
   (let* ((pdf-filename (file-name-nondirectory pdf-filepath))
          (bibtex-filename (klin-pdf-filename-to-bibtex-filename pdf-filename))
          (bibtex-filepath (concat (file-name-directory pdf-filepath)
@@ -65,35 +139,20 @@
     bibtex-filepath))
 
 (defun klin-ask-pdf-offset-number (num)
-  "Prompt user to enter a number NUM, with input history support."
+  "Prompt user to enter the page offset number NUM of a pdf.
+This may be called inside an opened pdf, to e.g. manually add a
+page-offset field to a bibtex entry."
   (interactive
    (list
     (read-number "pdf page offset number: ")))
   (message "number is %s." (number-to-string num))
   num)
 
-(defun isbn-to-bibtex-ottobib-insert (isbn)
-  "Insert ottobib bib entry suggestion for ISBN."
-  (interactive "sISBN: ")
-  ;; (unless isbn (setq isbn "0195117972"))
-  (let* ((tmpfilename (make-temp-file "ottobib")
-                      ;; "/home/chris/Dropbox/stuff/1Book/elisp/bar"
-                      )
-         (bibtex-text
-          (let* (beginning
-                 ending)
-            (url-copy-file (concat "https://www.ottobib.com/isbn/ " isbn "/bibtex") tmpfilename t)
-            (with-temp-buffer
-              (insert-file-contents tmpfilename)
-              (goto-char (point-min))
-              (setq beginning (re-search-forward "textarea.+?>"))
-              (setq ending (progn (re-search-forward "<\/textarea>")
-                                  (re-search-backward "<\/text")))
-              (buffer-substring-no-properties beginning ending)))))
-    (insert bibtex-text)))
-
-(defun bibtex-get-field-from-entry-under-cursor (field bibfile-buffer)
+(defun bibtex-get-field-from-entry-under-cursor
+    (field &optional bibfile-buffer)
   "Get FIELD's value from bib entry in BIBFILE-BUFFER under cursor."
+  (unless bibfile-buffer
+    (setq bibfile-buffer (current-buffer)))
   (with-current-buffer bibfile-buffer
     (save-excursion
       (bibtex-beginning-of-entry)
@@ -102,41 +161,43 @@
         field-value))))
 
 (defun klin-bibtex-get-field (field &optional key bibfile-path)
-  "Return key value pair (FIELD, value) of a bib entry with KEY in BIBFILE-PATH.
-Unless KEY is given, use the entry under cursor.
-Unless BIBFILE-PATH is given, search in the current bib buffer."
-  (unless key (setq key "negele98_quant"))
-  (unless bibfile-path (setq bibfile-path (cdr (org-ref-get-bibtex-key-and-file key))))
-  (unless bibfile-path (setq bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
-
-  (let* (entry)
+  "Return key value of FIELD of a bib entry with KEY in BIBFILE-PATH.
+Unless KEY is given, use the entry under cursor.  Unless BIBFILE-PATH
+is given, search in the current bib buffer."
+   (unless bibfile-path
+    (setq bibfile-path (cdr (org-ref-get-bibtex-key-and-file key))))
+   (let* (entry)
     (with-temp-buffer
       (bibtex-mode)
       (insert-file-contents bibfile-path)
-      (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+      (bibtex-set-dialect (parsebib-find-bibtex-dialect)
+                          t)
       ;; refresh the parsing of the keys
       (bibtex-parse-keys)
       ;; if just one, get it's key
       (unless key
         (if (= 1 (length (bibtex-global-key-alist)))
-            (setq key (car (nth 0 (bibtex-global-key-alist))))))
-      (unless key (setq key "negele98_quanti")) ;; debugging
+            (setq key (car (nth 0
+                                (bibtex-global-key-alist))))))
 
       ;; find the one you are looking for, after parsing keys
-      (unless (bibtex-search-entry key nil 0)
+      (if (bibtex-search-entry key nil 0)
+          (progn
+            (setq entry (bibtex-parse-entry)) ; sets cursor at the end of entry's last field
+            (let ((field-value (org-ref-reftex-get-bib-field field entry)))
+              (if (>= (length field-value) 1)
+                  field-value
+                (message (concat "no field " field " found in " bibfile-path
+                                 " -> " key))
+                nil))) ;; sets cursor at the beginning of the entry's line
         (message (concat "no key " key " found in " bibfile-path))
-        nil
-        (setq entry
-              (bibtex-parse-entry)) ; sets cursor at the end of entry's last field
-        (let ((field-value (org-ref-reftex-get-bib-field field entry)))
-          (if (>= (length field-value) 1)
-              field-value
-            (message (concat "no field " field " found in " bibfile-path " -> " key))
-            nil)) ;; sets cursor at the beginning of the entry's line
-        ))))
+        nil))))
+
+;; ---------- lower complexity interactive functions
 
 (defun klin-open-pdf-from-bibtex (bibtexkey page)
   "Open BIBTEXKEY's pdf file on PAGE, respecting page offset."
+  (interactive)
   (let* ((file-page-offset (string-to-number (klin-bibtex-get-field "file-page-offset"
                                                                     bibtexkey)))
          (filepath (klin-bibtex-get-field "filepath" bibtexkey))
@@ -144,34 +205,81 @@ Unless BIBFILE-PATH is given, search in the current bib buffer."
                   1)))
     (open-pdf-document-new-frame filepath page)))
 
-(defun make-bibtex-file-for-pdf (&optional pdfpath)
+(defun klin-bibtex-ask-for-isbn-suggestion-and-insert ()
+  "Fill an empty bib file with isbn template."
+  (interactive)
+  (let* ((isbn (read-string "ISBN? (return to continue):")))
+    (isbn-to-bibtex isbn (buffer-file-name (current-buffer)))))
+
+;; ----------
+
+;; ---------- higher complexity interactive functions
+
+(defun klin-bibtex-compare-entry-to-original-bibfile ()
+  "Open up the original bibfile, if it's to be found.
+Then, it is left up to the user to compare or sync up the entrys."
+  (interactive)
+  (let* ((reduced-pdf-filepath (bibtex-get-field-from-entry-under-cursor "filepath"))
+         (current-key (bibtex-get-field-from-entry-under-cursor "=key="))
+         (original-bibfile-path
+          (let* ((bib-filepath-from-pdf-filepath-field
+                  (klin-pdf-filepath-to-bibtex-filepath
+                   (expand-file-name reduced-pdf-filepath)))
+                 (suggested-initial-input "~/"))
+            (if (file-exists-p bib-filepath-from-pdf-filepath-field)
+                (setq suggested-initial-input
+                      bib-filepath-from-pdf-filepath-field))
+            (helm-read-file-name
+             "select bib file to compare (e.g. original bibfile): "
+             :initial-input suggested-initial-input))))
+    ;; then, open it up in another (maybe split) window
+    (find-file-other-window original-bibfile-path)
+
+    (let* (reduced-pdf-filepath-search-position
+           bibtex-find-entry-search-position)
+      (goto-char (point-min))
+      (save-excursion
+        (setq reduced-pdf-filepath-search-position
+              (re-search-forward reduced-pdf-filepath)))
+      (save-excursion
+        (setq bibtex-find-entry-search-position
+              (bibtex-find-entry current-key)))
+      (if reduced-pdf-filepath-search-position
+          (progn
+            (message "found matching filepath")
+            (goto-char reduced-pdf-filepath-search-position)))
+      (if bibtex-find-entry-search-position
+          (progn
+            (message "found matching key")
+            (goto-char bibtex-find-entry-search-position))))))
+
+
+;; TODO: Launch this from inside a pdf
+(defun klin-create-pdf-associated-bibtex-file (&optional pdfpath)
   "For a pdf at PDFPATH, start making a bibtex entry."
   (interactive)
-  ;; (unless pdfpath (setq pdfpath (expand-file-name "~/Dropbox/2TextBooks/1-NegeleOrland-QuantumManyParticeSystems.pdf")))
-  ;; (unless isbn (setq isbn "0-7382-0052-2"))
   (let* ((basedir (file-name-directory pdfpath))
          (filename (file-name-nondirectory pdfpath))
          (bibtexfilename (concat "." filename ".bib")) ;; "hidden" file
          (bibfilepath (concat basedir bibtexfilename)))
-
     ;; check if pdf actually exists
     (unless (file-exists-p pdfpath)
       (unless (yes-or-no-p "PDF file doesn't exist, continue anyway?")
         (error "PDF file doesn't exist, chose to quit")))
-
     ;; this appends to a file (and creates one if there is none)
-    (unless bibfilepath (setq bibfilepath (expand-file-name "~/Dropbox/stuff/1Book/testfile.txt")))
-    (with-temp-buffer (write-region "" nil bibfilepath 'append))
-    (klin-bibtex-edit-interactively bibfilepath nil)))
+    (with-temp-buffer
+      (write-region "" nil bibfilepath 'append))
+    (klin-bibtex-edit-interactively bibfilepath
+                                    nil)))
 
-(defun on-bibtex-processing-frame-close-hf (&optional frame)
+(defun klin-bibtex-process-next-pdf-on-frame-close (&optional frame)
   "Called when FRAME is closed (if contained in list 'delete-frame-functions').
 If the current frame of the bibtex batch processing is closed, you move on
 to the next frame in the list."
   (interactive)
   (unless frame
     (setq frame (selected-frame)))
-  (message (concat "calling on-bibtex-processing-frame-close-hf on frame "
+  (message (concat "calling klin-bibtex-process-next-pdf-on-frame-close on frame "
                    (prin1-to-string frame)))
   (let* ( ;; (fitting-tuple (car (rassoc frame bib-processing-bibfiles-frames)))
          (fitting-tuple (car (delq nil
@@ -210,12 +318,11 @@ to the next frame in the list."
   ;; then, let it proceed to delete the frame
   )
 
-(defun klin-bibtex-edit-interactively (&optional intended-bibfile-path alternative-bibtex-entry-str)
-  "Visit INTENDED-BIBFILE-PATH, optionally carry along ALTERNATIVE-BIBTEX-ENTRY-STR.
+(defun klin-bibtex-edit-interactively
+    (intended-bibfile-path &optional alternative-bibtex-entry-str)
+  "Visit INTENDED-BIBFILE-PATH, optionally with ALTERNATIVE-BIBTEX-ENTRY-STR.
 Removes the file at INTENDED-BIBFILE-PATH if at the end, it remains empty."
   (interactive)
-  ;; (unless intended-bibfile-path (setq intended-bibfile-path (expand-file-name "~/Dropbox/2TextBooks/.1-NegeleOrland-QuantumManyParticeSystems.pdf.bib")))
-
   ;; open the existing bibfile
   (let* ((tmpfilepath (make-temp-file "alternative-bibtex-entry")))
     (find-file-other-frame intended-bibfile-path)
@@ -231,8 +338,12 @@ Removes the file at INTENDED-BIBFILE-PATH if at the end, it remains empty."
           (insert alternative-bibtex-entry-str))
       ;; else: propose the opportunity to manually run isbn-to-bibtex
       ;; to get a suggestion
-      (message "you can run e.g. ask-for-isbn-suggest-and-insert to get a suggestion")
-      ;; you could run e.g. ask-for-isbn-suggestion-and-insert ()
+      (with-help-window (help-buffer)
+        (princ (concat "you could run now: \n"
+                       "klin-bibtex-entry-fill-isbn-manually \n"
+                       "klin-bibtex-entry-fill-filepath-and-file-page-offset-manually \n"
+                       "klin-integrate-bibtex-entry-into-collective-file")))
+      ;; you could run e.g. klin-bibtex-ask-for-isbn-suggestion-and-insert ()
       )
     ;; for consecutive processing of individual bibtex files assoc. to single pdfs:
     ;; change the frame value assoc to the current intended-bibfile-path
@@ -251,15 +362,149 @@ Removes the file at INTENDED-BIBFILE-PATH if at the end, it remains empty."
     ;; add a function to delete-frame-functions that will handle the transition:
     ;; when kill-frame-and-buffers-within is called at some point, that will
     ;; kill the previous frame and open up the next one in the list
-    (add-to-list 'delete-frame-functions 'on-bibtex-processing-frame-close-hf)))
+    (add-to-list 'delete-frame-functions 'klin-bibtex-process-next-pdf-on-frame-close)))
 
-(defun ask-for-isbn-suggestion-and-insert ()
-  "Fill an empty bib file with isbn template."
+
+;; ---------- integration of entrys into other bibfiles
+
+(defun klin-bibtex-integrate-entry-into-collective-bibfile (candidate)
+  "Integrate entry under cursor into collective bibfile CANDIDATE."
+  (let* ((coll-bibtex-filepath (car candidate)))
+                      ;; go into coll-bibtex-filepath's file
+                      ;; anda file
+                      ;; copy an entry in the one buffer to a kill-ring
+                      (bibtex-copy-entry-as-kill)
+                      (when (find-file-other-window coll-bibtex-filepath)
+                        (goto-char (point-max))
+                        (insert "\n\n")
+                        (insert (car bibtex-entry-kill-ring))
+                        (bibtex-validate))))
+
+(defun klin-bibtex-get-collective-bibtex-files ()
+  "Get collective bibtex files in the current context.
+Search for an open org file and wether it has a bib file
+associated to it."
+  (mapcar (lambda (tup) (list (concat (nth 0 tup)
+                                      " -> "
+                                      (nth 1 tup))
+                              (nth 1 tup)))
+          (reverse
+           (-flatten-n 1 (remove-if (lambda (x)
+                                      (eq x nil))
+                                    (mapcar (lambda (buffer)
+                                              (with-current-buffer buffer
+                                                (when (buffer-file-name)
+                                                  (mapcar (lambda (bibfilepath)
+                                                            (list (buffer-file-name)
+                                                                  bibfilepath))
+                                                          (klin-org-org-ref-find-bibliography-fullfilenames)))))
+                                            (remove-if (lambda (x)
+                                                         (eq x nil))
+                                                       (mapcar (lambda (buffer)
+                                                                 (with-current-buffer buffer
+                                                                   (if (eq major-mode 'org-mode)
+                                                                       (current-buffer))))
+                                                               (buffer-list)))))))))
+
+(defvar helm-source-klin-bibtex-entry-into-collective
+      '((name . "integrate bibtex entry into collective bibtex file:")
+        (candidates . klin-bibtex-get-collective-bibtex-files)
+        (action . (lambda (candidate)
+                    (klin-bibtex-integrate-entry-into-collective-bibfile candidate)))))
+
+(defun klin-bibtex-integrate-bib-entry-into-collective ()
+  "Integrate entry under cursor into a collective bibtex file."
   (interactive)
-  (let* ((isbn (read-string "ISBN? (return to continue):")))
-    (isbn-to-bibtex isbn (buffer-file-name (current-buffer)))))
+  (helm :sources '(helm-source-klin-bibtex-entry-into-collective)))
 
-(defun fix-file-page-offset (&optional key)
+;; ---------
+
+;; --------- setting associated bibfiles for pdfs
+
+(defun klin-bibtex-set-bibfiles-for-pdfs (&optional filepaths)
+  "Mark some PDFs with helm (optional: give FILEPATHS)."
+  (interactive)
+  (unless filepaths
+    (setq filepaths (helm-read-file-name "Set bibfiles for marked pdfs: "
+                                         :initial-input "~/Dropbox/"
+                                         :marked-candidates t)))
+  (when (> (length bib-processing-bibfiles-frames) 0)
+    (message
+     "Some bib files were still in the queue, waiting to be processed. We skip them, reinitializing the processing queue.")
+    (setq bib-processing-bibfiles-frames nil))
+  ;; assign the list of bibfiles to process to bib-processing-bibfiles-frames
+  ;; fill frames with nil for the beginning
+  (let* ((as (mapcar (lambda (arg)
+                       (klin-pdf-filepath-to-bibtex-filepath arg))
+                     filepaths))
+         (prepared-bibfiles-frames-list (mapcar (lambda (ai)
+                                                  (let ((temp-as-bs nil))
+                                                    (setq temp-as-bs (append temp-as-bs
+                                                                             `(,ai ,nil)))))
+                                                as)))
+    (setq bib-processing-bibfiles-frames (append bib-processing-bibfiles-frames prepared-bibfiles-frames-list)))
+
+  ;; start with the first one, that initiates it; after closing that one,
+  ;; there is a hook to open the 2nd one and so on.
+  (let ((pdf-filepath (nth 0 filepaths)))
+    (klin-create-pdf-associated-bibtex-file pdf-filepath)))
+
+;; ---------
+
+;; --------- interactive filling and fixing
+
+(defun klin-bibtex-entry-fill-isbn-manually ()
+  "Assist the filling in of pdf-file related fields in .bib entry."
+  (interactive)
+
+  ;; re-parse the bib buffer
+  (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
+  (bibtex-parse-keys)
+
+  ;; if it's empty, try to find the pdf from the file name first,
+  ;; in order to get to the isbn, which enables you to get the
+  ;; title, author, year, publisher data from the internet
+  (let* (pdf-filepath)
+    (if (eq (length (bibtex-global-key-alist)) 0)
+        (setq pdf-filepath (klin-bibtex-get-pdf-filepath-for-bibtex-entry)))
+    ;; now that we have the file path, open the pdf to find the isbn
+    (message "We'll open up the pdf now. You could try to find the isbn.")
+    (sleep-for 2)
+    (find-file-other-frame pdf-filepath)))
+
+(defun klin-bibtex-entry-fill-filepath-and-file-page-offset-manually ()
+  "Assists the user in setting pdf-related data fields in bibtex file."
+  (interactive)
+  (let* ((filepath-field-str
+         (bibtex-get-field-from-entry-under-cursor
+          "filepath" (current-buffer)))
+         (file-page-offset-field-str
+          (bibtex-get-field-from-entry-under-cursor
+           "file-page-offset" (current-buffer)))
+         )
+    (unless (or (not (string= "" filepath-field-str)) (not filepath-field-str))
+      (klin-bibtex-entry-fix-filepath-field))
+    (unless (or (not (string= "" file-page-offset-field-str))
+                (not file-page-offset-field-str))
+      (klin-bibtex-entry-fix-file-page-offset))
+    )
+  )
+
+(defun klin-bibtex-entry-fix-filepath-field (&optional key)
+  "Set filepath field of KEY's bib entry.
+If KEY is not set, edit entry under cursor."
+  (interactive)
+  (let* (filepath)
+    (unless key
+      (setq key (bibtex-get-field-from-entry-under-cursor "=key="
+                                                          (current-buffer))))
+    (setq filepath (klin-bibtex-get-pdf-filepath-for-bibtex-entry))
+    (bibtex-set-field "filepath"
+                      (klin-utils-get-reduced-pdf-file-path filepath)))
+  (bibtex-clean-entry)
+  (bibtex-fill-entry))
+
+(defun klin-bibtex-entry-fix-file-page-offset (&optional key)
   "Asks for the KEY's entry's pdf file page offset, with the choice of opening the pdf."
   (interactive)
   (let* ((bib-buffer (current-buffer))
@@ -297,56 +542,9 @@ Removes the file at INTENDED-BIBFILE-PATH if at the end, it remains empty."
   (bibtex-clean-entry)
   (bibtex-fill-entry))
 
-(defun fix-filepath-field (&optional key)
-  "Set filepath field of KEY's bib entry.
-If KEY is not set, edit entry under cursor."
-  (interactive)
-  (let* (filepath)
-    (unless key
-      (setq key (bibtex-get-field-from-entry-under-cursor "=key="
-                                                          (current-buffer))))
-    (setq filepath (klin-get-pdf-filepath-for-bibtex-entry))
-    (bibtex-set-field "filepath"
-                      (s-replace (substitute-in-file-name "$HOME")
-                                 "~"
-                                 (substitute-in-file-name (expand-file-name filepath)))))
-  (bibtex-clean-entry)
-  (bibtex-fill-entry))
+;; -----------
 
-
-(defun bibtex-next-entry (&optional n)
-  "Jump to the beginning of the next (N th next) bibtex entry.
-N is a prefix argument.  If it is numeric, jump that many entries
-forward.  Negative numbers do nothing."
-  (interactive "P")
-  ;; Note if we start at the beginning of an entry, nothing
-  ;; happens. We need to move forward a char, and call again.
-  (when (= (point) (save-excursion
-                     (bibtex-beginning-of-entry)))
-    (forward-char)
-    (bibtex-next-entry))
-  ;; search forward for an entry
-  (bibtex-set-dialect (parsebib-find-bibtex-dialect)
-                      t) ; initialize bibtex-entry-head
-  (when (re-search-forward bibtex-entry-head
-                           nil
-                           t
-                           (and (numberp n)
-                                n))
-    ;; go to beginning of the entry
-    (bibtex-beginning-of-entry)))
-
-(defun bibtex-previous-entry (&optional n)
-  "Jump to beginning of the (Nth) previous bibtex entry.
-N is a prefix argument."
-  (interactive "P")
-  (bibtex-beginning-of-entry)
-  (when (re-search-backward bibtex-entry-head
-                            nil
-                            t
-                            (and (numberp n)
-                                 n))
-    (bibtex-beginning-of-entry)))
+;; ----------- 3rd party tools
 
 (defun jmax-bibtex-get-fields ()
   "Get a list of fields in a bibtex entry."
@@ -368,87 +566,7 @@ N is a prefix argument."
         ;; spaces, then =
         (re-search-forward (format "^\\s-*%s\\s-*=" field) nil t))))
 
-(defun check-pdfs-for-bib-file (&optional filepaths)
-  "Mark some PDFs with helm (optional: give FILEPATHS)."
-  (interactive)
-  (unless filepaths
-    (setq filepaths (helm-read-file-name "mark some pdfs: " :initial-input "~/Dropbox/"
-                                         :marked-candidates t)))
-  (when (> (length bib-processing-bibfiles-frames) 0)
-    (message
-     "Some bib files were still in the queue, waiting to be processed. We skip them, reinitializing the processing queue.")
-    (setq bib-processing-bibfiles-frames nil))
-  ;; assign the list of bibfiles to process to bib-processing-bibfiles-frames
-  ;; fill frames with nil for the beginning
-  (let* ((as (mapcar (lambda (arg)
-                       (klin-pdf-filepath-to-bibtex-filepath arg))
-                     filepaths))
-         (prepared-bibfiles-frames-list (mapcar (lambda (ai)
-                                                  (let ((temp-as-bs nil))
-                                                    (setq temp-as-bs (append temp-as-bs
-                                                                             `(,ai ,nil)))))
-                                                as)))
-    (setq bib-processing-bibfiles-frames (append bib-processing-bibfiles-frames prepared-bibfiles-frames-list)))
-
-  ;; start with the first one, that initiates it; after closing that one,
-  ;; there is a hook to open the 2nd one and so on.
-  (let ((pdf-filepath (nth 0 filepaths)))
-    (make-bibtex-file-for-pdf pdf-filepath)))
-(defun klin-try-to-fill-all-pdf-stuff-in-2-pdfstuff ()
-  "Assists the user in setting pdf-related data fields in bibtex file."
-  (interactive)
-  (let* ((filepath-field-str
-         (bibtex-get-field-from-entry-under-cursor
-          "filepath" (current-buffer)))
-         (file-page-offset-field-str
-          (bibtex-get-field-from-entry-under-cursor
-           "file-page-offset" (current-buffer)))
-         )
-    (unless (or (not (string= "" filepath-field-str)) (not filepath-field-str))
-      (fix-filepath-field))
-    (unless (or (not (string= "" file-page-offset-field-str))
-                (not file-page-offset-field-str))
-      (fix-file-page-offset))
-    )
-  )
-
-(defun klin-get-pdf-filepath-for-bibtex-entry (&optional key)
-  "Try to find the pdf associated with the bib file.
-KEY can be provided, but if not it will try to figure
-the pdf filename out by the buffer file name."
-  (interactive)
-
-  ;; re-parse the bib buffer
-  (bibtex-set-dialect (parsebib-find-bibtex-dialect) t)
-  (bibtex-parse-keys)
-
-  (helm-read-file-name
-   (concat "what is the corresponding pdf?"
-           (if (or (not (string= "" key)) (not key))
-               "(key: not set)"
-             (concat "(key: " key " )"))
-           ": ")
-   :initial-input
-   (let* ((filepath-field
-           (bibtex-get-field-from-entry-under-cursor
-            "filepath" (current-buffer)))
-          (filename-guess-from-bibfile-name
-           (klin-bibtex-filename-to-pdf-filename (buffer-name)))
-          (standard-folder-path
-           (expand-file-name "~/Dropbox/2TextBooks/"))
-          (filepath-guess-from-bibfile-name-standard-folder
-           (concat standard-folder-path
-                   filename-guess-from-bibfile-name)))
-
-     (if (and (not (string= filepath-field ""))
-              (file-exists-p (expand-file-name filepath-field)))
-         (expand-file-name filepath-field)
-       (if (file-exists-p
-            filepath-guess-from-bibfile-name-standard-folder)
-           filepath-guess-from-bibfile-name-standard-folder
-         (if (file-exists-p standard-folder-path)
-             standard-folder-path
-           ""))))))
+;; ----------
 
 (provide 'klin-bibtex)
 ;;; klin-bibtex.el ends here
