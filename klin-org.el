@@ -93,6 +93,7 @@
           (match-string 2 nearestlink-string)
           (match-string 3 nearestlink-string))))
 
+
 (defun klin-org-org-ref-find-bibliography-fullfilenames (&optional org-buffer)
   "Find the bibliography associated to an org file opened in ORG-BUFFER.
 If ORG-BUFFER isn't given, the current buffer is assumed."
@@ -174,7 +175,8 @@ If ORG-BUFFER isn't given, the current buffer is assumed."
 ;; -------- user interaction for citation insertion and opening reference
 
 (defun klin-org-open-link-nearest-to-point ()
-  "If cursor is somewhere in the text, search the nearest link and open it."
+  "If cursor is somewhere in the text, search the nearest link and open it.
+By default, don't open a new frame, and maximize the window."
   (interactive)
   (klin-org-open-link (klin-org-get-link-data-nearest-to-point)))
 

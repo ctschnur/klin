@@ -24,50 +24,8 @@
 
 ;;; Code:
 
+;; --------- tabbar simple grouping customization
 
-;; tab-buffers is an ordered list indicating the order of tabs
-(cl-defstruct klin-pdfs-frame frame tab-buffers)
-
-(defvar klin-pdfs-frames nil
-  "If you blast a lot of pdfs, show them in the frames containted in that list.")
-
-(defun klin-tabs-open-pdfs ()
-  "Open a pdf from Library."
-  (interactive)
-  (let* ((pdf-list (helm-read-file-name
-                     "Select pdf: "
-                     :initial-input (concat
-                                     (expand-file-name "~/Dropbox/2TextBooks")
-                                     "/ .pdf$ ")
-                     :marked-candidates t))
-         frame
-         k-p-f)
-    (mapcar
-     (lambda (pdf-path)
-       (let* ((tab-buffers))
-         ;; open them freshly in a new frame with a new ordered tab-buffers list
-         (if (not frame)
-             (progn
-               (setq frame (progn
-                             (find-file-other-frame pdf-path)
-                             (selected-frame)))
-               (add-to-list 'klin-pdfs-frames
-                            (setq k-p-f
-                                  (make-klin-pdfs-frame :frame frame
-                                                        :tab-buffers nil)))))
-         (x-focus-frame frame)
-         (find-file pdf-path)
-         ;; add that pdf-path to the klin-pdf-frame's (k-p-f's) tab-buffers list
-         (setf (klin-pdfs-frame-tab-buffers k-p-f)
-               (append (klin-pdfs-frame-tab-buffers k-p-f) `(,(current-buffer))))
-
-         (add-to-list 'klin-pdfs-frames k-p-f)
-         ;; (split-window-horizontally)
-         (maximize-frame)
-         (pdf-view-fit-page-to-window)))
-     pdf-list)))
-
-;; customize to show all normal files in one group
 (defun my-tabbar-buffer-groups-standard ()
   "Return the name of the tab group names the current buffer belongs to.
 There are two groups: Emacs buffers (those whose name starts with '*', plus
@@ -86,16 +44,50 @@ tabbar.el v1.7."
 ;; assign this to gouvern the behaviour of tabbar
 (setq tabbar-buffer-groups-function 'my-tabbar-buffer-groups-standard)
 
-
 ;; -----------
 
+(defun klin-tabs-open-pdfs ()
+  "Open a pdf from Library."
+  (interactive)
+  (let* ((pdf-list (helm-read-file-name
+                     "Select pdf: "
+                     :initial-input (concat
+                                     (expand-file-name "~/Dropbox/2TextBooks")
+                                     "/ .pdf$ ")
+                     :marked-candidates t))
+         frame
+         k-p-f)
+    (mapcar
+     (lambda (pdf-path)
+       (let* (
+              ;;(tab-buffers)
+              )
+         ;; open them freshly in a new frame with a new ordered tab-buffers list
+         (if (not frame)
+             (progn
+               (setq frame (progn
+                             (find-file-other-frame pdf-path)
+                             (selected-frame)))
+               ;; (add-to-list 'klin-pdfs-frames
+               ;;              (setq k-p-f
+               ;;                    (make-klin-pdfs-frame :frame frame
+               ;;                                          :tab-buffers nil)))
+               ))
+         (x-focus-frame frame)
+         (find-file pdf-path)
+         ;; add that pdf-path to the klin-pdf-frame's (k-p-f's) tab-buffers list
+         (setf (klin-pdfs-frame-tab-buffers k-p-f)
+               (append (klin-pdfs-frame-tab-buffers k-p-f) `(,(current-buffer))))
+
+         ;; (add-to-list 'klin-pdfs-frames k-p-f)
+         ;; (split-window-horizontally)
+         (maximize-frame)
+         (pdf-view-fit-page-to-window)))
+     pdf-list)))
 
 ;; if I have a pdf and open it with find-file, I'd like to
 ;; clone it if it's already open somewhere and give it another buffer
 ;; (only if tabbar-mode is enabled)
-
-(defvar klin-show-pdfs-tabbed t
-  "Set weather the tabbed pdf view should be used or not.")
 
 ;; TODO: now only find a way to run this
 ;; (since find-file-hook actually doesn't run if the file is already open)
@@ -111,7 +103,7 @@ tabbar.el v1.7."
     (message "clone it")))
 
 ;; (add-hook 'find-file-hook 'klin-clone-pdf-buffer-instead-of-find-file)
-(remove-hook 'find-file-hook 'klin-clone-pdf-buffer-instead-of-find-file)
+;; (remove-hook 'find-file-hook 'klin-clone-pdf-buffer-instead-of-find-file)
 
 ;; (defun klin-my-tabbar-buffer-groups ()
 ;;   "For every new pdf buffer that is opened, run this function.

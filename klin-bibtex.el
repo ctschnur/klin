@@ -203,7 +203,8 @@ is given, search in the current bib buffer."
          (filepath (klin-bibtex-get-field "filepath" bibtexkey))
          (page (- (+ page file-page-offset)
                   1)))
-    (open-pdf-document-new-frame filepath page)))
+    ;; (open-pdf-document-new-frame filepath page)
+    (open-pdf-document-other-frame filepath page t)))
 
 (defun klin-bibtex-ask-for-isbn-suggestion-and-insert ()
   "Fill an empty bib file with isbn template."

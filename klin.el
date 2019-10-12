@@ -34,14 +34,31 @@
 (require 'klin-utils)
 (require 'klin-org)
 (require 'klin-bibtex)
-(require 'klin-tabs)
+
 (require 'tabbar)
 (tabbar-mode 1)
+(require 'klin-tabs)
 (require 'klin-pdf-frames)
 
 ;; keys from within org-mode
 (require 'org)
-(define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
+;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
+
+;; multiple-cursors operates only reliably in the current frame
+;; so you have to change back to the current frame after
+;; opening up the n-m th frame in a series of n new frames
+(define-key org-mode-map (kbd "C-M-, o") (lambda ()
+                                           (interactive)
+                                           (let* ((orig-window (selected-window))
+                                                  (orig-buffer (current-buffer))
+                                                  (orig-frame (selected-frame)))
+                                             (klin-org-open-link-nearest-to-point)
+                                             (select-window orig-window))))
+
+;; (define-key org-mode-map (kbd "C-M-, o") (lambda ()
+;;                                            (interactive)
+;;                                            (message "hi")))
+
 (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
 
 ;; keys from within pdf-view-mode

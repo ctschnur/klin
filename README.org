@@ -5,9 +5,14 @@
 ** misc notes
 
 TODO: 
-- make a clickable list to run the bibtex entry filling functions (with help links)
-- make a shortcut to create a bibtex file directly from an opened pdf
+- make/open interleave buffer from pdf
+- toggle interleave buffer window open
+- make your own tabbing system (make it behave like chrome tabs)
+
+TODO: 
 - maximize pdf windows when opening them from a link
+- make a shortcut to create a bibtex file directly from an opened pdf
+- make a clickable list to run the bibtex entry filling functions (with help links)
 - if the citation insertion doesn't work directly because of e.g. unspecified path, 
   wait for user confirmation before sprining up with the bibfile creation buffer
 

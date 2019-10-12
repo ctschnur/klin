@@ -79,6 +79,43 @@ Run this function from a pdfview buffer."
     (find-file-other-frame filepath)
     (pdf-view-goto-page page)))
 
+(defun open-pdf-document-other-frame
+    (filepath page &optional maximize)
+  "Open the pdf file at FILEPATH in another window and on a certain PAGE.
+by default, the pdf's window's frame will be maximized.
+You can set MAXIMIZE be a non-nil value to maximize the window."
+  (unless page (setq page 1))
+  (progn
+    (find-file-other-frame filepath)
+    (pdf-view-goto-page page)
+    ;; if it's not fullscreen, make it fullscreen with
+    ;; frame.el's toggle-frame-fullscreen, which keeps
+    ;; the previous frame dimensions stored so that
+    ;; you can toggle back
+    (if maximize
+      (let* ((fullscreen (frame-parameter nil 'fullscreen)))
+        (unless fullscreen
+          (toggle-frame-maximized))))
+    (pdf-view-redisplay)))
+
+;; (defun pdf-redisplay-on-window-size-change ()
+;;   "Re-displays pdfview on window size change.
+;; E.g. re-centers it.
+;; Assumes pdf-tools is used to view pdfs."
+;;   ;; for some reason pdf-view-mode is not defined
+;;   ;; as a variable, so check for another pdf-tools
+;;   ;; associated buffer-local minor mode, pdf-outline-minor-mode
+;;   ;; see also (pdf-tools-modes)
+;;   (if (bound-and-true-p pdf-outline-minor-mode)
+;;       (pdf-view-redisplay)))
+
+;; (setq window-size-change-functions nil)
+
+;; (add-hook 'pdf-outline-minor-mode-hook
+;;           (lambda ()
+;;             (add-to-list 'window-size-change-functions
+;;                          'pdf-redisplay-on-window-size-change)))
+
 (defun klin-pdf-make-pdf-frame-invisible ()
   "Make the current frame invisible.
 Intended for PDF frame management."
