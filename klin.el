@@ -21,7 +21,7 @@
 ;;; Commentary:
 
 ;; Key bindings can either be (1) declared in a new map bundled within a
-;; minor mode (first option: buffer-local, second option: global),
+;; minor mode (first option: buffer-local, second option global),
 ;; or (2) they can be (easier option in my opinion) just set in hooks
 ;; when entering the specific file type or mode (e.g. org-mode) where
 ;; you want to have them available.  I'm going to do (2) here.
@@ -35,8 +35,10 @@
 (require 'klin-org)
 (require 'klin-bibtex)
 
-(require 'tabbar)
-(tabbar-mode 1)
+(require 'klin-optional)
+
+;; (require 'tabbar)
+;; (tabbar-mode 1)
 (require 'klin-tabs)
 (require 'klin-pdf-frames)
 

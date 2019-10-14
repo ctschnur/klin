@@ -101,10 +101,11 @@ If ORG-BUFFER isn't given, the current buffer is assumed."
   (unless org-buffer
     (progn
       ;; if the current buffer from wich this function is called is an org buffer, then use that one
-      (if (string= "org"
-                   (file-name-extension (buffer-name)))
+      (if (or (eq major-mode 'org-mode)
+              (string= "org"
+                       (file-name-extension (buffer-name))))
           (setq org-buffer (current-buffer))
-        (message this-command "Not called from an org file and option org-buffer not provided. "))))
+        (message "not called from an org file and option org-buffer not provided. "))))
   ;; (unless org-buffer (setq org-buffer (get-buffer "main.org"))) ; debugging
 
   ;; find partial filenames relative to org buffer in which e.g. addbibresources are defined
@@ -190,7 +191,25 @@ By default, don't open a new frame, and maximize the window."
     nil)
 
   (let* ((collective-bibtex-filepath
-          (car (klin-org-org-ref-find-bibliography-fullfilenames)))
+          (let* ((bib-path
+                  (car (klin-org-org-ref-find-bibliography-fullfilenames))))
+            (unless bib-path
+              ;; ask to create and add a bibliography
+              (setq bib-path
+                    (helm-read-file-name "No bib file found! Create/reference one: "
+                                         :initial-input
+                                         (concat (file-name-directory (buffer-file-name))
+                                                 ;; "."  ; two dots seem excessive
+                                                 (file-name-base (buffer-file-name))
+                                                 ".bib")))
+
+              ;; insert it at the top as a latex reference
+              (goto-char (point-min))
+              (let ((inhibit-read-only t))
+                (insert "#+LATEX_HEADER: \\addbibresource{"
+                        (file-name-base bib-path)
+                        ".bib}\n")))
+            bib-path))
          (reduced-pdf-filepath
           (klin-utils-get-reduced-pdf-file-path (klin-pdf-link-data-pdf-filepath
                                      klin-pdfview-stored-link)))

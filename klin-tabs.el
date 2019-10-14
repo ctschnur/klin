@@ -16,38 +16,82 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <ht
 
-;;; Commentary:
-
-;;
 
 ;;; Code:
 
 ;; --------- tabbar simple grouping customization
 
-(defun my-tabbar-buffer-groups-standard ()
-  "Return the name of the tab group names the current buffer belongs to.
-There are two groups: Emacs buffers (those whose name starts with '*', plus
-dired buffers), and the rest.  This works at least with Emacs v24.2 using
-tabbar.el v1.7."
-  (list (cond
-         ((string-equal "*"
-                        (substring (buffer-name)
-                                   0
-                                   1)) "emacs")
-         ((and (string-match "pdf$" (buffer-file-name))
-               (not (string-match "main\\.pdf$" (buffer-file-name)))) "pdf")
-         ((eq major-mode 'dired-mode) "emacs")
-         (t "user"))))
+;; (defun my-tabbar-buffer-groups-standard ()
+;;   "Return the name of the tab group names the current buffer belongs to.
+;; There are two groups: Emacs buffers (those whose name starts with '*', plus
+;; dired buffers), and the rest.  This works at least with Emacs v24.2 using
+;; tabbar.el v1.7."
+;;   (list (cond
+;;          ((string-equal "*"
+;;                         (substring (buffer-name)
+;;                                    0
+;;                                    1)) "emacs")
+;;          ((and (string-match "pdf$" (buffer-file-name))
+;;                (not (string-match "main\\.pdf$" (buffer-file-name)))) "pdf")
+;;          ((eq major-mode 'dired-mode) "emacs")
+;;          (t "user"))))
 
-;; assign this to gouvern the behaviour of tabbar
-(setq tabbar-buffer-groups-function 'my-tabbar-buffer-groups-standard)
+;; ;; assign this to gouvern the behaviour of tabbar
+;; (setq tabbar-buffer-groups-function 'my-tabbar-buffer-groups-standard)
 
 ;; -----------
 
-(defun klin-tabs-open-pdfs ()
-  "Open a pdf from Library."
+
+(defun elscreen-move-tab-right ()
+  "Move tab in elscreen."
+  (interactive)
+  (unless (eq (elscreen-get-current-screen) (seq-max (elscreen-get-screen-list)))
+    (let* ()
+      (elscreen-goto (+ (elscreen-get-current-screen)
+                        1))
+      (elscreen-swap))))
+
+(defun elscreen-move-tab-left ()
+  "Move tab in elscreen."
+  (interactive)
+  (unless (eq (elscreen-get-current-screen) (seq-min (elscreen-get-screen-list)))
+    (let* ()
+      (elscreen-goto (- (elscreen-get-current-screen)
+                        1))
+      (elscreen-swap))))
+
+(defun elscreen-visit-tab-left ()
+  "Visit tab in elscreen"
+  (interactive)
+  (elscreen-goto (- (elscreen-get-current-screen)
+                        1))
+  )
+
+(defun elscreen-visit-tab-right ()
+  "Visit tab in elscreen"
+  (interactive)
+  (elscreen-goto (+ (elscreen-get-current-screen)
+                        1))
+  )
+
+;; Key sequences "C-S-PgUp" and "C-S-PgDn" move the current tab to the left and to the right.
+;; (global-set-key (kbd "C-S-<prior>") 'elscreen-move-tab-left)
+;; (global-set-key (kbd "C-S-<next>") 'elscreen-move-tab-right)
+(global-set-key (kbd "<C-M-S-prior>") 'elscreen-move-tab-left)
+(global-set-key (kbd "<C-M-S-next>") 'elscreen-move-tab-right)
+
+;; visiting neighboring tabs
+(global-set-key (kbd "<C-M-prior>") 'elscreen-visit-tab-left)
+(global-set-key (kbd "<C-M-next>") 'elscreen-visit-tab-right)
+
+(defun klin-tabs-open-pdfs (&optional arg)
+  "Open a pdf from Library.
+If arg is non-nil, open all pdfs in the current
+elscreen frame.
+Chrome-like tabs are best done with elscree
+and elscreen-create"
   (interactive)
   (let* ((pdf-list (helm-read-file-name
                      "Select pdf: "
@@ -55,35 +99,50 @@ tabbar.el v1.7."
                                      (expand-file-name "~/Dropbox/2TextBooks")
                                      "/ .pdf$ ")
                      :marked-candidates t))
-         frame
-         k-p-f)
-    (mapcar
-     (lambda (pdf-path)
-       (let* (
-              ;;(tab-buffers)
-              )
-         ;; open them freshly in a new frame with a new ordered tab-buffers list
-         (if (not frame)
-             (progn
-               (setq frame (progn
-                             (find-file-other-frame pdf-path)
-                             (selected-frame)))
-               ;; (add-to-list 'klin-pdfs-frames
-               ;;              (setq k-p-f
-               ;;                    (make-klin-pdfs-frame :frame frame
-               ;;                                          :tab-buffers nil)))
-               ))
-         (x-focus-frame frame)
-         (find-file pdf-path)
-         ;; add that pdf-path to the klin-pdf-frame's (k-p-f's) tab-buffers list
-         (setf (klin-pdfs-frame-tab-buffers k-p-f)
-               (append (klin-pdfs-frame-tab-buffers k-p-f) `(,(current-buffer))))
+         (ctr 0)
+         frame)
 
-         ;; (add-to-list 'klin-pdfs-frames k-p-f)
-         ;; (split-window-horizontally)
-         (maximize-frame)
-         (pdf-view-fit-page-to-window)))
-     pdf-list)))
+    (unless arg
+      (setq frame (make-frame)))
+
+    ;; this doesn't seem to work when you open up a
+    ;; completely new frame. Maybe you can do something
+    ;; with make-frame-functions
+
+    ;; or, try to just open up a new frame
+    ;; at the beginning of running this function ... (~)
+
+    ;; actually, this worked, try that:
+    ;; (let ((my-cur-file (buffer-file-name))) (with-selected-frame (nth 1 (frame-list)) (elscreen-create) (find-file my-cur-file)))
+    ;; (let ((my-cur-file (buffer-file-name)) (other-frame (nth 1 (frame-list)))) (with-selected-frame other-frame (elscreen-create) (find-file my-cur-file) ) (elscreen-kill))
+    ;; (let ((my-cur-file (buffer-file-name)) (other-frame (nth 1 (frame-list))) (cur-frame (selected-frame))) (with-selected-frame other-frame (elscreen-create) (find-file my-cur-file)) (elscreen-kill) (x-focus-frame other-frame))
+
+    (with-selected-frame frame
+      (while (< ctr (length pdf-list))
+        (elscreen-create)
+        (find-file (nth ctr pdf-list))
+        (setq ctr (+ 1 ctr))
+        (pdf-view-fit-page-to-window)))
+
+    ;; (setq screen (progn
+    ;;                (find-file-other-frame pdf-path)
+    ;;                (selected-frame)))
+    ;; (add-to-list 'klin-pdfs-frames
+    ;;              (setq k-p-f
+    ;;                    (make-klin-pdfs-frame :frame frame
+    ;;                                          :tab-buffers nil)))
+
+    ;; (x-focus-frame frame)
+    ;; (find-file pdf-path)
+    ;; add that pdf-path to the klin-pdf-frame's (k-p-f's) tab-buffers list
+    ;; (setf (klin-pdfs-frame-tab-buffers k-p-f)
+    ;;       (append (klin-pdfs-frame-tab-buffers k-p-f) `(,(current-buffer))))
+
+    ;; (add-to-list 'klin-pdfs-frames k-p-f)
+    ;; (split-window-horizontally)
+    ;; (maximize-frame)
+
+    pdf-list))
 
 ;; if I have a pdf and open it with find-file, I'd like to
 ;; clone it if it's already open somewhere and give it another buffer

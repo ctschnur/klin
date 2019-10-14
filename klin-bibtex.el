@@ -204,7 +204,7 @@ is given, search in the current bib buffer."
          (page (- (+ page file-page-offset)
                   1)))
     ;; (open-pdf-document-new-frame filepath page)
-    (open-pdf-document-other-frame filepath page t)))
+    (open-pdf-document-other-frame-or-window filepath page nil -1)))
 
 (defun klin-bibtex-ask-for-isbn-suggestion-and-insert ()
   "Fill an empty bib file with isbn template."

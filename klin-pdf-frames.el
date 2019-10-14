@@ -79,24 +79,40 @@ Run this function from a pdfview buffer."
     (find-file-other-frame filepath)
     (pdf-view-goto-page page)))
 
-(defun open-pdf-document-other-frame
-    (filepath page &optional maximize)
+(defun open-pdf-document-other-frame-or-window
+    (filepath page &optional maximize frame-or-window)
   "Open the pdf file at FILEPATH in another window and on a certain PAGE.
 by default, the pdf's window's frame will be maximized.
-You can set MAXIMIZE be a non-nil value to maximize the window."
+You can set MAXIMIZE be a non-nil value to maximize the window.
+FRAME-OR-WINDOW < 0 -> split window
+FRAME-OR-WINDOW > 0 -> frame
+FRAME-OR-WINDOW = nil -> find-file"
   (unless page (setq page 1))
-  (progn
-    (find-file-other-frame filepath)
-    (pdf-view-goto-page page)
-    ;; if it's not fullscreen, make it fullscreen with
-    ;; frame.el's toggle-frame-fullscreen, which keeps
-    ;; the previous frame dimensions stored so that
-    ;; you can toggle back
-    (if maximize
+  (cond
+   ((not frame-or-window)
+    (find-file filepath))
+   ((< frame-or-window 0)
+    (progn
+      (split-window-below)
+      (other-window 1)
+      (window-resize (selected-window)
+                     (round (* (- 1 (/ 1 1.68)) (window-height))))
+      (find-file filepath)
+      (if (eq major-mode 'pdf-view-mode)
+          (pdf-view-redisplay))))
+   ((> frame-or-window 0)
+    (find-file-other-frame filepath)))
+
+  (pdf-view-goto-page page)
+  ;; if it's not fullscreen, make it fullscreen with
+  ;; frame.el's toggle-frame-fullscreen, which keeps
+  ;; the previous frame dimensions stored so that
+  ;; you can toggle back
+  (if maximize
       (let* ((fullscreen (frame-parameter nil 'fullscreen)))
         (unless fullscreen
           (toggle-frame-maximized))))
-    (pdf-view-redisplay)))
+  (pdf-view-redisplay))
 
 ;; (defun pdf-redisplay-on-window-size-change ()
 ;;   "Re-displays pdfview on window size change.
