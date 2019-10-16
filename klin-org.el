@@ -211,7 +211,7 @@ By default, don't open a new frame, and maximize the window."
                         ".bib}\n")))
             bib-path))
          (reduced-pdf-filepath
-          (klin-utils-get-reduced-pdf-file-path (klin-pdf-link-data-pdf-filepath
+          (klin-utils-get-reduced-file-path (klin-pdf-link-data-pdf-filepath
                                      klin-pdfview-stored-link)))
          (pdf-page (klin-pdf-link-data-pdf-page
                     klin-pdfview-stored-link))

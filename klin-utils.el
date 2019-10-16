@@ -45,7 +45,7 @@
               (buffer-substring-no-properties beginning ending)))))
     (insert bibtex-text)))
 
-(defun klin-utils-get-reduced-pdf-file-path (full-filepath)
+(defun klin-utils-get-reduced-file-path (full-filepath)
   "Get the reduced pdf filepath from FULL-FILEPATH.
 The reduced pdf filepath is of the form ~/... .
 The full-filepath is of the form /home/[USER]/... ."

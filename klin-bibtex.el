@@ -420,6 +420,8 @@ associated to it."
 
 ;; ---------
 
+;; --------- jumping in
+
 ;; --------- setting associated bibfiles for pdfs
 
 (defun klin-bibtex-set-bibfiles-for-pdfs (&optional filepaths)
@@ -501,7 +503,7 @@ If KEY is not set, edit entry under cursor."
                                                           (current-buffer))))
     (setq filepath (klin-bibtex-get-pdf-filepath-for-bibtex-entry))
     (bibtex-set-field "filepath"
-                      (klin-utils-get-reduced-pdf-file-path filepath)))
+                      (klin-utils-get-reduced-file-path filepath)))
   (bibtex-clean-entry)
   (bibtex-fill-entry))
 

@@ -44,37 +44,61 @@
 ;; -----------
 
 
+
+
+;; -------- copy a buffer to new next tab
+(defun copy-buffer-to-new-next-tab ()
+  "Create a new elscreen screen to the right of the current one and open buffer."
+  (interactive)
+  (let* ((buf (current-buffer))
+         (original-screen-pos (elscreen-get-current-screen)))
+    (elscreen-create)
+    (switch-to-buffer buf)
+    (elscreen-move-tab-to-position (+ original-screen-pos
+                                      1)))
+  )
+;; --------
+
+(defun elscreen-get-next-higher-screen-pos ()
+  (seq-min (remove nil
+                   (mapcar (lambda (elem)
+                             (if (> elem (elscreen-get-current-screen))
+                                 elem))
+                           (elscreen-get-screen-list)))))
+
+(defun elscreen-get-next-lower-screen-pos ()
+  (seq-max (remove nil
+                   (mapcar (lambda (elem)
+                             (if (< elem (elscreen-get-current-screen))
+                                 elem))
+                           (elscreen-get-screen-list)))))
+
 (defun elscreen-move-tab-right ()
   "Move tab in elscreen."
   (interactive)
-  (unless (eq (elscreen-get-current-screen) (seq-max (elscreen-get-screen-list)))
-    (let* ()
-      (elscreen-goto (+ (elscreen-get-current-screen)
-                        1))
-      (elscreen-swap))))
+  (elscreen-next)
+  (elscreen-swap))
 
 (defun elscreen-move-tab-left ()
   "Move tab in elscreen."
   (interactive)
-  (unless (eq (elscreen-get-current-screen) (seq-min (elscreen-get-screen-list)))
-    (let* ()
-      (elscreen-goto (- (elscreen-get-current-screen)
-                        1))
-      (elscreen-swap))))
+  (elscreen-previous)
+  (elscreen-swap))
 
-(defun elscreen-visit-tab-left ()
-  "Visit tab in elscreen"
+(defun elscreen-move-tab-to-position (target-pos)
+  "Move tab to position TARGET-POS, displacing other tabs."
   (interactive)
-  (elscreen-goto (- (elscreen-get-current-screen)
-                        1))
-  )
-
-(defun elscreen-visit-tab-right ()
-  "Visit tab in elscreen"
-  (interactive)
-  (elscreen-goto (+ (elscreen-get-current-screen)
-                        1))
-  )
+  ;; clamp
+  (cond
+   ((< target-pos (seq-min (elscreen-get-screen-list)))
+    (setq target-pos (seq-min (elscreen-get-screen-list))))
+   ((> target-pos (seq-max (elscreen-get-screen-list)))
+    (setq target-pos (seq-max (elscreen-get-screen-list)))))
+  ;; swap through
+  (while (/= target-pos (elscreen-get-current-screen))
+    (cond
+     ((< target-pos (elscreen-get-current-screen)) (elscreen-move-tab-left))
+     ((> target-pos (elscreen-get-current-screen)) (elscreen-move-tab-right)))))
 
 ;; Key sequences "C-S-PgUp" and "C-S-PgDn" move the current tab to the left and to the right.
 ;; (global-set-key (kbd "C-S-<prior>") 'elscreen-move-tab-left)
@@ -83,8 +107,9 @@
 (global-set-key (kbd "<C-M-S-next>") 'elscreen-move-tab-right)
 
 ;; visiting neighboring tabs
-(global-set-key (kbd "<C-M-prior>") 'elscreen-visit-tab-left)
-(global-set-key (kbd "<C-M-next>") 'elscreen-visit-tab-right)
+(global-set-key (kbd "<C-M-prior>") 'elscreen-previous)
+(global-set-key (kbd "<C-M-next>") 'elscreen-next)
+
 
 (defun klin-tabs-open-pdfs (&optional arg)
   "Open a pdf from Library.

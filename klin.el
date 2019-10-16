@@ -85,5 +85,8 @@
 (define-key bibtex-mode-map (kbd "C-M-, c") 'klin-bibtex-compare-entry-to-original-bibfile)
 (define-key bibtex-mode-map (kbd "C-M-, o") 'klin-open-pdf-from-bibtex)
 
+;; jump to citation in bibtex buffer
+(define-key org-mode-map (kbd "C-M-, j") 'org-ref-open-citation-at-point)
+
 (provide 'klin)
 ;;; klin.el ends here

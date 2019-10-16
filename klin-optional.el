@@ -32,11 +32,70 @@
 
 (require 'org-noter)
 
+(require 'klin-utils)
+
 
 ;; ---------- org-mode getting and setting global document properties
 ;; thanks to Tobias' answer at https://emacs.stackexchange.com/a/21472
 
 (require 'cl-lib)
+
+;; -------- file add watcher in scanner
+(require 'filenotify)
+
+(defvar desc-global nil
+  "Descriptor for the callback.")
+
+(defun klin-watch-callback (event)
+  "Insert org link (filepath inside EVENT) to file changed in cloud."
+  (interactive)
+  (let* ((filepath (expand-file-name (nth 2 event))))
+    ;; removing the watcher immediateley
+    ;; (message "Event %S" event)
+    ;; (message "descriptor: ")
+    ;; (print (car (car event)))
+    ;; (message "action: ")
+    ;; (print (nth 1 event))
+    (if (eq (nth 1 event) 'created)
+        (progn
+          ;; (message "CREATED recognized!")
+          ;; (insert "a")
+          (message "%s was added" filepath)
+          (if (eq major-mode 'org-mode)
+              (insert (concat "[["
+                              (klin-utils-get-reduced-file-path filepath)
+                              "]"
+                              "[scan:"
+                              (file-name-nondirectory filepath)
+                              "]]"))
+            (message "not in org-mode, not inserting!"))))
+    (if desc-global
+        (file-notify-rm-watch desc-global))
+    ;; (run-at-time "1 sec"
+    ;;              nil
+    ;;              (lambda ()
+    ;;                (file-notify-rm-watch desc-global)
+    ;;                (message "Removed the filesystem watcher.")))
+    ))
+
+(defun klin-org-watch-and-insert-scanned-file ()
+  "Launch file system watcher."
+  (interactive)
+  (let* ((cloud-scanner-folder
+          (expand-file-name "~/Dropbox/1LinkedApps/scanner/"))
+         desc)
+    (if (eq major-mode 'org-mode)
+        (progn
+          (setq desc (file-notify-add-watch cloud-scanner-folder
+                                            '(change attribute-change)
+                                            'klin-watch-callback))
+          (setq desc-global desc)
+          (message "watching for changes in %s, descriptor: %S"
+                   cloud-scanner-folder
+                   desc))
+      (message "Not in org-mode, not setting up a watcher!."))))
+
+;; --------
 
 (defun org-global-props-key-re (key)
   "Construct a regular expression matching key and an optional plus and eating the spaces behind.
@@ -383,6 +442,20 @@ notes file, even if it finds one."
 ;;   (make-button 1 10 :type 'custom-button))
 
 ;; --------
+
+
+;; --------- KEY DEFININITIONS
+;; --------- directly embed pictures or e.g. handwritten notes from cloud
+(define-key org-mode-map (kbd "C-M-, w") 'klin-org-watch-and-insert-scanned-file)
+
+;; --------- some key bindings for pdf-view-mode to make it more chrome-like
+(define-key pdf-view-mode-map (kbd "<S-mouse-5>") 'image-forward-hscroll)
+(define-key pdf-view-mode-map (kbd "<S-mouse-4>") 'image-backward-hscroll)
+
+(define-key pdf-view-mode-map (kbd "<C-mouse-5>") (lambda () (interactive) (pdf-view-enlarge 1.1)))
+(define-key pdf-view-mode-map (kbd "<C-mouse-4>") (lambda () (interactive) (pdf-view-shrink 1.1)))
+;; ---------
+
 
 (provide 'klin-optional)
 ;;; klin-optional.el ends here
