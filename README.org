@@ -3,56 +3,19 @@
 
 * klin - functionality for my science writing workflow
 ** misc notes
+The name /klin/ is a one-step rotation of the word /link/. 
+This emacs-lisp library provides functions to /link/ together and integrate tools to as conveniently as possible link together all produced documents during e.g. lectures, and alongside that, to integrate all other side notes/exercises directly from the cloud into an org-mode document (e.g. after taking a picture/scanning a document with your phone camera). 
 
-TODO: 
-- make/open interleave buffer from pdf
-- toggle interleave buffer window open
-- make your own tabbing system (make it behave like chrome tabs)
+I intend to do all structuring of arguments/researching of topics in e-books from within emacs, so this library implements some functions to make quick browsing and comparing of a number of pdf documents easy.
 
-TODO: 
-- maximize pdf windows when opening them from a link
-- make a shortcut to create a bibtex file directly from an opened pdf
+Imagine a tabbed pdf viewer (much like in a browser) together with the ability to via simple key commands make cross-references encoded in plain text, and pull together all your sources into an org-mode document to produce some structured writing about the problem at hand, all in one place, pulling together all the information necessary and making it accessible inside a powerful dynamic environment like emacs.
+
+So far, my workflow relies on a few specific packages, among them are elscreen, pdf-tools, org-ref and org-noter. 
+
+** TODO:
 - make a clickable list to run the bibtex entry filling functions (with help links)
-- if the citation insertion doesn't work directly because of e.g. unspecified path, 
-  wait for user confirmation before sprining up with the bibfile creation buffer
+- make a quick help menu documenting the most useful functions with associated key combination.
+- make a list of features in this README
+- (low importance) make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs
+- make an integrated workflow to annotate any linked pdf using xournal, so that scanned-in images can be corrected/annotated digitally with e.g. a graphic tablet if necessary.
 
-TODO:
-- in klin-open-pdfs (klin-bibtex.el), open a new frame and put 
-  an ordered tabbar-group of the selected pdfs inside
-- in klin-org-insert-pdf-link create a function that checks weather it has a bib file, then inserts it, or not, depending on choice. 
-
-TODO: 
-- make a minor mode enabled in .bib files that has the functionality i need
-
-TODO: 
-- make buffer-local keys in .bib file to trigger the various function
-- EARLIER: use the widget-library: show the keybindings in an attached small help buffer
-  - ACTUALLY: No, just create a package with some documentation. There, you can write down
-    what functions are useful. 
-
-TODO: 
-- integrate the browsing of open pdfs with browsing of file structure when opening new pdfs
-#+BEGIN_SRC emacs-lisp
-;; - first of all, don't override that function, but make your own
-;;   custom function with a global list of stored link property lists
-;; - Map the store-link function to it's own global key
-;; - on klin-store-link, look if the pdf has a bibtex file sitting in it's folder.
-;;   store the path to that bibtex file alongside the link properties in
-;;   the datastructure.
-;; - on klin-insert-link, open up a helm-source with the candidates from the globally
-;;   stored list
-;; - then, at insertion, search in the org document's collective bibtex file,
-;;   for a corresponding entry with the same pdf filepath as the original pdf
-;; - at insertion of a new entry, check if the key is already
-;;   used by another entry. If yes,
-;;   open the bibfile buffer and search and highlight both entries to manually make
-;;   a change.
-;;   (can happen for good reason, e.g. if you have the same author publishing
-;;   two cited things in the same year).
-;; search a pdf's bibtex entry in the org document's associated bibtex
-;; file (based on filepath).
-;; If that filepath is found, take it's bibtexkey.
-;; If that filepath is not found, ask for a bibtex file to go check in,
-;; with 1st choice based on the pdf's accompanying bib file's path.
-;; if none at all is found, ask to create one associated to that pdf.
-#+END_SRC
