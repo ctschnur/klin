@@ -443,19 +443,5 @@ notes file, even if it finds one."
 
 ;; --------
 
-
-;; --------- KEY DEFININITIONS
-;; --------- directly embed pictures or e.g. handwritten notes from cloud
-(define-key org-mode-map (kbd "C-M-, w") 'klin-org-watch-and-insert-scanned-file)
-
-;; --------- some key bindings for pdf-view-mode to make it more chrome-like
-(define-key pdf-view-mode-map (kbd "<S-mouse-5>") 'image-forward-hscroll)
-(define-key pdf-view-mode-map (kbd "<S-mouse-4>") 'image-backward-hscroll)
-
-(define-key pdf-view-mode-map (kbd "<C-mouse-5>") (lambda () (interactive) (pdf-view-enlarge 1.1)))
-(define-key pdf-view-mode-map (kbd "<C-mouse-4>") (lambda () (interactive) (pdf-view-shrink 1.1)))
-;; ---------
-
-
 (provide 'klin-optional)
 ;;; klin-optional.el ends here

@@ -195,9 +195,11 @@ is given, search in the current bib buffer."
 
 ;; ---------- lower complexity interactive functions
 
-(defun klin-open-pdf-from-bibtex (bibtexkey page)
+(defun klin-open-pdf-from-bibtex (&optional bibtexkey page)
   "Open BIBTEXKEY's pdf file on PAGE, respecting page offset."
   (interactive)
+  (unless bibtexkey
+    (setq bibtexkey (klin-bibtex-get-field "=key=" nil (buffer-file-name))))
   (let* ((file-page-offset (string-to-number (klin-bibtex-get-field "file-page-offset"
                                                                     bibtexkey)))
          (filepath (klin-bibtex-get-field "filepath" bibtexkey))
@@ -226,7 +228,7 @@ Then, it is left up to the user to compare or sync up the entrys."
           (let* ((bib-filepath-from-pdf-filepath-field
                   (klin-pdf-filepath-to-bibtex-filepath
                    (expand-file-name reduced-pdf-filepath)))
-                 (suggested-initial-input "~/"))
+                 (suggested-initial-input "~/Dropbox/2TextBooks/ .bib$ "))
             (if (file-exists-p bib-filepath-from-pdf-filepath-field)
                 (setq suggested-initial-input
                       bib-filepath-from-pdf-filepath-field))

@@ -34,59 +34,107 @@
 (require 'klin-utils)
 (require 'klin-org)
 (require 'klin-bibtex)
-
 (require 'klin-optional)
-
-;; (require 'tabbar)
-;; (tabbar-mode 1)
 (require 'klin-tabs)
 (require 'klin-pdf-frames)
 
-;; keys from within org-mode
 (require 'org)
-;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
+(require 'hydra)
 
-;; multiple-cursors operates only reliably in the current frame
-;; so you have to change back to the current frame after
-;; opening up the n-m th frame in a series of n new frames
-(define-key org-mode-map (kbd "C-M-, o") (lambda ()
-                                           (interactive)
-                                           (let* ((orig-window (selected-window))
-                                                  (orig-buffer (current-buffer))
-                                                  (orig-frame (selected-frame)))
-                                             (klin-org-open-link-nearest-to-point)
-                                             (select-window orig-window))))
 
-;; (define-key org-mode-map (kbd "C-M-, o") (lambda ()
+;; (define-key org-mode-map (kbd "C-M-, o") (lambda ()  ; multiple-cursors works ootb only with lambdas
 ;;                                            (interactive)
-;;                                            (message "hi")))
+;;                                            (let* ((orig-window (selected-window))
+;;                                                   (orig-buffer (current-buffer))
+;;                                                   (orig-frame (selected-frame)))
+;;                                              (klin-org-open-link-nearest-to-point)
+;;                                              ;; multiple-cursors operates only reliably in the current frame
+;;                                              ;; so you have to change back to the current frame after
+;;                                              ;; opening up the n-m th frame in a series of n new frames
+;;                                              (select-window orig-window))))
 
-(define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
-
-;; keys from within pdf-view-mode
 (require 'pdf-view)
-(define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
-(define-key pdf-view-mode-map (kbd "C-M-, i") 'klin-pdf-make-pdf-frame-invisible)
+;; (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
+;; (define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
 
-;; keys for global pdf operations
-;; - visibility/rearranging
-;; (global-set-key (kbd "C-M-, I") 'make-pdf-frames-invisible-all)
-;; (global-set-key (kbd "C-M-, V") 'make-pdf-frames-visible-all)
+;; -------- org-mode important klin keys
+;; org-mode klin hydra
+(define-key org-mode-map (kbd "C-M-,")
+  (defhydra hydra-klin-org-mode-buffer-menu ()
+    "klin in org"
+    ("o" (lambda () ; multiple-cursors works ootb only with lambdas
+           (interactive)
+           (let* ((orig-window (selected-window))
+                  (orig-buffer (current-buffer))
+                  (orig-frame (selected-frame)))
+             (klin-org-open-link-nearest-to-point)
+             ;; multiple-cursors operates only reliably in the current frame
+             ;; so you have to change back to the current frame after
+             ;; opening up the n-m th frame in a series of n new frames
+             (select-window orig-window))) "open pdf link (klin)")
+    ("l" (lambda ()
+           (interactive)
+           (klin-org-insert-pdf-link)) "insert pdf link (klin)")
+    ("j" (lambda ()
+           (interactive)
+           (org-ref-open-citation-at-point)) "open citation at point")
+    ("w" (lambda ()
+           (interactive)
+           (klin-org-watch-and-insert-scanned-file)) "watch for scan coming in")))
+;; --------
 
-;; - browsing open, opening, and closing open pdfs
-(global-set-key (kbd "C-M-, p") 'klin-pdf-helm-browse-pdf-buffers)
-(global-set-key (kbd "C-M-, P") 'klin-tabs-open-pdfs)
-(global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
+;; -------- globally important klin keys
+;; browsing open, opening, and closing open pdfs
+;; (global-set-key (kbd "C-M-, p") 'klin-pdf-helm-browse-pdf-buffers)
+;; (global-set-key (kbd "C-M-, P") 'klin-tabs-open-pdfs)
+;; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
 
-;; keys for global bibfile adding/checking operations
-(global-set-key (kbd "C-M-, m") 'klin-bibtex-set-bibfiles-for-pdfs)
+;; repeat them in a hydra
+(global-set-key (kbd "C-M-,")
+  (defhydra hydra-klin-from-anywhere ()
+    "klin in general"
+    ("p" (lambda ()
+           (interactive)
+           (klin-pdf-helm-browse-pdf-buffers)) "browse pdf buffers")
+    ("P" (lambda ()
+           (interactive)
+           (klin-tabs-open-pdfs)) "open selection of pdfs in tabs")
+    ("b" (lambda ()
+           (interactive)
+           (klin-bibtex-set-bibfiles-for-pdfs)) "add/edit pdf assoc. bib files")
+    ("k" (lambda ()
+           (interactive)
+           (kill-frame-and-buffers-within)) "kill frame and buffers")))
+;; -----------
 
-;; within bibtex buffers
-(define-key bibtex-mode-map (kbd "C-M-, c") 'klin-bibtex-compare-entry-to-original-bibfile)
-(define-key bibtex-mode-map (kbd "C-M-, o") 'klin-open-pdf-from-bibtex)
+;; ----------- within bibtex buffers
+(define-key bibtex-mode-map (kbd "C-M-,")
+  (defhydra hydra-klin-from-bibtex ()
+    "klin in bibtex"
+    ("i" (lambda ()
+           (interactive)
+           (klin-bibtex-entry-fill-isbn-manually))
+     "isbn download entry")
+    ("f" (lambda ()
+           (interactive)
+           (klin-bibtex-entry-fill-filepath-and-file-page-offset-manually))
+     "fix filepath and file-page-offset")
+    ("c" (lambda ()
+           (interactive)
+           (klin-bibtex-compare-entry-to-original-bibfile))
+     "compare entry (collective <-> pdf-assoc) bibfile")
+    ("p" (lambda ()
+           (interactive)
+           (klin-open-pdf-from-bibtex))
+     "open pdf")))
+;; ----------
 
-;; jump to citation in bibtex buffer
-(define-key org-mode-map (kbd "C-M-, j") 'org-ref-open-citation-at-point)
+;; --------- pdf-view-mode to make pdf pinch/zoom more chrome-like
+(define-key pdf-view-mode-map (kbd "<S-mouse-5>") 'image-forward-hscroll)
+(define-key pdf-view-mode-map (kbd "<S-mouse-4>") 'image-backward-hscroll)
+(define-key pdf-view-mode-map (kbd "<C-mouse-5>") (lambda () (interactive) (pdf-view-enlarge 1.1)))
+(define-key pdf-view-mode-map (kbd "<C-mouse-4>") (lambda () (interactive) (pdf-view-shrink 1.1)))
+;; ---------
 
 (provide 'klin)
 ;;; klin.el ends here

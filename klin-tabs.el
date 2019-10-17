@@ -21,31 +21,6 @@
 
 ;;; Code:
 
-;; --------- tabbar simple grouping customization
-
-;; (defun my-tabbar-buffer-groups-standard ()
-;;   "Return the name of the tab group names the current buffer belongs to.
-;; There are two groups: Emacs buffers (those whose name starts with '*', plus
-;; dired buffers), and the rest.  This works at least with Emacs v24.2 using
-;; tabbar.el v1.7."
-;;   (list (cond
-;;          ((string-equal "*"
-;;                         (substring (buffer-name)
-;;                                    0
-;;                                    1)) "emacs")
-;;          ((and (string-match "pdf$" (buffer-file-name))
-;;                (not (string-match "main\\.pdf$" (buffer-file-name)))) "pdf")
-;;          ((eq major-mode 'dired-mode) "emacs")
-;;          (t "user"))))
-
-;; ;; assign this to gouvern the behaviour of tabbar
-;; (setq tabbar-buffer-groups-function 'my-tabbar-buffer-groups-standard)
-
-;; -----------
-
-
-
-
 ;; -------- copy a buffer to new next tab
 (defun copy-buffer-to-new-next-tab ()
   "Create a new elscreen screen to the right of the current one and open buffer."
@@ -148,30 +123,7 @@ and elscreen-create"
         (find-file (nth ctr pdf-list))
         (setq ctr (+ 1 ctr))
         (pdf-view-fit-page-to-window)))
-
-    ;; (setq screen (progn
-    ;;                (find-file-other-frame pdf-path)
-    ;;                (selected-frame)))
-    ;; (add-to-list 'klin-pdfs-frames
-    ;;              (setq k-p-f
-    ;;                    (make-klin-pdfs-frame :frame frame
-    ;;                                          :tab-buffers nil)))
-
-    ;; (x-focus-frame frame)
-    ;; (find-file pdf-path)
-    ;; add that pdf-path to the klin-pdf-frame's (k-p-f's) tab-buffers list
-    ;; (setf (klin-pdfs-frame-tab-buffers k-p-f)
-    ;;       (append (klin-pdfs-frame-tab-buffers k-p-f) `(,(current-buffer))))
-
-    ;; (add-to-list 'klin-pdfs-frames k-p-f)
-    ;; (split-window-horizontally)
-    ;; (maximize-frame)
-
     pdf-list))
-
-;; if I have a pdf and open it with find-file, I'd like to
-;; clone it if it's already open somewhere and give it another buffer
-;; (only if tabbar-mode is enabled)
 
 ;; TODO: now only find a way to run this
 ;; (since find-file-hook actually doesn't run if the file is already open)

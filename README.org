@@ -13,9 +13,14 @@ Imagine a tabbed pdf viewer (much like in a browser) together with the ability t
 So far, my workflow relies on a few specific packages, among them are elscreen, pdf-tools, org-ref and org-noter. 
 
 ** TODO:
-- make a clickable list to run the bibtex entry filling functions (with help links)
-- make a quick help menu documenting the most useful functions with associated key combination.
+- debug the system by trying to get some work done
+- make a command that lets you select two newly created pdfs scans, display them side by side for you to check, then makes one temporary file out of them using
+#+BEGIN_SRC sh
+pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
+#+END_SRC
+  lets you check it and then lets you save it as a non-temporary file in the scanner folder and simultaneously moves the the two seperate pdfs to trash. 
+- make an integrated workflow to annotate any linked pdf using xournal, so that scanned-in images can be corrected/annotated digitally with e.g. a graphic tablet if necessary.
+- make a graphical pdf editing tool in emacs using pdf-view-mode
 - make a list of features in this README
 - (low importance) make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs
-- make an integrated workflow to annotate any linked pdf using xournal, so that scanned-in images can be corrected/annotated digitally with e.g. a graphic tablet if necessary.
 
