@@ -44,8 +44,15 @@
 (define-key org-mode-map (kbd "C-M-, w") 'klin-org-watch-and-insert-scanned-file)
 (define-key org-mode-map (kbd "C-M-, b c") 'klin-bibtex-jump-to-collective-bib-file)
 
+(define-key org-mode-map (kbd "C-M-, p") ; p: process
+  (defhydra hydra-klin-from-org (:columns 3)
+    "klin: process in org"
+    ("i l o" (lambda ()
+           (interactive)
+           (klin-org-insert-latex-overhead)) "insert LaTeX overhead")))
+
 ;; ---------- presentations with org-mode, latex beamer and inkscape
-(define-key org-mode-map (kbd "C-M-, p i") 'klin-open-in-inkscape)
+(define-key org-mode-map (kbd "C-M-, i") 'klin-open-in-inkscape)
 ;; ----------
 
 ;; --------
@@ -60,12 +67,66 @@
 (define-key bibtex-mode-map (kbd "C-M-, e f f") 'klin-bibtex-entry-fix-filepath-file-page-offset)   ; fix entry file-
 (define-key bibtex-mode-map (kbd "C-M-, e i c") 'klin-bibtex-integrate-bib-entry-into-collective)
 (define-key bibtex-mode-map (kbd "C-M-, o p") 'klin-bibtex-open-pdf-from-bibtex)
-;; -------
+
+;; process next/previous pdf
+;; (define-key bibtex-mode-map (kbd "C-M-, p n") 'klin-bibtex-process-next-pdf)
+;; (define-key bibtex-mode-map (kbd "C-M-, p n") 'klin-bibtex-process-previous-pdf)
+
+;; (global-set-key (kbd "C-M-,") nil)
+(define-key bibtex-mode-map (kbd "C-M-, p")
+  (defhydra hydra-klin-from-bibtex (:columns 3)
+    "klin in bibtex"
+    ("o p c" (lambda ()
+           (interactive)
+           (klin-bibtex-process-open-current-pdf)) "open pdf")
+    ("o p b"
+      (lambda ()
+        (interactive)
+        (klin-bibtex-open-pdf-from-bibtex))
+      "open pdf")
+    ("n" (lambda ()
+           (interactive)
+           (klin-bibtex-process-next-pdf)) "next")
+    ("p" (lambda ()
+           (interactive)
+           (klin-bibtex-process-previous-pdf)) "previous")
+    ("g t i" (lambda ()
+           (interactive)
+           (klin-bibtex-grab-template-isbn)) "grab template from ISBN")
+    ("f p" (lambda ()
+             (interactive)
+             (klin-bibtex-entry-fix-filepath-field)) "fix file-path")
+    ("f o" (lambda ()
+             (interactive)
+             (klin-bibtex-entry-fix-file-page-offset)) "fix file-page-offset")
+    ("c o" (lambda ()
+           (interactive)
+           (klin-bibtex-compare-entry-to-original-bibfile))
+     "comp. coll[..].bib, self.bib")
+    ("e i c" (lambda ()
+               (interactive)
+               (klin-bibtex-integrate-bib-entry-into-collective)) "integrate into collective")
+    ("F" (lambda ()
+           (interactive)
+           (klin-bibtex-process-finish-current-pdf)) "finish current")
+    ("c l" (lambda ()
+           (interactive)
+           (klin-bibtex-process-clean-whole-list)) "clean out list")
+    ("q" (lambda ()
+           (interactive)
+           (if (y-or-n-p (format "Close this frame? "))
+               (delete-frame)
+             (message "Not closing frame"))) "quit frame")
+    ))
+
+;; ----------
 
 ;; -------- globally important klin keys
 ;; browsing open, opening, and closing open pdfs
 (global-set-key (kbd "C-. p") 'klin-pdf-helm-browse-pdf-buffers)
-(global-set-key (kbd "C-. P") 'klin-tabs-open-pdfs);
+(global-set-key (kbd "C-. P") 'klin-tabs-open-pdfs)
+(global-set-key (kbd "C-. b") 'klin-bibtex-set-bibfiles-for-pdfs)
+                                        ;
 ; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
 
 (provide 'klin-bindings)

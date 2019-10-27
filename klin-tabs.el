@@ -121,8 +121,8 @@ and elscreen-create"
   (let* ((pdf-list (helm-read-file-name
                      "Select pdf: "
                      :initial-input (concat
-                                     (expand-file-name "~/Dropbox/2TextBooks")
-                                     "/ .pdf$ ")
+                                     (expand-file-name pdf-library-dir)
+                                     " .pdf$ ")
                      :marked-candidates t))
          (ctr 0)
          frame)

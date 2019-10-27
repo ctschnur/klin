@@ -24,6 +24,7 @@
 
 ;;; Code:
 
+(require 'klin-conventions)
 (require 'klin-utils)
 (require 'klin-org)
 (require 'klin-bibtex)

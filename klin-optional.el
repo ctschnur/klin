@@ -246,9 +246,17 @@ notes file, even if it finds one."
              ;; be the same as `buffer-file-name', but is needed for the truename workaround
              (document-used-path (expand-file-name document-name document-directory))
 
-             ;; CHANGED: THIS LINE IS THE ONLY THING I CHANGED
+             ;; CHANGED:
              ;; (search-names (append org-noter-default-notes-file-names (list (concat document-base ".org"))))
-             (search-names (append org-noter-default-notes-file-names (list (concat "." document-name ".org"))))
+             (search-names
+              (append org-noter-default-notes-file-names
+                      (reverse (list
+                                ;; the order gets flipped around in the selection dialog,
+                                ;; that's why I'm flipping it here, too
+                                (klin-utils-pdf-get-org-notes-file-path document-base)
+                                (concat document-base ".org")
+                                (concat "." document-base ".org")
+                                ))))
              notes-files-annotating     ; List of files annotating document
              notes-files                ; List of found notes files (annotating or not)
 
@@ -282,6 +290,9 @@ notes file, even if it finds one."
                                                      search-names nil t))
                    list-of-possible-targets
                    target)
+
+              ;; CHANGED: after completing read, ask to create the path if it's not already there
+              (klin-utils-ask-to-create-dir (file-name-directory notes-file-name))
 
               ;; NOTE(nox): Create list of targets from current path
               (catch 'break

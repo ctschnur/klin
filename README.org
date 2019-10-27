@@ -11,8 +11,10 @@ So far, my workflow relies on a few specific packages, among them are elscreen, 
 
 ** Ideas: 
 *** TODO:
+- make helm-source for opening linked pdfs in references.bib together in new elscreen frame.
 - make a seperate subfolder for each pdf's notes file, that has a bibtex file associated to it. If you want to render it to latex, there will be a lot of files created in this subfolder. 
 - Debug the system by trying to get some work done. 
+- Detach and attach window from anywhere
 - make elscreen create new buffers to fill in the gap after killing an elscreen buffer with a number in between minimum and maximum
 - make a list of features in this README
 

@@ -1,8 +1,8 @@
-;;; klin-hydras.el --- if you use hydras, define them here  -*- lexical-binding: t; -*-
+;;; klin-conventions.el --- Conventions for the klin package  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
 
-;; Author: chris <chris@chris-tower>
+;; Author: chris <chris@chris-thinkpad>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -24,18 +24,7 @@
 
 ;;; Code:
 
+(defvar pdf-library-dir (expand-file-name "~/Dropbox/2TextBooks/"))
 
-
-(require 'klin-utils)
-(require 'klin-org)
-(require 'klin-bibtex)
-(require 'klin-optional)
-(require 'klin-tabs)
-(require 'klin-pdf-frames)
-
-(require 'org)
-(require 'hydra)
-(require 'pdf-view)
-
-(provide 'klin-hydras)
-;;; klin-hydras.el ends here
+(provide 'klin-conventions)
+;;; klin-conventions.el ends here

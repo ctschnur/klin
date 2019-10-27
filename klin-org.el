@@ -38,10 +38,14 @@
   (let* (; (linktyp (nth 0 mylist))
          (bibtexkey (nth 1 mylist))
          (description (nth 2 mylist))
-         page-str)
-    (string-match "p\\.\\s-*\\([0-9]*\\)" description)
+         page-str
+         (collective-bib-file (car (klin-org-org-ref-find-bibliography-fullfilenames))))
+    (string-match "p\\.\\s-*\\([-0-9]*\\)" description)
     (setq page-str (match-string 1 description))
-    (klin-bibtex-open-pdf-from-bibtex bibtexkey (string-to-number page-str))))
+
+    ;; now go into the bibtex buffer and execute from there
+    (with-bib-file-buffer collective-bib-file
+      (klin-bibtex-open-pdf-from-bibtex bibtexkey (string-to-number page-str)))))
 
 (defun klin-org-get-link-text-at-point ()
   "Get the text (description) of the org link at point."
@@ -243,12 +247,39 @@ By default, don't open a new frame, and maximize the window."
 (defun klin-org-create-and-add-bibliography (&optional bib-path)
   "In an org mode file, create and add a bibliography at BIB-PATH."
   (interactive)
-  (setq bib-path (helm-read-file-name "Create and/or reference a bib file: "
-                                      :initial-input (concat (file-name-directory (buffer-file-name))
-                                                             ;; "."  ; two dots seem excessive
-                                                             (file-name-base (buffer-file-name))
-                                                             ".bib")))
-  ;; insert it at the top as a latex reference
+  (unless bib-path
+    (setq bib-path (helm-read-file-name "Create and/or reference a bib file: "
+                                        :initial-input (concat (file-name-directory (buffer-file-name))
+                                                               (file-name-base (buffer-file-name))
+                                                               ".bib"))))
+
+  ;; touch the file in a possibly not already created directory
+  (with-temp-buffer
+    (klin-utils-ask-to-create-dir (file-name-directory bib-path))
+    (find-file bib-path)
+    (save-buffer)
+    (kill-buffer))
+
+  (if (file-exists-p bib-path)
+      (progn
+        ;; insert it at the top as a latex reference
+        (goto-char (point-min))
+        (let ((inhibit-read-only t))
+          ;; use LATEX_HEADER_EXTRA to specify that this instruction
+          ;; is to be ignored by latex fragement preview
+          ;; else, there is a problem with the preview: if you
+          ;; add sth. else than \usepackage{example}, e.g.
+          ;; \sthelse{example} it renders
+          ;; "example" in front of every latex fragment
+          (insert "#+LATEX_HEADER_EXTRA: \\addbibresource{"
+                  (file-name-base bib-path)
+                  ".bib}\n")))
+    (error "File wasn't created")))
+
+(defun klin-org-insert-latex-overhead ()
+  "Inserts the latex overhead into an org-mode buffer.
+So that it can be compiled into a latex file with references."
+  (interactive)
   (goto-char (point-min))
   (let ((inhibit-read-only t))
     ;; use LATEX_HEADER_EXTRA to specify that this instruction
@@ -257,9 +288,15 @@ By default, don't open a new frame, and maximize the window."
     ;; add sth. else than \usepackage{example}, e.g.
     ;; \sthelse{example} it renders
     ;; "example" in front of every latex fragment
-    (insert "#+LATEX_HEADER_EXTRA: \\addbibresource{"
-            (file-name-base bib-path)
-            ".bib}\n")))
+    (insert
+     "#+LATEX_HEADER: \\usepackage[backend=biber, style=alphabetic, sorting=nyt]{biblatex}
+#+LATEX_HEADER: \\usepackage[ngerman]{babel}
+#+LATEX_HEADER: \\usepackage[margin=1.15in]{geometry}
+#+OPTIONS: toc:nil
+#+BEGIN_EXPORT latex
+\\today
+#+END_EXPORT
+")))
 
 (defun klin-org-insert-pdf-link ()
   "Insert a formatted link to a pdf."
@@ -273,9 +310,10 @@ By default, don't open a new frame, and maximize the window."
   (let* ((collective-bibtex-filepath
           (let* ((bib-path
                   (car (klin-org-org-ref-find-bibliography-fullfilenames))))
-            (unless bib-path
-              ;; ask to create and add a bibliography
-              (klin-org-create-and-add-bibliography bib-path)
+            (if (or (not bib-path) (not (file-exists-p bib-path)))
+                (progn
+                  ;; ask to create and add a bibliography
+                  (klin-org-create-and-add-bibliography bib-path))
               )
             bib-path))
          (reduced-pdf-filepath
@@ -288,6 +326,9 @@ By default, don't open a new frame, and maximize the window."
          print-page
          ;; link-text
          pdf-filepath-in-collective-bibfile-p)
+
+    ;; parse the collective bib file for this filename
+    ;; and get other stuff like key, and page offset
     (with-temp-buffer
       (insert-file-contents collective-bibtex-filepath)
       (bibtex-mode)
@@ -310,8 +351,7 @@ By default, don't open a new frame, and maximize the window."
                         "[cite:" key "]"
                         "[p." (number-to-string
                                print-page) "]"
-                               "]"))
-      (insert "[[cite]]"))))
+                               "]")))))
 
 
 ;; --------- jumping into bib file

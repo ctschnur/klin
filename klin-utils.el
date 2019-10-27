@@ -27,6 +27,75 @@
 (require 'parsebib)
 (require 's)
 
+(defun klin-utils-pdf-get-ancillary-dir-path (pdf-filepath)
+  "Get the ancillary directory for a pdf."
+  ;; setting pdf-filepath
+  ;; (if pdf-filepath
+  ;;     (progn
+  ;;       (unless (file-exists-p pdf-filepath)
+  ;;         (error "The pdf file doesn't exist."))
+  ;;       (if (file-exists-p (concat pdf-filepath)))
+  ;;       (setq pdf-filepath (expand-file-name pdf-filepath))
+  ;;       )
+  ;;   (if (string-equal (file-name-extension (buffer-file-name))
+  ;;                     "pdf")
+  ;;       (setq pdf-filepath (buffer-file-name))
+  ;;     (error "Unable to determine pdf-filepath")))
+  (concat (file-name-directory pdf-filepath)
+          (file-name-as-directory (file-name-base pdf-filepath)))
+  )
+
+(defun klin-utils-pdf-get-notes-dir-path (pdf-filepath)
+  "From within a pdf buffer, or given a PDF-FILEPATH, get the relative notes file path.
+If ABSOLUTE is non-nil, get the absolute path.
+The directory structure looks like this:
+
+this.pdf
+this/ (ancillary dir)
+     |-> notes/
+           |-> notes.org
+               notes.bib (automatically created when trying to cite sth in notes.org)
+               graphics/
+         self.bib"
+  ;; ;; setting pdf-filepath
+  ;; (if pdf-filepath
+  ;;     (setq pdf-filepath (expand-file-name pdf-filepath))
+  ;;   (if (string-equal (file-name-extension (buffer-file-name))
+  ;;                     "pdf")
+  ;;       (setq pdf-filepath (buffer-file-name))
+  ;;     (error "Unable to determine pdf-filepath")))
+
+  (file-name-as-directory
+   (concat
+    (klin-utils-pdf-get-ancillary-dir-path pdf-filepath)
+    "notes"))
+  )
+
+(defun klin-utils-pdf-get-self-bib-file-path (pdf-filepath)
+  (concat
+   (klin-utils-pdf-get-ancillary-dir-path pdf-filepath)
+   "self.bib")
+  )
+
+(defun klin-utils-pdf-get-org-notes-file-path (pdf-filepath)
+  (concat
+   (klin-utils-pdf-get-notes-dir-path pdf-filepath)
+   "notes.org")
+  )
+
+;; (defun klin-utils-pdf-get-org-notes-bibliography-file-path (org-notes-file-path)
+;;   (concat
+;;    (file-name-directory org-notes-file-path)
+;;    "references.bib"))
+
+(defun klin-utils-ask-to-create-dir (directory)
+  "Only if it's not already a directory."
+  (setq directory (file-name-as-directory directory))
+  (unless (file-exists-p directory)
+    (setq directory (helm-read-file-name "Create directory: "
+                                         :initial-input directory))
+    (make-directory directory 'parents)))
+
 (defun klin-utils-isbn-to-bibtex-ottobib-insert (isbn)
   "Insert ottobib bib entry suggestion for ISBN."
   (interactive "sISBN: ")

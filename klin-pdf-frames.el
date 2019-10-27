@@ -75,9 +75,11 @@ Run this function from a pdfview buffer."
 (defun open-pdf-document-new-frame (&optional filepath page)
   "Open the pdf file at FILEPATH in a new frame on a certain PAGE."
   (unless page (setq page 1))
-  (progn
-    (find-file-other-frame filepath)
-    (pdf-view-goto-page page)))
+  (let* ((new-frame (make-frame)))
+    (with-selected-frame new-frame
+      (find-file-existing filepath)
+      (pdf-view-goto-page page))
+    new-frame))
 
 (defun open-pdf-document-other-frame-or-window
     (filepath page &optional maximize frame-or-window)
