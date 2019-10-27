@@ -148,7 +148,7 @@ There are two modes of operation. You may create the session from:
 - The Org notes file
 - The document to be annotated (PDF, EPUB, ...)
 
-- Creating the session from notes file -----------------------------------------
+- Creating the session from notes file -----------------------
 This will open a session for taking your notes, with indirect
 buffers to the document and the notes side by side. Your current
 window configuration won't be changed, because this opens in a
@@ -169,8 +169,8 @@ With a prefix number ARG:
 -     Equal to 0: Create session with `org-noter-always-create-frame' toggled
 -    Less than 0: Open the folder containing the document
 
-- Creating the session from the document ---------------------------------------
-pThis will try to find a notes file in any of the parent folders.
+- Creating the session from the document ----------------------
+This will try to find a notes file in any of the parent folders.
 The names it will search for are defined in `org-noter-default-notes-file-names'.
 It will also try to find a notes file with the same name as the
 document, giving it the maximum priority.

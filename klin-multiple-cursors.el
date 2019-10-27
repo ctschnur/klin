@@ -1,4 +1,4 @@
-;;; klin.el --- key bindings for klin functions in different modes  -*- lexical-binding: t; -*-
+;;; klin-multiple-cursors.el --- integration with multiple-cursors  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
 
@@ -20,7 +20,7 @@
 
 ;;; Commentary:
 
-;; some commentary, magit test
+;;
 
 ;;; Code:
 
@@ -30,11 +30,18 @@
 (require 'klin-optional)
 (require 'klin-tabs)
 (require 'klin-pdf-frames)
-(require 'klin-presentations)
 
-;; (require 'klin-hydras)
-(require 'klin-bindings)
-;; (require 'klin-multiple-cursors)
+(define-key org-mode-map (kbd "C-M-, o")
+  (lambda () ; multiple-cursors works ootb only with lambdas
+    (interactive)
+    (let* ((orig-window (selected-window))
+           (orig-buffer (current-buffer))
+           (orig-frame (selected-frame)))
+      (klin-org-open-link-nearest-to-point)
+      ;; multiple-cursors operates only reliably in the current frame
+      ;; so you have to change back to the current frame after
+      ;; opening up the n-m th frame in a series of n new frames
+      (select-window orig-window))))
 
-(provide 'klin)
-;;; klin.el ends here
+(provide 'klin-multiple-cursors)
+;;; klin-multiple-cursors.el ends here

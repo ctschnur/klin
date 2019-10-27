@@ -25,8 +25,8 @@
 
 ;;; Code:
 
-(add-to-list 'load-path (expand-file-name "~/.emacs.d/lisp/"))
 (require 'frame-cmds)
+
 (require 'helm)
 (require 'pdf-view)
 

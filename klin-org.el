@@ -41,7 +41,7 @@
          page-str)
     (string-match "p\\.\\s-*\\([0-9]*\\)" description)
     (setq page-str (match-string 1 description))
-    (klin-open-pdf-from-bibtex bibtexkey (string-to-number page-str))))
+    (klin-bibtex-open-pdf-from-bibtex bibtexkey (string-to-number page-str))))
 
 (defun klin-org-get-link-text-at-point ()
   "Get the text (description) of the org link at point."
@@ -49,6 +49,19 @@
     (if (eq (car (org-element-context)) 'link)
         (buffer-substring-no-properties (org-element-property :begin type)
                                         (org-element-property :end type)))))
+
+(require 'dash)
+
+(defun cs/get-value-with-lowest-abs-value (list)
+  "Get value with lowset absolute value in LIST."
+  (let* ((mylist list)
+         (cur-min-abs-val (car mylist))
+         (ctr 0))
+    (while (< ctr (length mylist))
+      (if (< (abs (nth ctr mylist)) cur-min-abs-val)
+          (setq cur-min-abs-val (nth ctr mylist)))
+      (setq ctr (+ ctr 1)))
+    cur-min-abs-val))
 
 (defun klin-org-get-link-data-nearest-to-point ()
   "Get the link info list nearets to point."
@@ -92,6 +105,52 @@
     (list (match-string 1 nearestlink-string)
           (match-string 2 nearestlink-string)
           (match-string 3 nearestlink-string))))
+
+;; (defun klin-org-get-link-data-nearest-to-point ()
+;;   "Get the link info list nearets to point."
+;;   (let* (; check if at point there is a link
+;;          (link-regexs (list
+;;                        '(re-klin
+;;                         "\\[\\[\\(.*?\\):\\(.*?\\)\\]\\[\\(.*?\\)\\]\\]")
+;;                        ;; '(re-no-type
+;;                        ;;  "\\[\\[\\(.*?\\)\\]\\[\\(.*?\\)\\]\\]")
+;;                        ))
+;;          (nearestlink-string (klin-org-get-link-text-at-point))
+;;          (cur-pos (point))
+;;          nextlink-match-beginning-pos
+;;          nextlink-match-string
+;;          prevlink-match-end-pos
+;;          prevlink-match-string
+;;          delta)
+
+;;     ;; if it's not at point, look for the closest, then set point to that
+;;     (unless nearestlink-string
+;;       ;; do the re-search-forward and get a list of delta-pos
+;;       (setq delta (cs/get-value-with-lowest-abs-value
+;;                    (mapcar
+;;                     (lambda (regex-type-regex-tuple)
+;;                       (remove nil
+;;                               (let* ((regex-type (nth 0 regex-type-regex-tuple))
+;;                                      (regex (nth 1 regex-type-regex-tuple)))
+;;                                 (cs/get-value-with-lowest-abs-value
+;;                                  (remove nil
+;;                                          (list (save-excursion
+;;                                                  (re-search-forward regex nil t 1)
+;;                                                  (setq nextlink-match-beginning-pos (match-beginning 0))
+;;                                                  (- nextlink-match-beginning-pos cur-pos))
+;;                                                (save-excursion
+;;                                                  (re-search-backward regex nil t 1)
+;;                                                  (setq prevlink-match-end-pos (match-end 0))
+;;                                                  (- prevlink-match-end-pos cur-pos))))))))
+;;                     link-regexs)))
+;;       ;; go to that delta and match the string
+;;       )
+
+;;     ;; apply the regex again to the nearest string and copy the data
+;;     (string-match re-klin nearestlink-string)
+;;     (list (match-string 1 nearestlink-string)
+;;           (match-string 2 nearestlink-string)
+;;           (match-string 3 nearestlink-string))))
 
 
 (defun klin-org-org-ref-find-bibliography-fullfilenames (&optional org-buffer)
@@ -181,6 +240,27 @@ By default, don't open a new frame, and maximize the window."
   (interactive)
   (klin-org-open-link (klin-org-get-link-data-nearest-to-point)))
 
+(defun klin-org-create-and-add-bibliography (&optional bib-path)
+  "In an org mode file, create and add a bibliography at BIB-PATH."
+  (interactive)
+  (setq bib-path (helm-read-file-name "Create and/or reference a bib file: "
+                                      :initial-input (concat (file-name-directory (buffer-file-name))
+                                                             ;; "."  ; two dots seem excessive
+                                                             (file-name-base (buffer-file-name))
+                                                             ".bib")))
+  ;; insert it at the top as a latex reference
+  (goto-char (point-min))
+  (let ((inhibit-read-only t))
+    ;; use LATEX_HEADER_EXTRA to specify that this instruction
+    ;; is to be ignored by latex fragement preview
+    ;; else, there is a problem with the preview: if you
+    ;; add sth. else than \usepackage{example}, e.g.
+    ;; \sthelse{example} it renders
+    ;; "example" in front of every latex fragment
+    (insert "#+LATEX_HEADER_EXTRA: \\addbibresource{"
+            (file-name-base bib-path)
+            ".bib}\n")))
+
 (defun klin-org-insert-pdf-link ()
   "Insert a formatted link to a pdf."
   (interactive)
@@ -195,20 +275,8 @@ By default, don't open a new frame, and maximize the window."
                   (car (klin-org-org-ref-find-bibliography-fullfilenames))))
             (unless bib-path
               ;; ask to create and add a bibliography
-              (setq bib-path
-                    (helm-read-file-name "No bib file found! Create/reference one: "
-                                         :initial-input
-                                         (concat (file-name-directory (buffer-file-name))
-                                                 ;; "."  ; two dots seem excessive
-                                                 (file-name-base (buffer-file-name))
-                                                 ".bib")))
-
-              ;; insert it at the top as a latex reference
-              (goto-char (point-min))
-              (let ((inhibit-read-only t))
-                (insert "#+LATEX_HEADER: \\addbibresource{"
-                        (file-name-base bib-path)
-                        ".bib}\n")))
+              (klin-org-create-and-add-bibliography bib-path)
+              )
             bib-path))
          (reduced-pdf-filepath
           (klin-utils-get-reduced-file-path (klin-pdf-link-data-pdf-filepath
@@ -244,6 +312,30 @@ By default, don't open a new frame, and maximize the window."
                                print-page) "]"
                                "]"))
       (insert "[[cite]]"))))
+
+
+;; --------- jumping into bib file
+
+(defun klin-org-action-jump-to-collective (candidate)
+  "Jump to file CANDIDATE."
+  ;; debugging
+  ;; (message "hello")
+  ;; (print candidate)
+  ;; (print (car candidate))
+  (find-file (car candidate))
+  )
+
+(defvar helm-source-klin-bibtex-jump-to-collective
+      '((name . "jump to collective bibtex file:")
+        (candidates . klin-bibtex-get-collective-bibtex-files)
+        (action . (lambda (candidate)
+                    (klin-org-action-jump-to-collective candidate)))))
+
+(defun klin-bibtex-jump-to-collective-bib-file ()
+  "Jump to collective bibtex file."
+  (interactive)
+  (helm :sources '(helm-source-klin-bibtex-jump-to-collective)))
+
 
 ;; --------
 
