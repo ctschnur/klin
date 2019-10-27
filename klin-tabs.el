@@ -21,7 +21,20 @@
 
 ;;; Code:
 
-;; -------- copy a buffer to new next tab
+;; -------- detach window to somewhere
+
+;; (defvar klin-detatched-buffer nil
+;;   "This holds the detatched window's buffer.")
+
+;; (defun klin-detatch-buffer-close-window (&optional ARG)
+;;   "Copy a window's buffer and close the window.
+;; Then, it is ready to be inserted somewhere else.
+;; With non-nil ARG, the window should be popped up as a new frame."
+;;   (interactive)
+
+;;   )
+
+;; ------------ pop buffer to new next tab
 (defun copy-buffer-to-new-next-tab ()
   "Create a new elscreen screen to the right of the current one and open buffer."
   (interactive)
@@ -32,6 +45,29 @@
     (elscreen-move-tab-to-position (+ original-screen-pos
                                       1)))
   )
+;; ------------
+;; ------------ pop buffer into new frame
+(defun pop-buffer-into-new-frame ()
+  "Pop buffer into new frame."
+  (let* ((this-frame (selected-frame))
+         (buf (current-buffer))
+         (this-window (selected-window))
+         (new-frame (make-frame)))
+    (with-selected-frame new-frame
+      (switch-to-buffer buf))
+    (with-selected-frame this-frame
+      (delete-window this-window))))
+;; ------------
+;; ------------ pop buffer into new elscreen tab in other frame
+(defun pop-buffer-into-new-elscreen-tab-in-other-frame ()
+  "TODO: not finished.
+Pop buffer into new elscreen tab in other frame."
+    (defvar helm-source-pop-into-new-elscreen-tab-in-other-frame '((name . "jump to frame:")
+                                                       (candidates . klin-bibtex-get-collective-bibtex-files)
+                                                       (action . (lambda (candidate)
+                                                                   (klin-org-action-jump-to-collective candidate)))))
+  )
+;; ------------
 ;; --------
 
 (defun elscreen-get-next-higher-screen-pos ()
@@ -74,17 +110,6 @@
     (cond
      ((< target-pos (elscreen-get-current-screen)) (elscreen-move-tab-left))
      ((> target-pos (elscreen-get-current-screen)) (elscreen-move-tab-right)))))
-
-;; Key sequences "C-S-PgUp" and "C-S-PgDn" move the current tab to the left and to the right.
-;; (global-set-key (kbd "C-S-<prior>") 'elscreen-move-tab-left)
-;; (global-set-key (kbd "C-S-<next>") 'elscreen-move-tab-right)
-(global-set-key (kbd "<C-M-S-prior>") 'elscreen-move-tab-left)
-(global-set-key (kbd "<C-M-S-next>") 'elscreen-move-tab-right)
-
-;; visiting neighboring tabs
-(global-set-key (kbd "<C-M-prior>") 'elscreen-previous)
-(global-set-key (kbd "<C-M-next>") 'elscreen-next)
-
 
 (defun klin-tabs-open-pdfs (&optional arg)
   "Open a pdf from Library.
@@ -194,7 +219,7 @@ same buffer will always update that buffer, no matter what."
     (current-buffer)
     (delete-window (selected-window)) ;; goes back to last window
     ;; (other-window-or-frame -1)
-      ;; (switch-to-buffer clone-buffer)
+    ;; (switch-to-buffer clone-buffer)
 
     ;; (switch-to-buffer clone-buffer)
     ;; now do the refreshing thing with normal mode, etc...

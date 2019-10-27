@@ -1,6 +1,3 @@
-#+LATEX_HEADER: \addbibresource{bibliography.bib} 
-#+LATEX_HEADER: \addbibresource{test.bib} 
-
 * klin - functionality for my science writing workflow
 ** misc notes
 The name /klin/ is a one-step rotation of the word /link/. 
@@ -10,17 +7,71 @@ I intend to do all structuring of arguments/researching of topics in e-books fro
 
 Imagine a tabbed pdf viewer (much like in a browser) together with the ability to via simple key commands make cross-references encoded in plain text, and pull together all your sources into an org-mode document to produce some structured writing about the problem at hand, all in one place, pulling together all the information necessary and making it accessible inside a powerful dynamic environment like emacs.
 
-So far, my workflow relies on a few specific packages, among them are elscreen, pdf-tools, org-ref and org-noter. 
+So far, my workflow relies on a few specific packages, among them are elscreen, pdf-tools, org-ref, org-noter and hydra. 
 
-** TODO:
-- debug the system by trying to get some work done
+** Ideas: 
+*** TODO:
+- make a seperate subfolder for each pdf's notes file, that has a bibtex file associated to it. If you want to render it to latex, there will be a lot of files created in this subfolder. 
+- Debug the system by trying to get some work done. 
+- make elscreen create new buffers to fill in the gap after killing an elscreen buffer with a number in between minimum and maximum
+- make a list of features in this README
+
+*** Delayed/dismissed TODOs: 
 - make a command that lets you select two newly created pdfs scans, display them side by side for you to check, then makes one temporary file out of them using
 #+BEGIN_SRC sh
 pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
 #+END_SRC
   lets you check it and then lets you save it as a non-temporary file in the scanner folder and simultaneously moves the the two seperate pdfs to trash. 
+- TODO: try to do the following: define a variable holding the hydra heads of common org and one holding the hydra heads of org-noter
+- then, let each mode have it's own hydra, and evaluate (eval '(...)) org-mode's hydra in org-noter's hydra, so that the hint changes dynamically
 - make an integrated workflow to annotate any linked pdf using xournal, so that scanned-in images can be corrected/annotated digitally with e.g. a graphic tablet if necessary.
-- make a graphical pdf editing tool in emacs using pdf-view-mode
-- make a list of features in this README
-- (low importance) make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs
+- (low importance) make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs- make a graphical pdf editing tool in emacs using pdf-view-mode
 
+*** possible optimizations: 
+**** implement better conditional hydras (in general)
+#+BEGIN_SRC emacs-lisp
+;; create cl-defstruct
+;; with base map (e.g. org-mode-map or global-map)
+;; with prefix
+;; with set of (condition keybinding function)
+
+;; then, define a hydra with
+;; with :hint nil
+;; with base-map as (eval base-map)
+;; with all hydra heads (disrespecting the condition)
+
+;; then, set the hint of that hydra name
+;; collect the ones whose conditions fit in one list -> set them to their prefixes
+;; and the ones whose conditions don't fit in another -> set them to nil
+
+;; (require 'hydra)
+;; ;; as in documentation hydra
+;; (defhydra hydra-on (org-mode-map "C-c" :hint nil)
+;;   "conditional not-messing-with-prefix hydra"
+;;   ("j" next-line)
+;;   ("k" previous-line)
+;;   ;; ("n" next-line)
+;;   ;; ("p" previous-line)
+;;   )
+
+;; (setq hydra-on/hint
+;;       '(if (evenp (line-number-at-pos))
+;;         (prog1 (eval
+;;                 (hydra--format nil '(nil nil :hint nil)
+;;                                (concat "\nhydra:"
+;;                                        " _j_ " "open citation at point"
+;;                                        " _k_ " "watch for scan coming in")
+;;                                hydra-on/heads))
+
+;;           (define-key hydra-on/keymap "C-c n" nil)
+;;           (define-key hydra-on/keymap "C-c p" nil)
+;;           (define-key hydra-on/keymap "C-c j" 'hydra-on/next-line)
+;;           (define-key hydra-on/keymap "C-c k" 'hydra-on/previous-line))
+;;         (prog1 (eval
+;;                 (hydra--format nil '(nil nil :hint nil)
+;;                                "\nodd: _n_ _p_\n" hydra-on/heads))
+;;           (define-key hydra-on/keymap "C-c j" nil)
+;;           (define-key hydra-on/keymap "C-c k" nil)
+;;           (define-key hydra-on/keymap "C-c n" 'hydra-on/next-line)
+;;           (define-key hydra-on/keymap "C-c p" 'hydra-on/previous-line))))
+#+END_SRC

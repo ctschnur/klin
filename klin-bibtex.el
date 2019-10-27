@@ -195,7 +195,7 @@ is given, search in the current bib buffer."
 
 ;; ---------- lower complexity interactive functions
 
-(defun klin-open-pdf-from-bibtex (&optional bibtexkey page)
+(defun klin-bibtex-open-pdf-from-bibtex (&optional bibtexkey page)
   "Open BIBTEXKEY's pdf file on PAGE, respecting page offset."
   (interactive)
   (unless bibtexkey
@@ -208,11 +208,14 @@ is given, search in the current bib buffer."
     ;; (open-pdf-document-new-frame filepath page)
     (open-pdf-document-other-frame-or-window filepath page nil -1)))
 
-(defun klin-bibtex-ask-for-isbn-suggestion-and-insert ()
-  "Fill an empty bib file with isbn template."
+(defun klin-bibtex-grab-template-isbn (&optional isbn buf-to-return-to)
+  "Fill an empty bib file with ISBN template an switch to buffer PDF-BUF-TO-RETURN-TO."
   (interactive)
-  (let* ((isbn (read-string "ISBN? (return to continue):")))
-    (isbn-to-bibtex isbn (buffer-file-name (current-buffer)))))
+  (unless isbn
+    (setq isbn (read-string "ISBN? (return to continue):")))
+  (if buf-to-return-to
+      (other-buffer buf-to-return-to))
+  (isbn-to-bibtex isbn (buffer-file-name (current-buffer))))
 
 ;; ----------
 
@@ -342,11 +345,13 @@ Removes the file at INTENDED-BIBFILE-PATH if at the end, it remains empty."
       ;; else: propose the opportunity to manually run isbn-to-bibtex
       ;; to get a suggestion
       (with-help-window (help-buffer)
-        (princ (concat "you could run now: \n"
-                       "klin-bibtex-entry-fill-isbn-manually \n"
-                       "klin-bibtex-entry-fill-filepath-and-file-page-offset-manually \n"
-                       "klin-integrate-bibtex-entry-into-collective-file")))
-      ;; you could run e.g. klin-bibtex-ask-for-isbn-suggestion-and-insert ()
+        (princ (concat "TODO: \n"
+                       "- download bibtex entry form isbn (if possible)\n"
+                       "  - get isbn template (if possible) (copy)\n"
+                       "  - ask for isbn (paste) \n"
+                       "- set file path and file page offset fields of entry\n"
+                       "- integrate entry into collective bibtex file (optional)")))
+      ;; you could run e.g. klin-bibtex-grab-template-isbn ()
       )
     ;; for consecutive processing of individual bibtex files assoc. to single pdfs:
     ;; change the frame value assoc to the current intended-bibfile-path
@@ -391,23 +396,24 @@ associated to it."
                                       " -> "
                                       (nth 1 tup))
                               (nth 1 tup)))
-          (reverse
-           (-flatten-n 1 (remove-if (lambda (x)
-                                      (eq x nil))
-                                    (mapcar (lambda (buffer)
-                                              (with-current-buffer buffer
-                                                (when (buffer-file-name)
-                                                  (mapcar (lambda (bibfilepath)
-                                                            (list (buffer-file-name)
-                                                                  bibfilepath))
-                                                          (klin-org-org-ref-find-bibliography-fullfilenames)))))
-                                            (remove-if (lambda (x)
-                                                         (eq x nil))
-                                                       (mapcar (lambda (buffer)
-                                                                 (with-current-buffer buffer
-                                                                   (if (eq major-mode 'org-mode)
-                                                                       (current-buffer))))
-                                                               (buffer-list)))))))))
+          (delq nil (delete-dups
+                     (reverse
+                      (-flatten-n 1 (remove-if (lambda (x)
+                                                 (eq x nil))
+                                               (mapcar (lambda (buffer)
+                                                         (with-current-buffer buffer
+                                                           (when (buffer-file-name)
+                                                             (mapcar (lambda (bibfilepath)
+                                                                       (list (buffer-file-name)
+                                                                             bibfilepath))
+                                                                     (klin-org-org-ref-find-bibliography-fullfilenames)))))
+                                                       (remove-if (lambda (x)
+                                                                    (eq x nil))
+                                                                  (mapcar (lambda (buffer)
+                                                                            (with-current-buffer buffer
+                                                                              (if (eq major-mode 'org-mode)
+                                                                                  (current-buffer))))
+                                                                          (buffer-list)))))))))))
 
 (defvar helm-source-klin-bibtex-entry-into-collective
       '((name . "integrate bibtex entry into collective bibtex file:")
@@ -421,8 +427,6 @@ associated to it."
   (helm :sources '(helm-source-klin-bibtex-entry-into-collective)))
 
 ;; ---------
-
-;; --------- jumping in
 
 ;; --------- setting associated bibfiles for pdfs
 
@@ -458,7 +462,7 @@ associated to it."
 
 ;; --------- interactive filling and fixing
 
-(defun klin-bibtex-entry-fill-isbn-manually ()
+(defun klin-bibtex-entry-open-pdf ()
   "Assist the filling in of pdf-file related fields in .bib entry."
   (interactive)
 
@@ -475,9 +479,18 @@ associated to it."
     ;; now that we have the file path, open the pdf to find the isbn
     (message "We'll open up the pdf now. You could try to find the isbn.")
     (sleep-for 2)
-    (find-file-other-frame pdf-filepath)))
+    ;; (split-window)
+    ;; (other-window 1)
+    (find-file pdf-filepath)
+    (with-help-window (help-buffer)
+        (princ (concat "TODO: \n"
+                       "- search the isbn\n"
+                       "- copy it\n"
+                       "- return to bib buffer and ask for isbn (key command)\n")))
+    (message "Please search and highlight the ISBN.")
+    ))
 
-(defun klin-bibtex-entry-fill-filepath-and-file-page-offset-manually ()
+(defun klin-bibtex-entry-fix-filepath-file-page-offset ()
   "Assists the user in setting pdf-related data fields in bibtex file."
   (interactive)
   (let* ((filepath-field-str
