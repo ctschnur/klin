@@ -39,13 +39,23 @@
 
 ;; -------- org-mode important klin keys
 (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
-(define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
+;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
 (define-key org-mode-map (kbd "C-M-, b j") 'org-ref-open-citation-at-point)
 (define-key org-mode-map (kbd "C-M-, w") 'klin-org-watch-and-insert-scanned-file)
 (define-key org-mode-map (kbd "C-M-, b c") 'klin-bibtex-jump-to-collective-bib-file)
 
+(define-key org-mode-map (kbd "C-M-, o") ; p: process
+  (defhydra hydra-klin-open-from-org (:columns 3)
+    "klin: open from org"
+    ("o" (lambda ()
+           (interactive)
+           (klin-org-open-link-nearest-to-point)) "Open klin link")
+    ("b p" (lambda ()
+           (interactive)
+           (klin-org-open-bibliographys-pdfs)) "Open bibliography PDFs")))
+
 (define-key org-mode-map (kbd "C-M-, p") ; p: process
-  (defhydra hydra-klin-from-org (:columns 3)
+  (defhydra hydra-klin-process-from-org (:columns 3)
     "klin: process in org"
     ("i l o" (lambda ()
            (interactive)

@@ -111,36 +111,15 @@ Pop buffer into new elscreen tab in other frame."
      ((< target-pos (elscreen-get-current-screen)) (elscreen-move-tab-left))
      ((> target-pos (elscreen-get-current-screen)) (elscreen-move-tab-right)))))
 
-(defun klin-tabs-open-pdfs (&optional arg)
-  "Open a pdf from Library.
-If arg is non-nil, open all pdfs in the current
-elscreen frame.
-Chrome-like tabs are best done with elscree
-and elscreen-create"
+
+(defun klin-tabs-open-pdfs-in-new-frame (pdf-list)
+  "Open PDF-LIST in chrome-like tabs with elscreen.
+Ootb limited to only 10 tabs, but probably configurable."
   (interactive)
-  (let* ((pdf-list (helm-read-file-name
-                     "Select pdf: "
-                     :initial-input (concat
-                                     (expand-file-name pdf-library-dir)
-                                     " .pdf$ ")
-                     :marked-candidates t))
-         (ctr 0)
+  (let* ((ctr 0)
          frame)
 
-    (unless arg
-      (setq frame (make-frame)))
-
-    ;; this doesn't seem to work when you open up a
-    ;; completely new frame. Maybe you can do something
-    ;; with make-frame-functions
-
-    ;; or, try to just open up a new frame
-    ;; at the beginning of running this function ... (~)
-
-    ;; actually, this worked, try that:
-    ;; (let ((my-cur-file (buffer-file-name))) (with-selected-frame (nth 1 (frame-list)) (elscreen-create) (find-file my-cur-file)))
-    ;; (let ((my-cur-file (buffer-file-name)) (other-frame (nth 1 (frame-list)))) (with-selected-frame other-frame (elscreen-create) (find-file my-cur-file) ) (elscreen-kill))
-    ;; (let ((my-cur-file (buffer-file-name)) (other-frame (nth 1 (frame-list))) (cur-frame (selected-frame))) (with-selected-frame other-frame (elscreen-create) (find-file my-cur-file)) (elscreen-kill) (x-focus-frame other-frame))
+    (setq frame (make-frame))
 
     (with-selected-frame frame
       (while (< ctr (length pdf-list))
@@ -149,6 +128,16 @@ and elscreen-create"
         (setq ctr (+ 1 ctr))
         (pdf-view-fit-page-to-window)))
     pdf-list))
+
+(defun klin-tabs-open-pdfs (&optional arg)
+  "Open pdfs from Library in new frame."
+  (interactive)
+  (klin-tabs-open-pdfs-in-new-frame
+   (helm-read-file-name "Select pdf: "
+                        :initial-input
+                        (concat (expand-file-name pdf-library-dir)
+                                " .pdf$ ")
+                        :marked-candidates t)))
 
 ;; TODO: now only find a way to run this
 ;; (since find-file-hook actually doesn't run if the file is already open)

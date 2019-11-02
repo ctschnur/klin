@@ -34,11 +34,10 @@
 
 (require 'klin-utils)
 
+(require 'cl-lib)
 
 ;; ---------- org-mode getting and setting global document properties
 ;; thanks to Tobias' answer at https://emacs.stackexchange.com/a/21472
-
-(require 'cl-lib)
 
 ;; -------- file add watcher in scanner
 (require 'filenotify)

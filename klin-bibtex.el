@@ -238,6 +238,62 @@ is given, search in the current bib buffer."
 
 ;; ----------
 
+(defun klin-bibtex-cursor-on-entry-head-line-beginning-p ()
+  "Within bibtex buffer, checks if cursor is on an entry or not."
+  (save-excursion
+    (klin-bibtex-reparse-bib-buffer)
+    ;; returns nil if not on an entry,
+    ;; otherwise it returns a list of properties
+    (bibtex-parse-entry)))
+
+;; --------- open all linked pdfs in a bibtex buffer
+
+(defun generate-them (bibfile-buffer)
+  "Within a BIBFILE-BUFFER, get all referenced pdf files.
+Return a list (description filepath)."
+  (with-current-buffer bibfile-buffer
+    (message "generate-them %s" (buffer-file-name))
+    (print (current-buffer))
+    (save-excursion
+      (klin-bibtex-reparse-bib-buffer)
+      (goto-char (point-min))
+      (mapcar (lambda (key-tuple)
+                (let* ((key (nth 0 key-tuple))
+                       ;; (title (klin-bibtex-get-field "title" key))
+                       (filepath (klin-bibtex-get-field "filepath" key)))
+                  (list (concat key
+                                ;; " | "
+                                ;; title
+                                " | "
+                                filepath
+                                )
+                        filepath)))
+              ;; generate list of all entries
+              (bibtex-global-key-alist)))))
+
+(require 'klin-tabs)
+
+(defun klin-bibtex-open-pdfs-in-bibtex-file ()
+  "Within bibtex buffer, run this to open a list of pdf files referenced therein."
+  (interactive)
+  (let* ((bibfile-buffer (current-buffer)))
+    (helm :sources `(((name . "PDF filepaths referenced in: ")
+                      ;; (candidates . klin-bibtex-get-all-referenced-pdf-filepaths-in-bibtex-file)
+                      ;; (candidates . mylistofcands)
+                      (candidates . (lambda ()
+                                      (generate-them ,bibfile-buffer)))
+                      (action . (lambda (candidate)
+                                  ;; (message "yes: %s" candidate)
+                                  ;; (print (helm-marked-candidates))
+                                  ;; (add-to-list 'klin-bibtex-tmplistofpdfstoopen
+                                  ;;              (car candidate) t)
+                                  (let* ((pdf-filepaths-to-open
+                                          (mapcar (lambda (elem)
+                                                    (car elem))
+                                                  (helm-marked-candidates))))
+                                    (klin-tabs-open-pdfs-in-new-frame pdf-filepaths-to-open)))))))))
+;; ---------
+
 ;; ---------- higher complexity interactive functions
 
 (defun klin-bibtex-compare-entry-to-original-bibfile ()

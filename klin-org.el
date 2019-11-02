@@ -45,7 +45,21 @@
 
     ;; now go into the bibtex buffer and execute from there
     (with-bib-file-buffer collective-bib-file
-      (klin-bibtex-open-pdf-from-bibtex bibtexkey (string-to-number page-str)))))
+                          (klin-bibtex-open-pdf-from-bibtex bibtexkey (string-to-number page-str)))))
+
+
+(defun klin-org-open-bibliographys-pdfs ()
+  "Inside an org buffer, search it's referenced bib file.
+And therein, search for pdfs that can be opened.  Then query which ones to open."
+  (interactive)
+  (let* ((bib-file (expand-file-name (substring-no-properties (nth 0 (org-ref-find-bibliography))))))
+    (with-temp-buffer
+      (insert-file-contents bib-file)
+      (bibtex-mode)
+      (klin-bibtex-reparse-bib-buffer)
+      (klin-bibtex-open-pdfs-in-bibtex-file)))
+  )
+
 
 (defun klin-org-get-link-text-at-point ()
   "Get the text (description) of the org link at point."
@@ -53,6 +67,7 @@
     (if (eq (car (org-element-context)) 'link)
         (buffer-substring-no-properties (org-element-property :begin type)
                                         (org-element-property :end type)))))
+
 
 (require 'dash)
 
