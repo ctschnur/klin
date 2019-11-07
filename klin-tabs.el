@@ -43,21 +43,69 @@
     (elscreen-create)
     (switch-to-buffer buf)
     (elscreen-move-tab-to-position (+ original-screen-pos
-                                      1)))
-  )
+                                      1))))
 ;; ------------
+
+(defvar popped-buffer nil)
+(defvar popped-buffer-frame nil)
+
 ;; ------------ pop buffer into new frame
-(defun pop-buffer-into-new-frame ()
+(defun pop-buffer (&optional pop-off new-frame)
   "Pop buffer into new frame."
+  (interactive)
   (let* ((this-frame (selected-frame))
          (buf (current-buffer))
          (this-window (selected-window))
-         (new-frame (make-frame)))
-    (with-selected-frame new-frame
-      (switch-to-buffer buf))
+         created-frame)
+    (if new-frame
+        (progn
+          (setq created-frame (make-frame))
+          (with-selected-frame created-frame
+            (switch-to-buffer buf))))
     (with-selected-frame this-frame
-      (delete-window this-window))))
+      (if pop-off
+          (delete-window this-window)))
+    (setq popped-buffer buf)
+    (if new-frame
+        (setq popped-buffer-frame (selected-frame)))))
 ;; ------------
+
+(defun push-buffer (&optional into-split into-new-tab-elscreen)
+  "Todo: into window, into split, into new elscreen tab."
+  (interactive)
+  ;; now, a buffer is selected
+  (if (and popped-buffer
+           (not (eq (current-buffer)
+                    popped-buffer)))
+      (progn
+        (if into-split
+            (let* (created-split-window)
+              (setq created-split-window (split-window))
+              (select-window created-split-window))
+          (if into-new-tab-elscreen
+              (elscreen-create)))
+
+        (switch-to-buffer popped-buffer)
+
+        (if (and popped-buffer-frame
+                 popped-buffer)
+            (with-selected-frame popped-buffer-frame
+              (let* (window-if-only-one))
+              (if (and (eq (window-buffer (car (window-list)))
+                           popped-buffer)
+                       (length (window-list)))
+                  (if (yes-or-no-p "Push buffer into window and delete frame?")
+                      (progn
+                        (delete-frame popped-buffer-frame)
+                        (setq popped-buffer-frame nil))))))
+        (setq popped-buffer nil))
+    (user-error "No buffer to push")))
+
+(defun clear-popped-buffer-and-frame ()
+  (interactive)
+  (setq popped-buffer nil)
+  (setq popped-buffer-frame nil))
+
 ;; ------------ pop buffer into new elscreen tab in other frame
 (defun pop-buffer-into-new-elscreen-tab-in-other-frame ()
   "TODO: not finished.

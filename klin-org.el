@@ -257,7 +257,8 @@ If ORG-BUFFER isn't given, the current buffer is assumed."
   "If cursor is somewhere in the text, search the nearest link and open it.
 By default, don't open a new frame, and maximize the window."
   (interactive)
-  (klin-org-open-link (klin-org-get-link-data-nearest-to-point)))
+  (unless (klin-org-link-jump 'no-error) ; first try the conventional org link
+    (klin-org-open-link (klin-org-get-link-data-nearest-to-point))))
 
 (defun klin-org-create-and-add-bibliography (&optional bib-path)
   "In an org mode file, create and add a bibliography at BIB-PATH."
@@ -307,6 +308,8 @@ So that it can be compiled into a latex file with references."
      "#+LATEX_HEADER: \\usepackage[backend=biber, style=alphabetic, sorting=nyt]{biblatex}
 #+LATEX_HEADER: \\usepackage[ngerman]{babel}
 #+LATEX_HEADER: \\usepackage[margin=1.15in]{geometry}
+#+LATEX_HEADER: \\usepackage{physics}
+#+LATEX_HEADER: \\usepackage{booktabs}
 #+OPTIONS: toc:nil
 #+BEGIN_EXPORT latex
 \\today
@@ -391,6 +394,24 @@ So that it can be compiled into a latex file with references."
   (interactive)
   (helm :sources '(helm-source-klin-bibtex-jump-to-collective)))
 
+;; --------
+
+;; --------
+
+;; klin open org-mode link as you would a klin link
+;; (org-element-at-point)
+;;
+
+(defun klin-org-link-jump (dont-issue-error)
+  "Open Dired for directory of file link at point."
+  (interactive)
+  (let ((el (org-element-lineage (org-element-context) '(link) t)))
+    (if (not (and el (equal (org-element-property :type el) "file")))
+        (if dont-issue-error
+            nil
+          (user-error "Not on file link"))
+      (open-pdf-document-other-frame-or-window (org-element-property :path el) nil nil -1)
+      t)))
 
 ;; --------
 

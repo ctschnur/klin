@@ -95,6 +95,11 @@ FRAME-OR-WINDOW = nil -> find-file"
     (find-file filepath))
    ((< frame-or-window 0)
     (progn
+
+      ;; FIXME: this worked once, but after relaunching emacs didn't
+      ;; (if winner-mode
+      ;;     (winner-save-unconditionally))
+
       (split-window-below)
       (other-window 1)
       (window-resize (selected-window)

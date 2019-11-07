@@ -11,6 +11,7 @@ So far, my workflow relies on a few specific packages, among them are elscreen, 
 
 ** Ideas: 
 *** TODO:
+- make function that makes inline latex editing easy
 - make helm-source for opening linked pdfs in references.bib together in new elscreen frame.
 - make a seperate subfolder for each pdf's notes file, that has a bibtex file associated to it. If you want to render it to latex, there will be a lot of files created in this subfolder. 
 - Debug the system by trying to get some work done. 

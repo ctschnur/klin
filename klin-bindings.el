@@ -37,6 +37,17 @@
 (require 'hydra)
 (require 'pdf-view)
 
+
+;; -------- within org-noter ---------
+(with-eval-after-load 'org-noter
+  (define-key org-noter-notes-mode-map (kbd "C-S-M-p") 'org-noter-sync-prev-note-in-prev-pdf)
+  (define-key org-noter-notes-mode-map (kbd "C-S-M-n") 'org-noter-sync-next-note-in-next-pdf)
+  (define-key org-noter-notes-mode-map (kbd "C-S-M-h") 'org-noter-switch-to-base-buffer))
+
+(define-key org-mode-map (kbd "C-S-M-l") 'org-noter)
+
+;; ----------
+
 ;; -------- org-mode important klin keys
 (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
 ;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
@@ -44,12 +55,13 @@
 (define-key org-mode-map (kbd "C-M-, w") 'klin-org-watch-and-insert-scanned-file)
 (define-key org-mode-map (kbd "C-M-, b c") 'klin-bibtex-jump-to-collective-bib-file)
 
-(define-key org-mode-map (kbd "C-M-, o") ; p: process
-  (defhydra hydra-klin-open-from-org (:columns 3)
+(define-key org-mode-map (kbd "C-M-, o") ; o: open
+  (defhydra hydra-klin-open-from-org (:columns 3 :exit t)
     "klin: open from org"
     ("o" (lambda ()
            (interactive)
-           (klin-org-open-link-nearest-to-point)) "Open klin link")
+           (klin-org-open-link-nearest-to-point)
+           ) "Open klin link")
     ("b p" (lambda ()
            (interactive)
            (klin-org-open-bibliographys-pdfs)) "Open bibliography PDFs")))
@@ -78,14 +90,10 @@
 (define-key bibtex-mode-map (kbd "C-M-, e i c") 'klin-bibtex-integrate-bib-entry-into-collective)
 (define-key bibtex-mode-map (kbd "C-M-, o p") 'klin-bibtex-open-pdf-from-bibtex)
 
-;; process next/previous pdf
-;; (define-key bibtex-mode-map (kbd "C-M-, p n") 'klin-bibtex-process-next-pdf)
-;; (define-key bibtex-mode-map (kbd "C-M-, p n") 'klin-bibtex-process-previous-pdf)
-
 ;; (global-set-key (kbd "C-M-,") nil)
 (define-key bibtex-mode-map (kbd "C-M-, p")
   (defhydra hydra-klin-from-bibtex (:columns 3)
-    "klin in bibtex"
+    "klin in bibtex (edit)"
     ("o p c" (lambda ()
            (interactive)
            (klin-bibtex-process-open-current-pdf)) "open pdf")
@@ -133,11 +141,56 @@
 
 ;; -------- globally important klin keys
 ;; browsing open, opening, and closing open pdfs
-(global-set-key (kbd "C-. p") 'klin-pdf-helm-browse-pdf-buffers)
+;; (global-set-key (kbd "C-. p") 'klin-pdf-helm-browse-pdf-buffers)
 (global-set-key (kbd "C-. P") 'klin-tabs-open-pdfs)
 (global-set-key (kbd "C-. b") 'klin-bibtex-set-bibfiles-for-pdfs)
-                                        ;
-; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
+
+;; (global-set-key (kbd "C-M-, e") nil)
+
+(global-set-key (kbd "C-M-, m")          ; pop off/on
+                (defhydra hydra-klin-pop-or-push
+                  ()
+                  "klin buffer pop/push"
+                  ("o f"
+                   (lambda ()
+                     (interactive)
+                     (hydra-disable)
+                     (pop-buffer t t)
+                     )
+                   "off -> (new) frame")
+                  ("o o"
+                   (lambda ()
+                     (interactive)
+                     (pop-buffer t nil))
+                   "off -> (just) off")
+                  ("i i"
+                   (lambda ()
+                     (interactive)
+                     (push-buffer))
+                   "into -> window")
+                  ("i s"
+                   (lambda ()
+                     (interactive)
+                     (push-buffer t))
+                   "into -> window")
+                  ("i n t"
+                   (lambda ()
+                     (interactive)
+                     (push-buffer nil t))
+                   "into -> window")
+                  ("c"
+                   (lambda ()
+                     (interactive)
+                     (clear-popped-buffer-and-frame))
+                   "into -> window")))
+
+;; (global-set-key (kbd "C-. p o f")
+;;                 (lambda () (pop-buffer 'pop-off 'new-frame)))
+;; (global-set-key (kbd "C-. p i w")
+;;                 (lambda () (push-buffer)))
+
+
+;; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
 
 (provide 'klin-bindings)
 
