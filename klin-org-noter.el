@@ -260,11 +260,23 @@ notes file, even if it finds one."
   ;;   (select-frame-set-input-focus (window-frame window))
   ;;   (select-window window))
   (org-display-inline-images)
+
+  ;; (org-latex-fragment)
   (cs-turn-on-org-dynamic-preview-latex-fragment)
+
+  ;; (call-interactively 'org-toggle-latex-fragment-with-prefix-arg)
+
   (setq org-export-with-sub-superscripts nil)
   (let ((inhibit-read-only t))
     (remove-text-properties (point-min) (point-max) '(read-only t)))
   )
+
+(defun org-toggle-latex-fragment-with-prefix-arg ()
+  "This only toggles it. TODO: I want a function that deliberately enables/disables
+programmatically."
+  (interactive)
+  (setq current-prefix-arg '(4)) ; C-u
+  (call-interactively 'org-toggle-latex-fragment))
 
 ;; afterwards by default go to the org document and widen the buffer
 (defun org-noter-goto-org-document-and-widen-buffer ()
