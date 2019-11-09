@@ -82,7 +82,7 @@ Run this function from a pdfview buffer."
     new-frame))
 
 (defun open-pdf-document-other-frame-or-window
-    (filepath page &optional maximize frame-or-window)
+    (filepath &optional page maximize frame-or-window)
   "Open the pdf file at FILEPATH in another window and on a certain PAGE.
 by default, the pdf's window's frame will be maximized.
 You can set MAXIMIZE be a non-nil value to maximize the window.

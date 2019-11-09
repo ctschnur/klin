@@ -9,22 +9,29 @@ Imagine a tabbed pdf viewer (much like in a browser) together with the ability t
 
 So far, my workflow relies on a few specific packages, among them are elscreen, pdf-tools, org-ref, org-noter and hydra. 
 
-** Ideas: 
-*** TODO:
-- make function that makes inline latex editing easy
-- make helm-source for opening linked pdfs in references.bib together in new elscreen frame.
-- make a seperate subfolder for each pdf's notes file, that has a bibtex file associated to it. If you want to render it to latex, there will be a lot of files created in this subfolder. 
-- Debug the system by trying to get some work done. 
-- Detach and attach window from anywhere
-- make elscreen create new buffers to fill in the gap after killing an elscreen buffer with a number in between minimum and maximum
-- make a list of features in this README
-
-*** Delayed/dismissed TODOs: 
-- make a command that lets you select two newly created pdfs scans, display them side by side for you to check, then makes one temporary file out of them using
+** TODO: 
+- make a command that, in a seperate frame, lets you select two newly created pdf scans (watch cloud folder fed by my scanner), display them side by side for you to check, then makes one temporary file out of them using the command
 #+BEGIN_SRC sh
 pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
 #+END_SRC
-  lets you check it and then lets you save it as a non-temporary file in the scanner folder and simultaneously moves the the two seperate pdfs to trash. 
+  which lets you check the output, then lets you save it as a non-temporary file in the scanner folder and simultaneously moves the the two seperate pdfs to trash
+
+** Changes (mentale Stütze): 
+- [ ] 
+- [ ] modify =org-noter= to be able to navigate a series of interleaved pdf documents in a widened org-mode buffer (to continuously scroll through the slides from my lectures and my handwritten additional ontes, which all are separate pdfs)
+- [X] make =org-noter= notes easily renderable to latex
+- [X] make helm-source for opening a selection of PDFs from reference.bib in new frame for quick interactive browsing
+- [X] make function that watches my cloud "scanning" folder for quick scanning of snippets and immediate pdf link insertion into org-mode
+- [X] Detaching and attaching windows visually (used for scraps of scanned paper with similar, arbitrary names, so I won't type them to go look for these buffers)
+
+*** Nice to have, but low priority: 
+- make elscreen create new buffers to fill in the gap after killing an elscreen buffer with a number in between minimum and maximum
+
+*** More challenging ideas:
+- create function that makes interactive latex editing/viewing easy (all in org-mode buffer) by inserting a cursor into the rendered latex equation and having a hotkey toggle between source and rendered representation (might be revolutionary, but will require some time)
+- make a list of features in this README
+
+*** Delayed/dismissed TODOs:   
 - TODO: try to do the following: define a variable holding the hydra heads of common org and one holding the hydra heads of org-noter
 - then, let each mode have it's own hydra, and evaluate (eval '(...)) org-mode's hydra in org-noter's hydra, so that the hint changes dynamically
 - make an integrated workflow to annotate any linked pdf using xournal, so that scanned-in images can be corrected/annotated digitally with e.g. a graphic tablet if necessary.

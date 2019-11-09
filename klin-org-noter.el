@@ -524,16 +524,22 @@ As such, it will only work when the notes window exists."
 (defun org-noter-switch-to-base-buffer ()
   "Switch to base buffer, but keep point and background scroll position."
   (interactive)
-  (let* ((ws (window-start)) notes-window-then)
+  (let* ((ws (window-start)) notes-window-then
+         point-pos-then
+         notes-buffer
+         notes-buffer-base-buffer
+         )
     (if (org-noter--get-notes-window)
         (progn
           (org-noter--with-selected-notes-window
-           (switch-to-buffer (buffer-base-buffer))
-           (progn
-             ;; (org-noter-widen-buffer)
-             ;; (org-noter-goto-org-document-and-widen-buffer)
-             (set-window-start (selected-window) ws)
-             (message "In base-buffer now"))))
+           (setq point-pos-then (point))
+           (setq notes-buffer-base-buffer (buffer-base-buffer))
+           )
+          (select-window (org-noter--get-notes-window))
+          (switch-to-buffer notes-buffer-base-buffer nil t)
+          ;; (set-window-start (selected-window) ws)
+          (goto-char point-pos-then)
+          (message "In base-buffer now"))
       (user-error "Not in org-noter session"))))
 
 (add-hook 'org-noter-doc-mode-hook

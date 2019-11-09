@@ -139,6 +139,7 @@ unaltered by ffap-file-at-point, which actually checks if there is a file."
                                   ;; "*Shell Command Output*"
                                   ;; t
                                   ))))
+
 ;; --------
 
 

@@ -173,30 +173,44 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 (defun my-get-command-select-gui-window-from-pid (pid)
   (concat "wmctrl -l -p | grep " (number-to-string pid) " | awk '{ print $1 }' | xargs wmctrl -i -a"))
 
-(defun my-run-freehand-notes-program-with-file (link-content)
+(defun my-run-freehand-notes-program-with-file (&optional link-content)
   "If a link of type freehand is clicked, find the file based on LINK-CONTENT (file name base of the notes file) and launch the program."
   (interactive)
-  (let* ((found-file-path (my-get-file-from-searchpaths link-content))
-         proc-freehand-notes)
-    (if (setq proc-if-already-running (car (my-get-process-with-name-if-running (my-get-freehand-process-name link-content))))
-        (progn
-          ;; focus window by PID wmctrl -l -p | grep 13122 | awk '{ print $1 }' | xargs wmctrl -i -a
-          (start-file-process-shell-command "wmctrl-select-window-from-pid"
-                                            "wmctrl-select-window-from-pid-buf"
-                                            (my-get-command-select-gui-window-from-pid (process-id proc-if-already-running)))
-          (message (concat "The process with " link-content " is already running!")))
+  (if link-content
+      (let* ((found-file-path (my-get-file-from-searchpaths link-content))
+             proc-freehand-notes
+             proc-if-already-running)
+        (if (setq proc-if-already-running (car (my-get-process-with-name-if-running (my-get-freehand-process-name link-content))))
+            (progn
+              ;; focus window by PID wmctrl -l -p | grep 13122 | awk '{ print $1 }' | xargs wmctrl -i -a
+              (start-file-process-shell-command "wmctrl-select-window-from-pid"
+                                                "wmctrl-select-window-from-pid-buf"
+                                                (my-get-command-select-gui-window-from-pid (process-id proc-if-already-running)))
+              (message (concat "The process with " link-content " is already running!")))
+          (let* (proc-freehand-notes-pdf-exporter)
+            (set-process-sentinel (setq proc-freehand-notes-pdf-exporter (my-start-process-freehand-note-program found-file-path))
+                                  (lambda (process event)
+                                    (princ (format "Process: %s had the event '%s'" process
+                                                   event))
+                                    (kill-process proc-freehand-notes-pdf-exporter))))
+          (set-process-sentinel (my-start-process-freehand-note-program-pdf-exporter-background
+                                 found-file-path)
+                                (lambda (process event)
+                                  (princ (format "Process: %s had the event '%s'" process
+                                                 event))))))
+    (user-error "No link-content provided")))
 
+(defun my-open-freehand-notes-assoc-pdf (&optional link-content)
+  (interactive)
+  ;; if link-content wasn't delivered (through the org link interface), but if
+  ;; this function is called manually (or from hydra) when on the link, parse the link under point
+  ;; for the link-content
+  (unless link-content
+    (setq link-content (org-element-property :path (org-element-context))))
 
-      (set-process-sentinel (my-start-process-freehand-note-program found-file-path)
-                            (lambda (process event)
-                              (princ (format "Process: %s had the event '%s'" process
-                                             event))
-                              (kill-process proc-freehand-notes-pdf-exporter)))
-      (set-process-sentinel (my-start-process-freehand-note-program-pdf-exporter-background
-                             found-file-path)
-                            (lambda (process event)
-                              (princ (format "Process: %s had the event '%s'" process
-                                             event)))))))
+  (if (my-get-freehand-note-fliepath-associated-pdf-filepath
+       link-content)
+      (my-open-freehand-generated-pdf link-content)))
 
 (defun my-get-file-from-searchpaths (file-name-base)
   "Go through the search paths and find the 1st occurence of the file with FILE-NAME-BASE."
@@ -231,11 +245,27 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 
 (org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
 
+(defvar my-freehand-notes-extension "xopp")
+
+(defvar my-annotating-freehand-notes-filename-tag "-ann"
+  "If an 'original' pdf (intention is to keep the original unaltered) is being
+openend to be annotated with the freehand notes program, the annotating
+freehand notes file (and it's generated (exported) pdf file, automatically) get a tag appended
+to their filenames")
+
+(defun my-get-new-freehand-note-filename-unique-base-component ()
+  "Essentially a timestamp."
+  (format-time-string "%Y-%m-%d--%H-%M-%S"))
+
+(defun my-get-new-freehand-note-annotating-filename ()
+  "Get filename base based off timestamp and add the 'anntoating' tag to it."
+  (concat my-get-new-freehand-note-filename-unique-base-component
+          my-annotating-freehand-notes-filename-tag
+          "." my-freehand-notes-extension))
+
 (defun my-get-new-freehand-note-filename ()
   "Get filename base based off timestamp."
-  (let* ((extension "xopp")
-         (timestamp (format-time-string "%Y-%m-%d--%H-%M-%S")))
-    (concat timestamp "." extension)))
+  (concat my-get-new-freehand-note-filename-unique-base-component "." my-freehand-notes-extension))
 
 (defun my-get-freehand-note-fliepath-associated-pdf-filepath (freehand-note-filepath)
   "Get the assoc pdf file path."
@@ -253,7 +283,7 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 
 (defun my-command-to-launch-background-auto-pdf-exporter-for-freehand-note (freehand-note-filepath)
   "Entr, export automatically to PDF.
-FIXME: automatically terminate the entr session after closing xournal."
+ppFIXME: automatically terminate the entr session after closing xournal."
   (concat " echo " freehand-note-filepath " | " " entr "
           " xournalpp " freehand-note-filepath " -p "
           (my-get-freehand-note-fliepath-associated-pdf-filepath
@@ -268,25 +298,54 @@ FIXME: automatically terminate the entr session after closing xournal."
 ;;   (list (make-temp-name "freehand-proc-")
 ;;         ))
 
-(defun klin-org-noter-create-new-xournalpp-note-and-insert-link ()
+(defun klin-org-noter-create-new-xournalpp-note (&optional insert-link-p)
   (interactive)
-  (let* ((new-freehand-note-filename (my-get-new-freehand-note-filename)))
+  (let* ((new-freehand-note-filename (my-get-new-freehand-note-filename))
+         (link-content (file-name-base new-freehand-note-filename)))
     (if (not (file-exists-p new-freehand-note-filename))
-        (if (not (my-is-point-over-link))
+        (if (and insert-link-p
+                 (not (my-is-point-over-link)))
             (progn
               ;; insert a link containing the name base of the freehand note file
               (insert (concat "[[freehand:"
-                              (file-name-base new-freehand-note-filename)
+                              link-content
                               "]["
-                              (file-name-base new-freehand-note-filename)
+                              link-content
                               "]]"))
 
               ;; copy the template to filepath
               (copy-file (my-get-freehand-note-template-file-path)
                          new-freehand-note-filename)
-              (visit-freehand-link (file-name-base new-freehand-note-filename)))
+              (my-run-freehand-notes-program-with-file link-content))
           (user-error "Point is over link"))
       (user-error "File already exist."))))
+
+(defun my-create-new-freehand-note (&optional arg ann-pdf)
+  "ARG = ann -> create annotating freehand notes file (annotating ANN-PDF)
+ARG = nil -> create plain freehand notes file from standard template and
+with a standard unique file name"
+  (interactive)
+  (let* (new-freehand-note-filename)
+    (if (not arg)
+        (setq new-freehand-note-filename (my-get-new-freehand-note-filename))
+        (if (not (file-exists-p new-freehand-note-filename))
+            (progn
+              ;; copy the template to filepath
+              (copy-file (my-get-freehand-note-template-file-path)
+                         new-freehand-note-filename)
+              (setq link-content (file-name-base new-freehand-note-filename))
+              (my-run-freehand-notes-program-with-file link-content))
+          (user-error "File already exists"))
+
+        (if (eq arg 'ann)
+            (setq new-freehand-note-filename (my-get-new-freehand-note-annotating-filename))
+          (if (not (file-exists-p new-freehand-note-filename))
+              (progn
+                (setq link-content (file-name-base new-freehand-note-filename))
+                ;; cp original.pdf original-ann.pdf && xournalpp original-ann.pdf -n 4
+                (my-run-freehand-notes-program-with-file link-content))
+            (user-error "File already exists"))))))
+
 
 ;; --------
 
