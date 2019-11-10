@@ -104,14 +104,14 @@
           ))
 
 
-(defun my-start-process-freehand-note-program (freehand-note-filepath)
+(defun my-start-process-freehand-note-program (arg freehand-note-filepath)
   (let* ((freehand-note-filename (file-name-nondirectory freehand-note-filepath))
          proc
          (freehand-notes-filename-base (file-name-base freehand-note-filename)))
     (setq proc (start-process-shell-command (my-get-freehand-process-name freehand-notes-filename-base)
                                             (my-get-freehand-process-buffer-name freehand-notes-filename-base)
                                             ;; (my-command-to-launch-freehand-program new-freehand-note-filename)
-                                            (concat "pwd ; xournalpp " freehand-note-filename)))))
+                                            (concat "pwd ; xournalpp " (prin1-to-string freehand-note-filename))))))
 
 (defun my-start-process-freehand-note-program-pdf-exporter-background (freehand-note-filepath)
   "This works specifically for xournalpp.
@@ -121,11 +121,11 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
          (freehand-notes-filename-base (file-name-base freehand-note-filename)))
     (setq proc (start-process-shell-command (my-get-freehand-entr-process-name freehand-notes-filename-base)
                                             (my-get-freehand-entr-process-buffer-name freehand-notes-filename-base)
-                                            (concat "echo " freehand-note-filepath
+                                            (concat "echo " (prin1-to-string freehand-note-filepath)
                                                     " | entr "
-                                                    " xournalpp " freehand-note-filepath
-                                                    " -p " (my-get-freehand-note-fliepath-associated-pdf-filepath
-                                                            freehand-note-filepath))))))
+                                                    " xournalpp " (prin1-to-string freehand-note-filepath)
+                                                    " -p " (prin1-to-string (my-get-freehand-note-fliepath-associated-pdf-filepath
+                                                                             freehand-note-filepath)))))))
 
 (defun path-is-relative (path)
   "Works on linux."
@@ -178,7 +178,7 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
   (interactive)
   (if link-content
       (let* ((found-file-path (my-get-file-from-searchpaths link-content))
-             proc-freehand-notes
+             ;; proc-freehand-notes
              proc-if-already-running)
         (if (setq proc-if-already-running (car (my-get-process-with-name-if-running (my-get-freehand-process-name link-content))))
             (progn
@@ -187,17 +187,20 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
                                                 "wmctrl-select-window-from-pid-buf"
                                                 (my-get-command-select-gui-window-from-pid (process-id proc-if-already-running)))
               (message (concat "The process with " link-content " is already running!")))
+
           (let* (proc-freehand-notes-pdf-exporter)
-            (set-process-sentinel (setq proc-freehand-notes-pdf-exporter (my-start-process-freehand-note-program found-file-path))
+            (set-process-sentinel (setq proc-freehand-notes-pdf-exporter (my-start-process-freehand-note-program-pdf-exporter-background
+                                                                          found-file-path))
+                                (lambda (process event)
+                                  (princ (format "Process: %s had the event '%s'" process
+                                                 event))))
+
+            (set-process-sentinel (my-start-process-freehand-note-program found-file-path)
                                   (lambda (process event)
                                     (princ (format "Process: %s had the event '%s'" process
                                                    event))
                                     (kill-process proc-freehand-notes-pdf-exporter))))
-          (set-process-sentinel (my-start-process-freehand-note-program-pdf-exporter-background
-                                 found-file-path)
-                                (lambda (process event)
-                                  (princ (format "Process: %s had the event '%s'" process
-                                                 event))))))
+          ))
     (user-error "No link-content provided")))
 
 (defun my-open-freehand-notes-assoc-pdf (&optional link-content)
@@ -257,9 +260,11 @@ to their filenames")
   "Essentially a timestamp."
   (format-time-string "%Y-%m-%d--%H-%M-%S"))
 
-(defun my-get-new-freehand-note-annotating-filename ()
-  "Get filename base based off timestamp and add the 'anntoating' tag to it."
-  (concat my-get-new-freehand-note-filename-unique-base-component
+(defun my-get-freehand-note-annotating-filename (original-file-name-base)
+  "Get filename base based off
+- the base name of the original file
+- and add the 'annotating' tag to it."
+  (concat original-file-name-base
           my-annotating-freehand-notes-filename-tag
           "." my-freehand-notes-extension))
 
@@ -267,7 +272,7 @@ to their filenames")
   "Get filename base based off timestamp."
   (concat my-get-new-freehand-note-filename-unique-base-component "." my-freehand-notes-extension))
 
-(defun my-get-freehand-note-fliepath-associated-pdf-filepath (freehand-note-filepath)
+(defun my-get-freehand-note-filepath-associated-pdf-filepath (freehand-note-filepath)
   "Get the assoc pdf file path."
   (concat (file-name-directory freehand-note-filepath) (file-name-base freehand-note-filepath) ".pdf"))
 
@@ -298,6 +303,7 @@ ppFIXME: automatically terminate the entr session after closing xournal."
 ;;   (list (make-temp-name "freehand-proc-")
 ;;         ))
 
+;; TODO: figure out why this function is still there
 (defun klin-org-noter-create-new-xournalpp-note (&optional insert-link-p)
   (interactive)
   (let* ((new-freehand-note-filename (my-get-new-freehand-note-filename))
@@ -320,32 +326,37 @@ ppFIXME: automatically terminate the entr session after closing xournal."
           (user-error "Point is over link"))
       (user-error "File already exist."))))
 
-(defun my-create-new-freehand-note (&optional arg ann-pdf)
+(defun my-create-new-freehand-note (&optional arg original-filepath)
   "ARG = ann -> create annotating freehand notes file (annotating ANN-PDF)
 ARG = nil -> create plain freehand notes file from standard template and
 with a standard unique file name"
   (interactive)
   (let* (new-freehand-note-filename)
     (if (not arg)
-        (setq new-freehand-note-filename (my-get-new-freehand-note-filename))
-        (if (not (file-exists-p new-freehand-note-filename))
-            (progn
-              ;; copy the template to filepath
-              (copy-file (my-get-freehand-note-template-file-path)
-                         new-freehand-note-filename)
-              (setq link-content (file-name-base new-freehand-note-filename))
-              (my-run-freehand-notes-program-with-file link-content))
-          (user-error "File already exists"))
-
-        (if (eq arg 'ann)
-            (setq new-freehand-note-filename (my-get-new-freehand-note-annotating-filename))
+        (progn
+          (setq new-freehand-note-filename (my-get-new-freehand-note-filename))
           (if (not (file-exists-p new-freehand-note-filename))
+              (progn
+                ;; copy the template to filepath
+                (copy-file (my-get-freehand-note-template-file-path)
+                           new-freehand-note-filename)
+                (setq link-content (file-name-base new-freehand-note-filename))
+                (my-run-freehand-notes-program-with-file link-content))
+            (user-error "File already exists"))))
+
+    (if (eq arg 'ann)
+        (let* ((original-filename-base (file-name-nondirectory (file-name-base original-filepath))))
+          (setq new-freehand-note-filename (my-get-new-freehand-note-annotating-filename
+                                            original-filename-base))
+          (if (not (file-exists-p new-freehand-note-filename))  ; this checks only if it's in the current path
               (progn
                 (setq link-content (file-name-base new-freehand-note-filename))
                 ;; cp original.pdf original-ann.pdf && xournalpp original-ann.pdf -n 4
+                (copy-file (my-get-freehand-note-template-file-path)
+                           new-freehand-note-filename)
+                ;; TODO: add page degree of freedom to link
                 (my-run-freehand-notes-program-with-file link-content))
             (user-error "File already exists"))))))
-
 
 ;; --------
 

@@ -1,0 +1,139 @@
+;; -*- mode: emacs-lisp; coding: emacs-mule; -*-
+;; --------------------------------------------------------------------------
+;; Desktop File for Emacs
+;; --------------------------------------------------------------------------
+;; Created Sun Nov 10 14:51:21 2019
+;; Desktop file format version 208
+;; Emacs version 26.3
+
+;; Global section:
+(setq desktop-saved-frameset [frameset 1 (24008 5593 826114 868000) (desktop . "208") "chris@chris-thinkpad" nil nil ((((minibuffer . t) (undecorated) (override-redirect) (font-backend xft x) (font . "-DAMA-Ubuntu Mono-normal-normal-normal-*-17-*-*-*-m-0-iso10646-1") (font-parameter . "Ubuntu Mono 13") (border-width . 0) (internal-border-width . 0) (right-divider-width . 0) (bottom-divider-width . 0) (vertical-scroll-bars) (horizontal-scroll-bars) (foreground-color . "#A0B3C5") (background-color . "#1D252C") (mouse-color . "black") (border-color . "black") (screen-gamma) (line-spacing) (left-fringe . 8) (right-fringe . 8) (no-special-glyphs) (scroll-bar-foreground) (scroll-bar-background) (menu-bar-lines . 1) (tool-bar-lines . 0) (title) (wait-for-wm . t) (tool-bar-position . top) (inhibit-double-buffering) (icon-type . t) (auto-raise) (auto-lower) (cursor-type . box) (scroll-bar-width . 0) (scroll-bar-height . 0) (alpha) (no-focus-on-map) (no-accept-focus) (fullscreen . fullheight) (visibility . t) (skip-taskbar) (z-group) (display-type . color) (background-mode . dark) (cursor-color . "#5EC4FF") (sticky) (frameset--id . "74A5-0CD0-8D51-C679") (frameset--mini t) (height . 57) (width . 104) (modeline . t) (unsplittable) (left + -10) (top . 1094) (icon-name) (display . ":0") (explicit-name)) ((min-height . 8) (min-width . 10) (min-height-ignore . 8) (min-width-ignore . 4) (min-height-safe . 2) (min-width-safe . 2) (min-pixel-height . 144) (min-pixel-width . 90) (min-pixel-height-ignore . 144) (min-pixel-width-ignore . 36) (min-pixel-height-safe . 36) (min-pixel-width-safe . 18)) vc (pixel-width . 960) (pixel-height . 1010) (total-width . 106) (total-height . 56) (normal-height . 1.0) (normal-width . 1.0) (combination-limit) (leaf (pixel-width . 960) (pixel-height . 506) (total-width . 106) (total-height . 28) (normal-height . 0.5) (normal-width . 1.0) (buffer "*scratch*" (selected) (hscroll . 0) (fringes 8 8 nil) (margins nil) (scroll-bars nil 0 t nil 0 t) (vscroll . 0) (dedicated) (point . 145) (start . 1))) (leaf (last . t) (pixel-width . 960) (pixel-height . 504) (total-width . 106) (total-height . 28) (normal-height . 0.5) (normal-width . 1.0) (buffer "*Process List*" (selected) (hscroll . 0) (fringes 8 8 nil) (margins nil) (scroll-bars nil 0 t nil 0 t) (vscroll . 0) (dedicated) (point . 1) (start . 1)))) (((minibuffer . t) (undecorated) (override-redirect) (font-backend xft x) (font . "-DAMA-Ubuntu Mono-normal-normal-normal-*-17-*-*-*-m-0-iso10646-1") (font-parameter . "Ubuntu Mono 13") (border-width . 0) (internal-border-width . 0) (right-divider-width . 0) (bottom-divider-width . 0) (vertical-scroll-bars) (horizontal-scroll-bars) (foreground-color . "#A0B3C5") (background-color . "#1D252C") (mouse-color . "black") (border-color . "black") (screen-gamma) (line-spacing) (left-fringe . 8) (right-fringe . 8) (no-special-glyphs) (scroll-bar-foreground) (scroll-bar-background) (menu-bar-lines . 1) (tool-bar-lines . 0) (title) (wait-for-wm . t) (tool-bar-position . top) (inhibit-double-buffering) (icon-type . t) (auto-raise) (auto-lower) (cursor-type . box) (scroll-bar-width . 0) (scroll-bar-height . 0) (alpha) (no-focus-on-map) (no-accept-focus) (fullscreen . fullheight) (visibility . t) (skip-taskbar) (z-group) (display-type . color) (background-mode . dark) (cursor-color . "#5EC4FF") (sticky) (frameset--id . "23A4-D04F-B52A-9BF7") (frameset--mini t) (height . 57) (width . 104) (modeline . t) (unsplittable) (left . 2870) (top . 14) (icon-name) (display . ":0") (explicit-name)) ((min-height . 4) (min-width . 10) (min-height-ignore . 4) (min-width-ignore . 4) (min-height-safe . 1) (min-width-safe . 2) (min-pixel-height . 72) (min-pixel-width . 90) (min-pixel-height-ignore . 72) (min-pixel-width-ignore . 36) (min-pixel-height-safe . 18) (min-pixel-width-safe . 18)) leaf (pixel-width . 960) (pixel-height . 1010) (total-width . 106) (total-height . 56) (normal-height . 1.0) (normal-width . 1.0) (buffer "scanner" (selected) (hscroll . 0) (fringes 8 8 nil) (margins nil) (scroll-bars nil 0 t nil 0 t) (vscroll . 0) (dedicated) (point . 1538) (start . 1))) (((minibuffer . t) (undecorated) (override-redirect) (font-backend xft x) (font . "-DAMA-Ubuntu Mono-normal-normal-normal-*-17-*-*-*-m-0-iso10646-1") (font-parameter . "Ubuntu Mono 13") (border-width . 0) (internal-border-width . 0) (right-divider-width . 0) (bottom-divider-width . 0) (vertical-scroll-bars) (horizontal-scroll-bars) (foreground-color . "#A0B3C5") (background-color . "#1D252C") (mouse-color . "black") (border-color . "black") (screen-gamma) (line-spacing) (left-fringe . 8) (right-fringe . 8) (no-special-glyphs) (scroll-bar-foreground) (scroll-bar-background) (menu-bar-lines . 1) (tool-bar-lines . 0) (title) (wait-for-wm . t) (tool-bar-position . top) (inhibit-double-buffering) (icon-type . t) (auto-raise) (auto-lower) (cursor-type . box) (scroll-bar-width . 0) (scroll-bar-height . 0) (alpha) (no-focus-on-map) (no-accept-focus) (fullscreen . fullheight) (visibility . t) (skip-taskbar) (z-group) (display-type . color) (background-mode . dark) (cursor-color . "#5EC4FF") (sticky) (frameset--id . "42DB-9B00-BEEA-4BAF") (frameset--mini t) (height . 57) (width . 104) (modeline . t) (unsplittable) (left . 1910) (top . 14) (icon-name) (display . ":0") (explicit-name)) ((min-height . 8) (min-width . 10) (min-height-ignore . 7) (min-width-ignore . 4) (min-height-safe . 2) (min-width-safe . 2) (min-pixel-height . 144) (min-pixel-width . 90) (min-pixel-height-ignore . 126) (min-pixel-width-ignore . 36) (min-pixel-height-safe . 36) (min-pixel-width-safe . 18)) vc (pixel-width . 960) (pixel-height . 1010) (total-width . 106) (total-height . 56) (normal-height . 1.0) (normal-width . 1.0) (combination-limit) (leaf (pixel-width . 960) (pixel-height . 314) (total-width . 106) (total-height . 17) (normal-height . 0.30396039603960395) (normal-width . 1.0) (buffer "notes.org" (selected) (hscroll . 0) (fringes 8 8 nil) (margins nil) (scroll-bars nil 0 t nil 0 t) (vscroll . 0) (dedicated) (point . 10366) (start . 9896))) (leaf (last . t) (pixel-width . 960) (pixel-height . 696) (total-width . 106) (total-height . 39) (normal-height . 0.696039603960396) (normal-width . 1.0) (buffer "2019-11-06 16.21.07.pdf" (selected) (hscroll . 0) (fringes 8 8 nil) (margins nil) (scroll-bars nil 0 t nil 0 t) (vscroll . 0) (dedicated) (point . 1) (start . 1)))) (((minibuffer . t) (undecorated) (override-redirect) (font-backend xft x) (font . "-DAMA-Ubuntu Mono-normal-normal-normal-*-17-*-*-*-m-0-iso10646-1") (font-parameter . "Ubuntu Mono 13") (border-width . 0) (internal-border-width . 0) (right-divider-width . 0) (bottom-divider-width . 0) (vertical-scroll-bars) (horizontal-scroll-bars) (foreground-color . "#A0B3C5") (background-color . "#1D252C") (mouse-color . "black") (border-color . "black") (screen-gamma) (line-spacing) (left-fringe . 8) (right-fringe . 8) (no-special-glyphs) (scroll-bar-foreground) (scroll-bar-background) (menu-bar-lines . 1) (tool-bar-lines . 0) (title) (wait-for-wm . t) (tool-bar-position . top) (inhibit-double-buffering) (icon-type . t) (auto-raise) (auto-lower) (cursor-type . box) (scroll-bar-width . 0) (scroll-bar-height . 0) (alpha) (no-focus-on-map) (no-accept-focus) (fullscreen . maximized) (visibility . t) (skip-taskbar) (z-group) (display-type . color) (background-mode . dark) (cursor-color . "#5EC4FF") (sticky) (environment) (frameset--id . "63E1-298F-2D83-7A50") (frameset--mini t . t) (height . 58) (width . 211) (modeline . t) (unsplittable) (left . 0) (top . 24) (icon-name) (display . ":0") (explicit-name)) ((min-height . 4) (min-width . 10) (min-height-ignore . 4) (min-width-ignore . 4) (min-height-safe . 1) (min-width-safe . 2) (min-pixel-height . 72) (min-pixel-width . 90) (min-pixel-height-ignore . 72) (min-pixel-width-ignore . 36) (min-pixel-height-safe . 18) (min-pixel-width-safe . 18)) leaf (pixel-width . 1920) (pixel-height . 1038) (total-width . 213) (total-height . 57) (normal-height . 1.0) (normal-width . 1.0) (buffer "klin-optional.el" (selected . t) (hscroll . 0) (fringes 8 8 nil) (margins nil) (scroll-bars nil 0 t nil 0 t) (vscroll . 0) (dedicated) (point . 8954) (start . 6865))))])
+(setq desktop-missing-file-warning nil)
+(setq tags-file-name nil)
+(setq tags-table-list nil)
+(setq search-ring nil)
+(setq regexp-search-ring '("proc-freehand-notes-pdf-exporter" "create-new" "2019-11-06" "xou" "ann-pdf" "my-create-new" "proc-freehand-notes" "scan" "link-content" "new-freehand-note-filename" "link-cont" "insert-link" "create" "xopp" "link-content" "context"))
+(setq register-alist nil)
+(setq file-name-history '("/home/chris/Dropbox/stuff/klin/klin-bindings.el" "/home/chris/Dropbox/stuff/klin/klin-optional.el" "/home/chris/" "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/notes.org" "/home/chris/.emacs.d/dotemacs.org" "/home/chris/dote" "/home/chris/Dropbox/stuff/klin/README.org" "/home/chris/Dropbox/stuff/klin/klin-org-noter.el" "/home/chris/Desktop/foo.org" "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/2019-11-08--02-44-47.pdf" "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/2019-11-08--00-15-41.pdf" "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/2019-11-08--00-15-41.xopp" "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/2019-11-07--22-36-17.pdf" "/home/chris/Dropbox/stuff/klin/klin-org.el" "/home/chris/.emacs.d/elisp/cs-latex-fragments-preview.el" "/home/chris/Dropbox/stuff/klin/#klin-bibtex.el#" "/home/chris/Dropbox/stuff/klin/klin-bibtex.el" "/home/chris/Dropbox/org/grenoble.org" "/home/chris/Dropbox/1Projects/1Administrative/1Grenoble/KIT_Grenoble_Doppelmaster_Vereinbarung.pdf" "~/Dropbox/courses/nanophotonics-and-plasmonics/lecture4_notes.pdf" "~/Dropbox/courses/nanophotonics-and-plasmonics/lecture3_notes.pdf" "~/Dropbox/courses/nanophotonics-and-plasmonics/Lecture5_notes.pdf" "/home/chris/Dropbox/stuff/klin/klin-utils.el" "~/Dropbox/courses/nanophotonics-and-plasmonics/exam_plasmo.pdf" "/home/chris/Dropbox/courses/nanophotonics-and-plasmonics/cs-notes/notes.org" "/home/chris/README.org" "/home/chris/Dropbox/stuff/klin/klin.el" "~/Dropbox/1Projects/1Administrative/1Grenoble/KIT_Grenoble_Doppelmaster_Vereinbarung.pdf" "/home/chris/Dropbox/1Projects/1Administrative/1Grenoble" "/home/chris/.emacs.d/elisp/org-mode-hacks.el" "~/Dropbox/courses/quantum-simulation/19-10-23.pdf" "/home/chris/.emacs" "/home/chris/.emacs.d/elpa/org-noter-20191020.1212/org-noter.el" "~/Dropbox/2TextBooks/Roffe-QuantumErrorCorrectionIntroductoryGuide-1907.11157.pdf" "/home/chris/Dropbox/2TextBooks/Roffe-QuantumErrorCorrectionIntroductoryGuide-1907.11157/notes/notes.org" "/home/chris/Dropbox/courses/" "/home/chris/Dropbox/courses/nanophotonics-and-plasmonics/lecture3_notes.pdf" "~/Dropbox/courses/nanophotonics-and-plasmonics/Lecture1_notes.pdf" "/home/chris/Dropbox/courses/nanophotonics-and-plasmonics/Lecture1_notes/notes/notes.org" "/home/chris/code_templates/latex_beamer_org-mode_presentation/presentation.org" "/home/chris/code_" "/home/chris/cod" "/home/chris/code_te" "/home/chris/Dropbox/courses/nanophotonics-and-plasmonics/" "/home/chris/Dropbox/courses/nanophotonics-and-plasmonics/lecture2_notes.pdf" "/home/chris/.emacs.d/elisp/" "/home/chris/Desktop/modeling/2019-11-01 20.48.43.pdf" "/home/chris/Desktop/hydrogen_spectrum_vs_m/main.py" "/home/chris/foo.txt" "/home/chris/foo.py" "/home/chris/Desktop/proj/main.py" "/home/chris/Desktop/proj/" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/ausarbeitungen.tex" "/home/chris/Dropbox/courses/modeling/" "/home/chris/Dropbox/courses/modeling/ausarbeitung1/aus" "/home/chris/Dropbox/courses/modeling/ausarbeitung1/" "/home/chris/Dropbox/courses/modeling/ausarbeitung1/ausarbeitung1.org" "/home/chris/Dropbox/courses/nanophotonics-and-plasmonics/mynotes.org" "/home/chris/Desktop/myproject/main.py" "/home/chris/Desktop/ms.py" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/references.bib" "/home/chris/Dropbox/courses/modeling/ausarbeitung1/references.bib" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/graphics/TP1/II/1J" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/resources/TP1/II/1.1-1.2/parameters.csv" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/resources/TP1/" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/" "~/Desktop/Untitled2.txt" "~/Desktop/Untitled.txt" "/home/chris/Dropbox/courses/modeling/ausarbeitungen/.gitignore" "~/Dropbox/2TextBooks/Griffiths-QM-Introduction.pdf" "~/Dropbox/2TextBooks/ln-Rockstuhl-ModThPhFuerLehramtsk.pdf" "/home/chris/file:/home/chris/Dropbox/2TextBooks/ln-Rockstuhl-ModThPhFuerLehramtsk.pdf" "/home/chris/Dropbox/2TextBooks/ln-Rischke-QM1/self.bib" "~/Dropbox/2TextBooks/ln-Rischke-QM1.pdf" "/home/chris/Dropbox/2TextBooks/ln-Rischke-QM2/self.bib" "/home/chris/Dropbox/2TextBooks/" "/home/chris/Dropbox/2TextBooks/ln-Rischke-QM2.pdf" "~/Dropbox/2TextBooks/ln-Rischke-QM2.pdf" "/home/chris/Dropbox/stuff/1Book/main.org" "~/Dropbox/2TextBooks/ln-Garst-TKM2.pdf" "~/Dropbox/2TextBooks/Woit-Qmbook.pdf" "~/Dropbox/2TextBooks/Greiner-QED.pdf" "/home/chris/Dropbox/stuff/klin/klin-tabs.el" "~/Dropbox/2TextBooks/ln-Rudolphqm1.pdf" "~/Dropbox/2TextBooks/ln-Rischke-ED.pdf" "~/Dropbox/2TextBooks/ln-Plefka-QM.pdf" "~/Dropbox/2TextBooks/main.pdf" "~/Dropbox/2TextBooks/awef.pdf" "~/Dropbox/2TextBooks/hey.pdf" "~/Desktop/modeling/2019-11-01 20.48.43.pdf" "/home/chris/Dropbox/1LinkedApps/scanner/" "~/Desktop/modeling/week02/usb/modelling/Introduction FEM 2019 - presentation.pdf" "/home/chris/Desktop/modeling/week02/usb/modelling/Introduction FEM 2019 - presentation/self.bib" "~/Desktop/modeling/week02/usb/modelling/Scattering Phenomena 2018-edited.pdf" "~/Desktop/modeling/week02/usb/modelling/Photonic crystals 2017.pdf" "~/Desktop/modeling/week02/usb/modelling/Short Introduction to Scattering 2019.pdf" "/home/chris/Desktop/modeling/week02/usb/modelling/" "/home/chris/Desktop/modeling/week02/usb/modelling/Introduction FEM 2019 - presentation.pdf" "/home/chris/Dropbox/courses/modeling/ausarbeitung1/.#ausarbeitung1.org"))
+
+;; Buffer section -- buffers listed in same order as in buffer list:
+(desktop-create-buffer 208
+  "/home/chris/Dropbox/stuff/klin/klin-optional.el"
+  "klin-optional.el"
+  'emacs-lisp-mode
+  '(visual-line-mode eldoc-mode override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode ws-butler-mode smartparens-mode paredit-mode company-mode flycheck-mode elisp-slime-nav-mode TeX-PDF-mode)
+  8954
+  '(8954 nil)
+  nil
+  nil
+  '((show-trailing-whitespace . 1) (buffer-display-time 24008 5593 806121 443000) (buffer-file-coding-system . prefer-utf-8-unix) (truncate-lines))
+  '((mark-ring (8954 7096 16654 8568 8513 4283 4215 14116 14011 14051 14040 8738 15011 15038 15014 16683))))
+
+(desktop-create-buffer 208
+  "/home/chris/Dropbox/1LinkedApps/scanner/2019-11-06 16.21.07.pdf"
+  "2019-11-06 16.21.07.pdf"
+  'pdf-view-mode
+  '(override-global-mode auto-revert-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode company-mode TeX-PDF-mode)
+  1
+  '(1 nil)
+  t
+  nil
+  '((buffer-display-time 24008 5482 284471 810000) (buffer-file-coding-system . no-conversion) (overwrite-mode))
+  '((mark-ring (1 2))))
+
+(desktop-create-buffer 208
+  "/home/chris/Dropbox/stuff/klin/klin-bindings.el"
+  "klin-bindings.el"
+  'emacs-lisp-mode
+  '(visual-line-mode eldoc-mode override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode ws-butler-mode smartparens-mode paredit-mode company-mode flycheck-mode elisp-slime-nav-mode TeX-PDF-mode)
+  8536
+  '(8201 nil)
+  nil
+  nil
+  '((show-trailing-whitespace . 1) (buffer-display-time 24008 5492 30601 643000) (buffer-file-coding-system . prefer-utf-8-unix) (truncate-lines))
+  '((mark-ring (8201 7408 8536 7397 8182 8209 9292 9319 8495 8601 8555 8501 5930 5936 9346 8181))))
+
+(desktop-create-buffer 208
+  nil
+  "scanner"
+  'dired-mode
+  '(override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode which-key-mode yas-minor-mode projectile-mode company-mode TeX-PDF-mode)
+  1538
+  '(1 nil)
+  t
+  '("/home/chris/Dropbox/1LinkedApps/scanner/")
+  '((buffer-display-time 24008 5443 973972 68000))
+  '((mark-ring (1))))
+
+(desktop-create-buffer 208
+  "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/notes.org"
+  "notes.org"
+  'org-mode
+  '(visual-line-mode override-global-mode auto-revert-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode smartparens-mode company-mode org-indent-mode TeX-PDF-mode)
+  10366
+  '(10366 nil)
+  nil
+  nil
+  '((indent-tabs-mode) (buffer-display-time 24008 5421 26159 641000) (buffer-file-coding-system . undecided-unix) (truncate-lines))
+  '((mark-ring (10366 1468 2032 8165 10303 10297 10298 10284 10280 1 10302 10302 10302 10148))))
+
+(desktop-create-buffer 208
+  nil
+  "chris"
+  'dired-mode
+  '(override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode which-key-mode yas-minor-mode projectile-mode company-mode TeX-PDF-mode)
+  222
+  '(nil nil)
+  t
+  '("/home/chris/")
+  '((buffer-display-time 24008 2905 514216 836000))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/chris/Dropbox/1LinkedApps/scanner/2019-10-22 02.19.26.pdf"
+  "2019-10-22 02.19.26.pdf"
+  'pdf-view-mode
+  '(override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode company-mode TeX-PDF-mode)
+  1
+  '(nil nil)
+  t
+  nil
+  '((buffer-display-time 24006 63521 79492 649000) (buffer-file-coding-system . no-conversion) (overwrite-mode))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/chris/Dropbox/courses/quantum-simulation/cs-notes/2019-11-07--22-36-17.pdf"
+  "2019-11-07--22-36-17.pdf"
+  'pdf-view-mode
+  '(override-global-mode auto-revert-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode company-mode TeX-PDF-mode)
+  1
+  '(1 nil)
+  nil
+  nil
+  '((buffer-display-time 24006 58134 29994 880000) (buffer-file-coding-system . no-conversion) (overwrite-mode))
+  '((mark-ring (1))))
+
+(desktop-create-buffer 208
+  "/home/chris/.emacs.d/elpa/evil-20190729.704/evil-vars.el"
+  "evil-vars.el"
+  'emacs-lisp-mode
+  '(visual-line-mode eldoc-mode override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode ws-butler-mode smartparens-mode paredit-mode company-mode flycheck-mode elisp-slime-nav-mode TeX-PDF-mode)
+  25339
+  '(nil nil)
+  nil
+  nil
+  '((show-trailing-whitespace . 1) (buffer-display-time) (buffer-file-coding-system . utf-8-unix) (truncate-lines))
+  '((mark-ring nil)))
+
+(desktop-create-buffer 208
+  "/home/chris/.emacs.d/elpa/evil-20190729.704/evil-states.el"
+  "evil-states.el"
+  'emacs-lisp-mode
+  '(visual-line-mode eldoc-mode override-global-mode global-auto-revert-mode my-keys-minor-mode helm-mode ivy-mode magit-file-mode undo-tree-mode which-key-mode yas-minor-mode projectile-mode ws-butler-mode smartparens-mode paredit-mode company-mode flycheck-mode elisp-slime-nav-mode TeX-PDF-mode)
+  22357
+  '(nil nil)
+  nil
+  nil
+  '((show-trailing-whitespace . 1) (buffer-display-time) (buffer-file-coding-system . utf-8-unix) (truncate-lines))
+  '((mark-ring nil)))
+

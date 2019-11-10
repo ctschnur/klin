@@ -17,7 +17,7 @@ pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
   which lets you check the output, then lets you save it as a non-temporary file in the scanner folder and simultaneously moves the the two seperate pdfs to trash
 
 ** Changes (mentale Stütze): 
-- [ ] 
+- [ ] Current issue: create fresh xopp file with a background already attached to it.
 - [ ] modify =org-noter= to be able to navigate a series of interleaved pdf documents in a widened org-mode buffer (to continuously scroll through the slides from my lectures and my handwritten additional ontes, which all are separate pdfs)
 - [X] make =org-noter= notes easily renderable to latex
 - [X] make helm-source for opening a selection of PDFs from reference.bib in new frame for quick interactive browsing
