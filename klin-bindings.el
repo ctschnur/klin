@@ -231,6 +231,23 @@
 
 ;; ------- within a normal pdf
 (define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
+
+;; (eval-after-load 'pdf-view
+;;   '(progn
+;;      (define-key pdf-view-mode-map (kbd "M-h") 'pdf-annot-add-highlight-markup-annotation)
+;;      ;; (define-key pdf-view-mode-map (kbd "r") nil)
+;;      (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)))
+
+(defun my-add-pdf-view-comfortable-read-key ()
+  (interactive)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "B") 'pdf-history-backward)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "F") 'pdf-history-forward)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'pdf-view-set-comfortable-reading-size)
+  (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
+  ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
+  )
+
+(add-hook 'pdf-view-mode-hook #'my-add-pdf-view-comfortable-read-key)
 ;; -------
 
 ;; ------- within a bibtex buffer

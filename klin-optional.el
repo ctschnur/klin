@@ -42,6 +42,8 @@
 ;; -------- file add watcher in scanner
 (require 'filenotify)
 
+
+
 (defvar my-open-the-annotated-version-first nil
   "Normally, the annotated version is not being opened first.
 But it now can be set to be opened first.")
@@ -445,6 +447,56 @@ add it at the beginning of file if there is none."
 (require 'klin-org-noter)
 
 ;; --------
+
+
+(require 'pdf-tools)
+(require 'pdf-view)
+
+(defun pdf-view-set-comfortable-reading-size ()
+  "Set a comfortable reading size.
+To be called inside a pdf-view-mode buffer.
+Sometimes, the pdf opens up massively downscaled or upscaled.
+Then, run this function to adjust."
+  (interactive)
+  (if (string-equal (file-name-extension (buffer-file-name)) "pdf")
+      (let* ((pdf-file-path (buffer-file-name))
+             (window-size-width (window-body-width nil t))
+             (screen-size-width (x-display-pixel-width))
+             pdf-first-page-width-pixels
+             (pdfinfo-command (concat "pdfinfo "
+                                      (prin1-to-string pdf-file-path)
+                                      " | grep \"Page size\" | awk '{ print $3; print $5 }'"))
+             shell-command-output
+             pdf-width-height-tuple
+             document-size-width
+             document-size-height
+             view-size-width
+             (x (/ 1.0 1.618)))
+
+        (pdf-view-scale-reset)
+
+        (setq view-size-width (* x screen-size-width))
+        (if (> view-size-width window-size-width)
+            (setq pdf-view-display-size 'fit-width)
+          (progn
+            (setq shell-command-output (shell-command-to-string pdfinfo-command))
+            (setq pdf-width-height-tuple (mapcar (lambda (elem)
+                                                   (string-to-number elem))
+                                                 (split-string shell-command-output "\n")))
+            (setq document-size-width (float (nth 0 pdf-width-height-tuple)))
+            (setq document-size-height (float (nth 1 pdf-width-height-tuple)))
+
+            ;; (setq pdf-view-display-size (/ (* x window-size-width) document-size-width))
+            (setq pdf-view-display-size (/ (* x screen-size-width) document-size-width))))
+
+        (pdf-view-redisplay)
+        ;; (pdf-view-create-page (pdf-view-current-page))
+        )))
+
+(add-hook 'pdf-view-mode-hook 'pdf-view-set-comfortable-reading-size t)
+
+
+;; ------------------
 
 (provide 'klin-optional)
 ;;; klin-optional.el ends here
