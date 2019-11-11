@@ -402,15 +402,30 @@ So that it can be compiled into a latex file with references."
 ;; (org-element-at-point)
 ;;
 
+(require 'klin-optional)
+
 (defun klin-org-link-jump (dont-issue-error)
   "Open Dired for directory of file link at point."
   (interactive)
-  (let ((el (org-element-lineage (org-element-context) '(link) t)))
+  (let* ((el (org-element-lineage (org-element-context) '(link) t))
+         (filepath (org-element-property :path el)))
     (if (not (and el (equal (org-element-property :type el) "file")))
         (if dont-issue-error
             nil
           (user-error "Not on file link"))
-      (open-pdf-document-other-frame-or-window (org-element-property :path el) nil nil -1)
+
+      (let* ((my-open-the-annotated-version-first t))
+        (if my-open-the-annotated-version-first
+            ;; check if there is an annotated version
+            (let* ((annotated-pdf-filepath (concat (file-name-directory filepath)
+                                                   (my-get-freehand-note-annotating-filename-base (file-name-base filepath))
+                                                   ".pdf")))
+              (if (file-exists-p annotated-pdf-filepath)
+                  (progn
+                    (setq filepath annotated-pdf-filepath)
+                    (message "Showing the *annotated* version"))))))
+
+      (open-pdf-document-other-frame-or-window filepath nil nil -1)
       t)))
 
 ;; --------

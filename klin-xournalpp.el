@@ -1,4 +1,4 @@
-;;; change-pdf-bg.el --- This script procedurally creates an xournalpp file from a pdf background.  -*- lexical-binding: t; -*-
+;;; klin-xournalpp.el --- This script procedurally creates an xournalpp file from a pdf background.  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
 
@@ -26,10 +26,10 @@
 
 (require 'dash)
 
-(defun cs-create-xournalpp-file-for-pdf (input-pdf-filepath output-xopp-filename)
+(defun cs-create-xournalpp-file-for-pdf (input-pdf-filepath output-xopp-filepath)
   "The command is
 pdfinfo source-pdf.pdf -l -1 | grep Page | grep size | awk '{ print $2; print $4; print $6}'"
-  (let* ((pdfinfo-str (shell-command-to-string (concat "pdfinfo " input-pdf-filepath " -l -1 | grep Page | grep size | awk '{ print $2; print $4; print $6}'"))) ; shows dimensions of all pages
+  (let* ((pdfinfo-str (shell-command-to-string (concat "pdfinfo " (prin1-to-string input-pdf-filepath) " -l -1 | grep Page | grep size | awk '{ print $2; print $4; print $6}'"))) ; shows dimensions of all pages
 
          (n-w-h-triples (-partition 3
                                     (mapcar (lambda (elem)
@@ -66,7 +66,7 @@ pdfinfo source-pdf.pdf -l -1 | grep Page | grep size | awk '{ print $2; print $4
 ")))
       (insert "</xournal>")
       (write-region (point-min) (point-max)
-                    output-xopp-filename))))
+                    output-xopp-filepath))))
 
 
 
@@ -126,5 +126,5 @@ pdfinfo source-pdf.pdf -l -1 | grep Page | grep size | awk '{ print $2; print $4
 
 
 
-(provide 'change-pdf-bg)
-;;; change-pdf-bg.el ends here
+(provide 'klin-xournalpp)
+;;; klin-xournalpp.el ends here

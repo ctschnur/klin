@@ -208,6 +208,8 @@ is given, search in the current bib buffer."
 
 ;; ---------- lower complexity interactive functions
 
+(require 'klin-optional)
+
 (defun klin-bibtex-open-pdf-from-bibtex (&optional bibtexkey page)
   "From within a bibtex buffer, open BIBTEXKEY's pdf file on PAGE, respecting page offset."
   (interactive)
@@ -224,6 +226,15 @@ is given, search in the current bib buffer."
          (page (- (+ (if page page 0) file-page-offset)
                   ;; 1
                   0)))
+
+    (let* ((my-open-the-annotated-version-first t))
+      (if my-open-the-annotated-version-first
+          ;; check if there is an annotated version
+          (let* ((annotated-pdf-filepath (concat (file-name-nondirectory filepath)
+                                                 (my-get-freehand-note-annotating-filename (file-name-base filepath)))))
+            (if (file-exists-p annotated-pdf-filepath)
+                (setq filepath annotated-pdf-filepath))
+            (message "Showing the *annotated* version"))))
 
     (open-pdf-document-other-frame-or-window filepath page nil -1)))
 

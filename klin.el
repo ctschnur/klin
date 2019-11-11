@@ -32,6 +32,7 @@
 (require 'klin-tabs)
 (require 'klin-pdf-frames)
 (require 'klin-presentations)
+(require 'klin-xournalpp)
 
 ;; (require 'klin-hydras)
 (require 'klin-bindings)

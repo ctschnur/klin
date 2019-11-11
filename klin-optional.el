@@ -42,6 +42,10 @@
 ;; -------- file add watcher in scanner
 (require 'filenotify)
 
+(defvar my-open-the-annotated-version-first nil
+  "Normally, the annotated version is not being opened first.
+But it now can be set to be opened first.")
+
 (defvar desc-global nil
   "Descriptor for the callback.")
 
@@ -104,7 +108,7 @@
           ))
 
 
-(defun my-start-process-freehand-note-program (arg freehand-note-filepath)
+(defun my-start-process-freehand-note-program (freehand-note-filepath)
   (let* ((freehand-note-filename (file-name-nondirectory freehand-note-filepath))
          proc
          (freehand-notes-filename-base (file-name-base freehand-note-filename)))
@@ -124,8 +128,7 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
                                             (concat "echo " (prin1-to-string freehand-note-filepath)
                                                     " | entr "
                                                     " xournalpp " (prin1-to-string freehand-note-filepath)
-                                                    " -p " (prin1-to-string (my-get-freehand-note-fliepath-associated-pdf-filepath
-                                                                             freehand-note-filepath)))))))
+                                                    " -p " (prin1-to-string (my-get-freehand-note-filepath-associated-pdf-filepath freehand-note-filepath)))))))
 
 (defun path-is-relative (path)
   "Works on linux."
@@ -192,13 +195,14 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
             (set-process-sentinel (setq proc-freehand-notes-pdf-exporter (my-start-process-freehand-note-program-pdf-exporter-background
                                                                           found-file-path))
                                 (lambda (process event)
-                                  (princ (format "Process: %s had the event '%s'" process
-                                                 event))))
+                                  ;; (princ (format "Process: %s had the event '%s'" process
+                                  ;;                event))
+                                  ))
 
             (set-process-sentinel (my-start-process-freehand-note-program found-file-path)
                                   (lambda (process event)
-                                    (princ (format "Process: %s had the event '%s'" process
-                                                   event))
+                                    ;; (princ (format "Process: %s had the event '%s'" process
+                                    ;;                event))
                                     (kill-process proc-freehand-notes-pdf-exporter))))
           ))
     (user-error "No link-content provided")))
@@ -211,7 +215,7 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
   (unless link-content
     (setq link-content (org-element-property :path (org-element-context))))
 
-  (if (my-get-freehand-note-fliepath-associated-pdf-filepath
+  (if (my-get-freehand-note-filepath-associated-pdf-filepath
        link-content)
       (my-open-freehand-generated-pdf link-content)))
 
@@ -260,12 +264,16 @@ to their filenames")
   "Essentially a timestamp."
   (format-time-string "%Y-%m-%d--%H-%M-%S"))
 
+(defun my-get-freehand-note-annotating-filename-base (original-file-name-base)
+  (concat original-file-name-base
+          my-annotating-freehand-notes-filename-tag)
+  )
+
 (defun my-get-freehand-note-annotating-filename (original-file-name-base)
   "Get filename base based off
 - the base name of the original file
 - and add the 'annotating' tag to it."
-  (concat original-file-name-base
-          my-annotating-freehand-notes-filename-tag
+  (concat (my-get-freehand-note-annotating-filename-base original-file-name-base)
           "." my-freehand-notes-extension))
 
 (defun my-get-new-freehand-note-filename ()
@@ -291,9 +299,28 @@ to their filenames")
 ppFIXME: automatically terminate the entr session after closing xournal."
   (concat " echo " freehand-note-filepath " | " " entr "
           " xournalpp " freehand-note-filepath " -p "
-          (my-get-freehand-note-fliepath-associated-pdf-filepath
+          (my-get-freehand-note-filepath-associated-pdf-filepath
            freehand-note-filepath)
           " & "))
+
+(defun my-is-filepath-annotating-p (pdf-filepath)
+  "Check if the PDF-FILEPATH's base ends with -ann."
+  (string-equal (car (last (split-string (file-name-base pdf-filepath) "-")))
+                "ann"))
+
+(defun my-is-filepath-generating-p (pdf-filepath)
+  "PDF-FILEPATH is generating, if there exists a corresponding -ann file for it."
+  (file-exists-p (concat (file-name-directory pdf-filepath)
+                         (my-get-freehand-note-annotating-filename (file-name-nondirectory pdf-filepath)))))
+
+(defun my-get-filepath-base-generating (annotated-pdf-filepath)
+  ;; if you end in -ann (actually not even necessarily, because every annotated pdf may have a generating pdf
+  ;; no matter the name), then deliver back the version with the .ann stripped off
+  (let* ((pdf-filepath annotated-pdf-filepath)
+         pdf-filepath-without-ann
+         (length-of-original-sans-extension (length (file-name-sans-extension annotated-pdf-filepath))))
+    (if (string-equal (car (last (split-string my-annotating-freehand-notes-filename-tag "-"))) (car (last (split-string (file-name-base annotated-pdf-filepath) "-"))))
+        (setq pdf-filepath-without-ann (substring-no-properties (file-name-sans-extension annotated-pdf-filepath) 0 (- length-of-original-sans-extension (length my-annotating-freehand-notes-filename-tag)))))))
 
 (defun my-is-point-over-link ()
   "Checks if point is over link."
@@ -326,6 +353,9 @@ ppFIXME: automatically terminate the entr session after closing xournal."
           (user-error "Point is over link"))
       (user-error "File already exist."))))
 
+
+(require 'klin-xournalpp)
+
 (defun my-create-new-freehand-note (&optional arg original-filepath)
   "ARG = ann -> create annotating freehand notes file (annotating ANN-PDF)
 ARG = nil -> create plain freehand notes file from standard template and
@@ -341,22 +371,30 @@ with a standard unique file name"
                 (copy-file (my-get-freehand-note-template-file-path)
                            new-freehand-note-filename)
                 (setq link-content (file-name-base new-freehand-note-filename))
-                (my-run-freehand-notes-program-with-file link-content))
-            (user-error "File already exists"))))
+                (my-run-freehand-notes-program-with-file link-content)
+                t)
+            (message "File already exists"))))
 
     (if (eq arg 'ann)
-        (let* ((original-filename-base (file-name-nondirectory (file-name-base original-filepath))))
-          (setq new-freehand-note-filename (my-get-new-freehand-note-annotating-filename
-                                            original-filename-base))
-          (if (not (file-exists-p new-freehand-note-filename))  ; this checks only if it's in the current path
-              (progn
-                (setq link-content (file-name-base new-freehand-note-filename))
-                ;; cp original.pdf original-ann.pdf && xournalpp original-ann.pdf -n 4
-                (copy-file (my-get-freehand-note-template-file-path)
-                           new-freehand-note-filename)
-                ;; TODO: add page degree of freedom to link
-                (my-run-freehand-notes-program-with-file link-content))
-            (user-error "File already exists"))))))
+        (if (string-equal (file-name-extension buffer-file-name) "pdf")
+            (let* ((original-filename-base (file-name-nondirectory (file-name-base original-filepath))))
+              (setq new-freehand-note-filename (my-get-freehand-note-annotating-filename
+                                                original-filename-base))
+              (if (not (file-exists-p new-freehand-note-filename))  ; this checks only if it's in the current path
+                  (progn
+                    (setq link-content (file-name-base new-freehand-note-filename))
+                    ;; Annotating means: you have already a pdf open, use this as a background
+                    ;; for an annotated copy of this same pdf.
+                    ;; ;; cp original.pdf original-ann.pdf && xournalpp original-ann.pdf -n 4
+                    ;; (copy-file (my-get-freehand-note-template-file-path)
+                    ;;            new-freehand-note-filename)
+                    (cs-create-xournalpp-file-for-pdf (buffer-file-name)
+                                                      (expand-file-name new-freehand-note-filename))
+
+                    ;; TODO: add page degree of freedom to link
+                    (my-run-freehand-notes-program-with-file link-content)
+                    t)
+                (message "File already exists")))))))
 
 ;; --------
 

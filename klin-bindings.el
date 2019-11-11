@@ -131,44 +131,78 @@
 
 (defun pdf-view-run-context-aware-hydra ()
   (interactive)
-  (let* ((hydra-body (eval (remove nil
-                                   `(defhydra hydra-klin-open-from-pdf-view
-                                      (:columns 3 :exit t)
-                                      "klin: open from pdf-view"
-                                      ;; if generating freehand notes exist
-                                      ,(if (file-exists-p (concat (file-name-sans-extension (buffer-file-name))
-                                                                  "."
-                                                                  my-freehand-notes-extension))
-                                           '("f g"
-                                             (lambda ()
-                                               (interactive)
-                                               (auto-revert-mode 1)
-                                               (my-run-freehand-notes-program-with-file))
-                                             "open generating freehand notes"))
-                                      ;; if annotating freehand notes exist
-                                      ,(let* ((link-content-from-pdf-view (file-name-base (buffer-file-name)))
-                                              )
-                                         (if (file-exists-p (concat (my-get-freehand-note-annotating-filename link-content-from-pdf-view)))
-                                             (let* ((searched-for-link-content (concat link-content-from-pdf-view
-                                                                                       my-annotating-freehand-notes-filename-tag)))
+  (let* ((link-content-from-pdf-view (file-name-base (buffer-file-name)))
+         (annotated-pdf-filepath (concat (my-get-freehand-note-filepath-associated-pdf-filepath (my-get-freehand-note-annotating-filename
+                                                                                                 link-content-from-pdf-view))))
+         (created-annotated-pdf-path (concat (file-name-directory (buffer-file-name))
+                                             (my-get-freehand-note-annotating-filename-base (file-name-base (buffer-file-name)))
+                                             ".pdf"))
+         (searched-for-link-content (concat link-content-from-pdf-view my-annotating-freehand-notes-filename-tag)))
+    (let* ((hydra-body (eval (remove nil
+                                     `(defhydra hydra-klin-open-from-pdf-view
+                                        (:columns 2 :exit t)
+                                        "klin: open from pdf-view"
+                                        ;; if generating freehand notes exist
+
+                                        ,(if (file-exists-p (concat (file-name-sans-extension (buffer-file-name))
+                                                                    "."
+                                                                    my-freehand-notes-extension))
+                                             (let* ()
+                                               `("f g"
+                                                 (lambda ()
+                                                   (interactive)
+                                                   (auto-revert-mode 1)
+                                                   (my-run-freehand-notes-program-with-file ,link-content-from-pdf-view))
+                                                 "open (existing) generating freehand notes")
+                                               (let* ()
+                                                 (when (my-is-filepath-annotating-p (buffer-file-name))
+                                                   `("s"
+                                                     (lambda ()
+                                                       (interactive)
+                                                       (auto-revert-mode 1)
+                                                       (find-file-existing ,(concat (my-get-filepath-base-generating (buffer-file-name))
+                                                                                    ".pdf")))
+                                                     "switch to (generating) pdf")))))
+                                        ;; if annotating freehand notes exist
+
+                                        ,(if (or (file-exists-p (concat (my-get-freehand-note-annotating-filename
+                                                                         link-content-from-pdf-view)))
+                                                 (string-equal (file-name-base (buffer-file-name))
+                                                               link-content-from-pdf-view))
+                                             (let* ()
                                                `("f a"
                                                  (lambda ()
                                                    (interactive)
                                                    (auto-revert-mode 1)
-                                                   (my-run-freehand-notes-program-with-file ,searched-for-link-content))
+                                                   (my-run-freehand-notes-program-with-file ,searched-for-link-content)
+                                                   (find-file ,created-annotated-pdf-path)
+                                                   (pdf-view-redisplay)
+                                                   (auto-revert-mode 1))
                                                  "open (already exiting) annotating freehand notes"))
                                            ;; else: create annotating freehand notes
-                                           '("c a f"
+                                           ;; (if it doesn't already end in -ann)
+                                           ;; (one could try to nest this further, but I don't see the real use in that now)
+                                           (if (not (my-is-filepath-annotating-p (buffer-file-name)))
+                                               (let* ()
+                                                 `("c a f"
+                                                   (lambda ()
+                                                     (interactive)
+                                                     (my-create-new-freehand-note 'ann)
+                                                     (find-file ,created-annotated-pdf-path)
+                                                     (pdf-view-redisplay)
+                                                     (auto-revert-mode 1))
+                                                   "create (not yet existing) annotating freehand notes"))))
+                                        ,(when (file-exists-p annotated-pdf-filepath)
+                                           `("s"
                                              (lambda ()
                                                (interactive)
                                                (auto-revert-mode 1)
-                                               (my-create-new-freehand-note 'ann))
-                                             "create (not yet existing) annotating freehand notes")))
-                                      ("q" nil "cancel"))))))
-
-    (hydra-klin-open-from-pdf-view/body)
-    (fmakunbound 'hydra-klin-open-from-pdf-view/body)
-    (setq hydra-klin-open-from-pdf-view nil)))
+                                               (find-file-existing ,annotated-pdf-filepath))
+                                             "switch to (annotated) pdf"))
+                                        ("q" nil "cancel"))))))
+      (hydra-klin-open-from-pdf-view/body)
+      (fmakunbound 'hydra-klin-open-from-pdf-view/body)
+      (setq hydra-klin-open-from-pdf-view nil))))
 
 (define-key pdf-view-mode-map (kbd "C-M-, o") ; o: open
   'pdf-view-run-context-aware-hydra)
