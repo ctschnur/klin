@@ -158,7 +158,7 @@ This may be called inside an opened pdf, to e.g. manually add a
 page-offset field to a bibtex entry."
   (interactive
    (list
-    (read-number "pdf page offset number: ")))
+    (read-number "pdf page offset number (\"which pdf page is book page 0?\"): ")))
   (message "number is %s." (number-to-string num))
   num)
 
@@ -227,14 +227,14 @@ is given, search in the current bib buffer."
                   ;; 1
                   0)))
 
-    (let* ((my-open-the-annotated-version-first t))
-      (if my-open-the-annotated-version-first
-          ;; check if there is an annotated version
-          (let* ((annotated-pdf-filepath (concat (file-name-nondirectory filepath)
-                                                 (my-get-freehand-note-annotating-filename (file-name-base filepath)))))
-            (if (file-exists-p annotated-pdf-filepath)
-                (setq filepath annotated-pdf-filepath))
-            (message "Showing the *annotated* version"))))
+    (if my-open-the-annotated-version-first
+        ;; check if there is an annotated version
+        (let* ((annotated-pdf-filepath (concat (file-name-nondirectory filepath)
+                                               (my-get-freehand-note-annotating-filename (file-name-base filepath)))))
+          (if (file-exists-p annotated-pdf-filepath)
+              (progn
+                (setq filepath annotated-pdf-filepath)
+                (message "Showing the *annotated* version")))))
 
     (open-pdf-document-other-frame-or-window filepath page nil -1)))
 

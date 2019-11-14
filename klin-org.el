@@ -413,17 +413,16 @@ So that it can be compiled into a latex file with references."
         (if dont-issue-error
             nil
           (user-error "Not on file link"))
-
-      (let* ((my-open-the-annotated-version-first t))
-        (if my-open-the-annotated-version-first
-            ;; check if there is an annotated version
-            (let* ((annotated-pdf-filepath (concat (file-name-directory filepath)
-                                                   (my-get-freehand-note-annotating-filename-base (file-name-base filepath))
-                                                   ".pdf")))
-              (if (file-exists-p annotated-pdf-filepath)
-                  (progn
-                    (setq filepath annotated-pdf-filepath)
-                    (message "Showing the *annotated* version"))))))
+      ;; if on file link
+      (if my-open-the-annotated-version-first
+          ;; check if there is an annotated version
+          (let* ((annotated-pdf-filepath (concat (file-name-directory filepath)
+                                                 (my-get-freehand-note-annotating-filename-base (file-name-base filepath))
+                                                 ".pdf")))
+            (if (file-exists-p annotated-pdf-filepath)
+                (progn
+                  (setq filepath annotated-pdf-filepath)
+                  (message "Showing the *annotated* version")))))
 
       (open-pdf-document-other-frame-or-window filepath nil nil -1)
       t)))

@@ -253,23 +253,35 @@ notes file, even if it finds one."
                    (org-noter))
                  (throw 'break t))))))))))
 
+  ;; run this after some time, when the window has been opened rendered
+
+  (run-with-idle-timer 0.25 nil 'my-after-org-noter-is-ready)
+  )
+
+
+(defun my-after-org-noter-is-ready ()
+  (interactive)
   ;; CHANGED:
   (org-noter-goto-org-document-and-widen-buffer)
   ;; (cs-highlight-org-noter-section)
   ;; (let ((window (org-noter--get-notes-window)))
   ;;   (select-frame-set-input-focus (window-frame window))
   ;;   (select-window window))
-  (org-display-inline-images)
-
   ;; (org-latex-fragment)
-  (cs-turn-on-org-dynamic-preview-latex-fragment)
-
   ;; (call-interactively 'org-toggle-latex-fragment-with-prefix-arg)
-
-  (setq org-export-with-sub-superscripts nil)
   (let ((inhibit-read-only t))
-    (remove-text-properties (point-min) (point-max) '(read-only t)))
-  )
+    (remove-text-properties (point-min)
+                            (point-max)
+                            '(read-only t)))
+
+  ;; (with-selected-window (org-noter--get-doc-window)
+  ;;   (pdf-view-set-comfortable-reading-size))
+  (select-window (org-noter--get-notes-window))
+  ;; (org-display-inline-images)
+  (org-toggle-latex-fragment '(16))  ;; this means C-u C-u as prefix argument here
+  (cs-turn-on-org-dynamic-preview-latex-fragment)
+  (setq org-export-with-sub-superscripts nil)
+  (message "Done."))
 
 (defun org-toggle-latex-fragment-with-prefix-arg ()
   "This only toggles it. TODO: I want a function that deliberately enables/disables
@@ -282,10 +294,13 @@ programmatically."
 (defun org-noter-goto-org-document-and-widen-buffer ()
   (interactive)
   (let* ((notes-window (org-noter--get-notes-window)))
-    (when notes-window
-      (select-window notes-window)
-      (org-noter-widen-buffer)
-      (message "Notes buffer has been widened"))))
+    (if notes-window
+        (progn
+          (select-window notes-window)
+          (org-noter-widen-buffer)
+          (message "Notes buffer has been widened"))
+      (message "No notes window yet available for widening"))
+    ))
 
 
 ;; --- other highlighting function
@@ -327,11 +342,62 @@ programmatically."
     (hlt-highlight-lines begin end nil nil)
     ))
 
+(defun org-noter-jump-into-it-next-note ()
+  "In an org-buffer (not org-noter), search the next NOTER_PAGE or NOTER_DOCUMENT property.
+Then launch org-noter in there."
+  (interactive)
+  (let* ((point-before (point))
+         (point-page (save-excursion (re-search-forward (regexp-quote ":NOTER_PAGE:") nil t)
+                                     (when (not (eq (point) point-before))
+                                       (point))))
+         (point-doc (save-excursion (re-search-forward (regexp-quote ":NOTER_DOCUMENT:") nil t)
+                                    (when (not (eq (point) point-before))
+                                      (point)))))
+    (cond
+     ((and point-page (not point-doc))
+      (goto-char point-page))
+     ((and point-doc (not point-page))
+      (goto-char point-doc))
+     ((and point-doc point-page)
+      (if (< (abs (- (point) point-doc))
+             (abs (- (point) point-page)))
+          (goto-char point-doc)
+        (goto-char point-page))))
+
+    (org-noter-goto-org-document-and-widen-buffer)
+    (org-noter)
+    (org-noter-goto-org-document-and-widen-buffer)))
+
+(defun org-noter-jump-into-it-prev-note ()
+  "In an org-buffer (not org-noter), search the prev NOTER_PAGE or NOTER_DOCUMENT property.
+Then launch org-noter in there."
+  (interactive)
+  (let* ((point-before (point))
+         (point-page (save-excursion (re-search-backward (regexp-quote ":NOTER_PAGE:") nil t)
+                                     (when (not (eq (point) point-before))
+                                       (point))))
+         (point-doc (save-excursion (re-search-backward (regexp-quote ":NOTER_DOCUMENT:") nil t)
+                                    (when (not (eq (point) point-before))
+                                       (point)))))
+    (cond
+     ((and point-page (not point-doc))
+      (goto-char point-page))
+     ((and point-doc (not point-page))
+      (goto-char point-doc))
+     ((and point-doc point-page)
+      (if (< (abs (- (point) point-doc))
+             (abs (- (point) point-page)))
+          (goto-char point-doc)
+        (goto-char point-page))))
+
+    (org-noter-goto-org-document-and-widen-buffer)
+    (org-noter)
+    (org-noter-goto-org-document-and-widen-buffer)))
 
 ;; copy org-noter-sync-previous-note and make an adapted function that is mapped to a different key
 ;; that switches up into the really wanted pdf
-
 ;; Simply override this one to stay in the notes buffer
+
 (defun org-noter-sync-prev-note ()
   "Go to the location of the previous note, in relation to where the point is.
 As such, it will only work when the notes window exists."

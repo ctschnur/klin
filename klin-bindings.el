@@ -38,21 +38,29 @@
 (require 'pdf-view)
 
 
+;; ------- if not (yet) in org-noter -------
+(define-key org-mode-map (kbd "C-S-M-l") 'org-noter)
+(define-key org-mode-map (kbd "C-S-M-p") 'org-noter-jump-into-it-prev-note)
+(define-key org-mode-map (kbd "C-S-M-n") 'org-noter-jump-into-it-next-note)
+;; ----------
+
 ;; -------- within org-noter ---------
 (with-eval-after-load 'org-noter
   (define-key org-noter-notes-mode-map (kbd "C-S-M-p") 'org-noter-sync-prev-note-in-prev-pdf)
   (define-key org-noter-notes-mode-map (kbd "C-S-M-n") 'org-noter-sync-next-note-in-next-pdf)
   (define-key org-noter-notes-mode-map (kbd "C-S-M-h") 'org-noter-switch-to-base-buffer))
 
-(define-key org-mode-map (kbd "C-S-M-l") 'org-noter)
-
-;; ----------
+(define-key org-noter-notes-mode-map (kbd "C-M-, k k") 'org-noter-kill-session)
+(define-key org-noter-doc-mode-map (kbd "C-M-, k k") 'org-noter-kill-session)
 
 ;; -------- org-mode important klin keys
 (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
 ;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
 (define-key org-mode-map (kbd "C-M-, b j") 'org-ref-open-citation-at-point)
-(define-key org-mode-map (kbd "C-M-, w") 'klin-org-watch-and-insert-scanned-file)
+(define-key org-mode-map (kbd "C-M-, w s") 'klin-org-watch-and-insert-scanned-file)
+;; (define-key org-mode-map (kbd "C-M-, w c") nil)
+(define-key org-mode-map (kbd "C-M-, w c s") 'watch-and-insert-arriving-files)
+(define-key org-mode-map (kbd "C-M-, w c a") 'abort-continous-watcher)
 (define-key org-mode-map (kbd "C-M-, b c") 'klin-bibtex-jump-to-collective-bib-file)
 
 
@@ -165,33 +173,39 @@
                                                      "switch to (generating) pdf")))))
                                         ;; if annotating freehand notes exist
 
-                                        ,(if (or (file-exists-p (concat (my-get-freehand-note-annotating-filename
-                                                                         link-content-from-pdf-view)))
-                                                 (string-equal (file-name-base (buffer-file-name))
-                                                               link-content-from-pdf-view))
-                                             (let* ()
-                                               `("f a"
-                                                 (lambda ()
-                                                   (interactive)
-                                                   (auto-revert-mode 1)
-                                                   (my-run-freehand-notes-program-with-file ,searched-for-link-content)
-                                                   (find-file ,created-annotated-pdf-path)
-                                                   (pdf-view-redisplay)
-                                                   (auto-revert-mode 1))
-                                                 "open (already exiting) annotating freehand notes"))
-                                           ;; else: create annotating freehand notes
-                                           ;; (if it doesn't already end in -ann)
-                                           ;; (one could try to nest this further, but I don't see the real use in that now)
-                                           (if (not (my-is-filepath-annotating-p (buffer-file-name)))
-                                               (let* ()
-                                                 `("c a f"
-                                                   (lambda ()
-                                                     (interactive)
-                                                     (my-create-new-freehand-note 'ann)
-                                                     (find-file ,created-annotated-pdf-path)
-                                                     (pdf-view-redisplay)
-                                                     (auto-revert-mode 1))
-                                                   "create (not yet existing) annotating freehand notes"))))
+                                        ,(let* (try-file open-file searched-for-link-content)
+                                           (cond
+                                            ( ;; it's a generating pdf that is shown and you want to find the existing annotating file
+                                             (file-exists-p (setq try-file (concat (my-get-freehand-note-annotating-filename
+                                                                                    link-content-from-pdf-view))))
+                                             (setq open-file (expand-file-name try-file))
+                                             (setq searched-for-link-content (file-name-base try-file)))
+                                            ( ;; it's an annotated pdf that is shown and you wish to find the corresponding annotating file
+                                             (file-exists-p (setq try-file (concat (my-get-freehand-note-filepath-from-annotated-pdf-filepath (buffer-file-name)))))
+                                             (setq open-file (expand-file-name try-file))
+                                             (setq searched-for-link-content (file-name-base try-file))
+                                             ))
+
+                                           (when open-file
+                                             `("f a"
+                                               (lambda ()
+                                                 (interactive)
+                                                 (auto-revert-mode 1)
+                                                 (my-run-freehand-notes-program-with-file ,searched-for-link-content)
+                                                 (find-file ,(my-get-freehand-note-filepath-associated-pdf-filepath try-file))
+                                                 (pdf-view-redisplay)
+                                                 (auto-revert-mode 1))
+                                               "open (already exiting) annotating freehand notes")))
+                                        ,(when (not (my-is-filepath-annotating-p (buffer-file-name)))
+                                           (let* ()
+                                             `("c a f"
+                                               (lambda ()
+                                                 (interactive)
+                                                 (my-create-new-freehand-note 'ann)
+                                                 (find-file ,created-annotated-pdf-path)
+                                                 (pdf-view-redisplay)
+                                                 (auto-revert-mode 1))
+                                               "create (not yet existing) annotating freehand notes")))
                                         ,(when (file-exists-p annotated-pdf-filepath)
                                            `("s"
                                              (lambda ()
@@ -232,22 +246,18 @@
 ;; ------- within a normal pdf
 (define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
 
-;; (eval-after-load 'pdf-view
-;;   '(progn
-;;      (define-key pdf-view-mode-map (kbd "M-h") 'pdf-annot-add-highlight-markup-annotation)
-;;      ;; (define-key pdf-view-mode-map (kbd "r") nil)
-;;      (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)))
-
 (defun my-add-pdf-view-comfortable-read-key ()
   (interactive)
   (evil-define-key 'normal pdf-view-mode-map (kbd "B") 'pdf-history-backward)
   (evil-define-key 'normal pdf-view-mode-map (kbd "F") 'pdf-history-forward)
   (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'pdf-view-set-comfortable-reading-size)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
   (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
   ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
   )
 
 (add-hook 'pdf-view-mode-hook #'my-add-pdf-view-comfortable-read-key)
+(add-hook 'pdf-view-mode-hook #'pdf-view-set-comfortable-reading-size t)
 ;; -------
 
 ;; ------- within a bibtex buffer
@@ -360,6 +370,5 @@
 ;; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
 
 (provide 'klin-bindings)
-
 
 ;;; klin-bindings.el ends here

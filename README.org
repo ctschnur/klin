@@ -1,88 +1,54 @@
-* klin - functionality for my science writing workflow
-** misc notes
-The name /klin/ is a one-step rotation of the word /link/. 
-This emacs-lisp library provides functions to /link/ together and integrate tools to as conveniently as possible link together all produced documents during e.g. lectures, and alongside that, to integrate all other side notes/exercises directly from the cloud into an org-mode document (e.g. after taking a picture/scanning a document with your phone camera). 
+* Klin - integration of tools for notetaking and academic writing
+This emacs-lisp library aims at creating a workflow to efficiently /link together all digital and hand-written notes one may have on a topic/ (for me, those are /university classes/). At the same time, in integrates tools to make all linked notes /editable/, even scanned-in handwritten notes (using open-source freehand drawing tools).
 
-I intend to do all structuring of arguments/researching of topics in e-books from within emacs, so this library implements some functions to make quick browsing and comparing of a number of pdf documents easy.
+** What software is used?
+/Klin/ integrates the following software (all free, mostly open source): 
+- Linux (the developer uses [[https://ubuntu.com/][Ubuntu]]; Mac should also be possible, since it has a unix shell and the software unix-shell commands for many things, e.g. interaction between emcas and other programs; Windows: most tools used here are cross-platform, but windows doesn't come with a unix shell, which limits functionality)
+- [[https://www.gnu.org/software/emacs/][Emacs]] (one of the most powerful and most expandable/scriptable text editors (comparable to an operating system) there is (as of 2019))
+  - [[https://orgmode.org/][Org mode]] (one of the most powerful and most expandable digital notetaking/GTD systems, based on plain text; this README document was created using org-mode)
+  - [[https://github.com/politza/pdf-tools][pdf-tools]] (emacs' way of viewing/searching/annotating PDFs; pixel-wise continuous scrolling is sadly not supported (as of 2019))
+  - [[https://github.com/jkitchin/org-ref][org-ref]] (management of references for org-mode; several functions implemented in org-ref are used/built upon to manage bibliography/references)
+  - [[https://github.com/weirdNox/org-noter][org-noter]] (package for note-taking by interleaving pdfs with side-by-side viewing of pdf and org-mode notes; basic functionality is taken and modified/expanded upon to interleave different sections of different pdfs in different org-mode headlines and continuously scroll through them, always creating new org-noter sessions, but keeping the cursor in the notes buffer and keeping the notes buffer widened (not narrowed)).
+  - [[https://github.com/abo-abo/hydra][Hydra]] (key (!) package for quick summary of and access to useful functions in various contexts of the software; several conditional hydras are implemented in different contexts, all using lisp's /code as data/ capabilities)
+  - [[https://github.com/knu/elscreen][ElScreen]] (for tabbed viewing/switching between several pdfs, trying to make pdf viewing more browser-like)
+- [[https://github.com/xournalpp/xournalpp][Xournalpp]] (software to annotate pdfs, keeping the original pdf and the annotated one seperate; includes freehand annotation functionality)
+- [[https://de.wikipedia.org/wiki/Portable_Document_Format][PDF]] (the files that you want to freehand-annotate are assumed to be pdfs)
 
-Imagine a tabbed pdf viewer (much like in a browser) together with the ability to via simple key commands make cross-references encoded in plain text, and pull together all your sources into an org-mode document to produce some structured writing about the problem at hand, all in one place, pulling together all the information necessary and making it accessible inside a powerful dynamic environment like emacs.
-
-So far, my workflow relies on a few specific packages, among them are elscreen, pdf-tools, org-ref, org-noter and hydra. 
-
-** TODO: 
-- make a command that, in a seperate frame, lets you select two newly created pdf scans (watch cloud folder fed by my scanner), display them side by side for you to check, then makes one temporary file out of them using the command
+Altough it can already do a lot of things, it is currently under construction.
+** Recently implemented features/TODO's: 
+- [ ] define a global variable that controls wether or not after a call to org-noter, the inline latex preview of the corresponding section is automatically rendered (not toggled, but rendered).
+- [ ] quick scanning of double-sided handwritten notes and insertion of links into org file:
+  - [ ] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 
+  - [ ] implement a merge function that takes two selected files (within the selected region of the org-mode buffer) and merges (collates pages) them into an output file that is put in the same directory and is linked to by another org-mode link inserted afterwards. The command 
 #+BEGIN_SRC sh
 pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
 #+END_SRC
-  which lets you check the output, then lets you save it as a non-temporary file in the scanner folder and simultaneously moves the the two seperate pdfs to trash
-
-** Changes (mentale Stütze): 
-- [ ] find out why cite link suddenly didn't work
-- [ ] Current issue: create fresh xopp file with a background already attached to it.
-- [ ] modify =org-noter= to be able to navigate a series of interleaved pdf documents in a widened org-mode buffer (to continuously scroll through the slides from my lectures and my handwritten additional ontes, which all are separate pdfs)
+collates two scanned pdfs into one. 
+  - [ ] implement function that is run on an org-mode link (scanned pdf) and inserts an org-noter headline referring to that link into the org buffer, at the current position.
+- [ ] implement /pop-off/ function for org-noter, where a new frame is opened up containing the same frame configuration as the old org-noter frame, but showing the original (base) buffers (pdf window not dedicated, independend searching/scrolling of the pdf and the document windows, but still the ability remains to go back to the old org-noter session instantly, if you launch org-noter from inside the document buffer)
+- [ ] implement /pop-off/ function that creates a new frame /just above and with the same dimensions and scroll state/ as the window it was launched on.
+- [X] modify =org-noter= to be able to navigate a series of interleaved pdf documents in a widened org-mode buffer (to continuously scroll through the slides from my lectures and my handwritten additional ontes, which all are separate pdfs)
+- [X] PDF freehand annotation: make every pdf viewed in =pdf-view-mode= easily /freehand annotatable/, using the great tool xournalpp. This can be especially useful if you have a convertible laptop on which you can do both freehand drawing and use emacs at the same time.
+  - [X] make a hydra from within =pdf-view-mode= that scans for/opens up an xournalpp freehand annotation file corresponding to the current pdf
+  - [X] export pdf automatically in the background and revert it's buffer in emacs, every time when the annotation file is being saved from within the xouranlpp GUI.
+  - [X] Create fresh xournalpp file with a background already attached to it.
+- [X] find out why cite link suddenly didn't work
 - [X] make =org-noter= notes easily renderable to latex
 - [X] make helm-source for opening a selection of PDFs from reference.bib in new frame for quick interactive browsing
 - [X] make function that watches my cloud "scanning" folder for quick scanning of snippets and immediate pdf link insertion into org-mode
 - [X] Detaching and attaching windows visually (used for scraps of scanned paper with similar, arbitrary names, so I won't type them to go look for these buffers)
+- [X] Jump to references (and to specific pages therein) that have associated pdf files, using additional custom bibtex fields =filepath={[Filepath of associated pdf file]}= and =file-page-offset={[Page number where arabic counting starts]}=
+  - [X] associate a /collective/ bibtex file (references) to an org-mode file (contains notes)
+  - [X] make a function that scans the current emacs buffers for org-mode files referencing /collective/ bibtex files.
+  - [X] for every pdf that you might want to reference (e.g. some e-book, lecture notes, ...), create a /self-/ bibtex entry.
+    - [X] make it easy to in a bibtex buffer, act on the current bibtex entry pull it down from the internet/manually fix its fields
+      - [X] create a hydra acting on the bibtex entry under cursor, giving access to functions that update it's fields
+- [X] automatically insert scanned-in pdf as a link into org-mode as it arrives in a cloud folder (e.g.: scan pages using a smartphone's camera and dropbox's pdf scanning functionality)
 
-*** Nice to have, but low priority: 
+*** Other /nice-to-have/ or /long-term/ ideas:
+- create function that makes interactive latex editing/viewing easy (all in org-mode buffer) by inserting a cursor into the rendered latex equation and having a hotkey toggle between source and rendered representation (might be revolutionary, but will require some time to implement)
 - make elscreen create new buffers to fill in the gap after killing an elscreen buffer with a number in between minimum and maximum
-
-*** More challenging ideas:
-- create function that makes interactive latex editing/viewing easy (all in org-mode buffer) by inserting a cursor into the rendered latex equation and having a hotkey toggle between source and rendered representation (might be revolutionary, but will require some time)
-- make a list of features in this README
-
-*** Delayed/dismissed TODOs:   
-- TODO: try to do the following: define a variable holding the hydra heads of common org and one holding the hydra heads of org-noter
-- then, let each mode have it's own hydra, and evaluate (eval '(...)) org-mode's hydra in org-noter's hydra, so that the hint changes dynamically
-- make an integrated workflow to annotate any linked pdf using xournal, so that scanned-in images can be corrected/annotated digitally with e.g. a graphic tablet if necessary.
-- (low importance) make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs- make a graphical pdf editing tool in emacs using pdf-view-mode
-
-*** possible optimizations: 
-**** implement better conditional hydras (in general)
-#+BEGIN_SRC emacs-lisp
-;; create cl-defstruct
-;; with base map (e.g. org-mode-map or global-map)
-;; with prefix
-;; with set of (condition keybinding function)
-
-;; then, define a hydra with
-;; with :hint nil
-;; with base-map as (eval base-map)
-;; with all hydra heads (disrespecting the condition)
-
-;; then, set the hint of that hydra name
-;; collect the ones whose conditions fit in one list -> set them to their prefixes
-;; and the ones whose conditions don't fit in another -> set them to nil
-
-;; (require 'hydra)
-;; ;; as in documentation hydra
-;; (defhydra hydra-on (org-mode-map "C-c" :hint nil)
-;;   "conditional not-messing-with-prefix hydra"
-;;   ("j" next-line)
-;;   ("k" previous-line)
-;;   ;; ("n" next-line)
-;;   ;; ("p" previous-line)
-;;   )
-
-;; (setq hydra-on/hint
-;;       '(if (evenp (line-number-at-pos))
-;;         (prog1 (eval
-;;                 (hydra--format nil '(nil nil :hint nil)
-;;                                (concat "\nhydra:"
-;;                                        " _j_ " "open citation at point"
-;;                                        " _k_ " "watch for scan coming in")
-;;                                hydra-on/heads))
-
-;;           (define-key hydra-on/keymap "C-c n" nil)
-;;           (define-key hydra-on/keymap "C-c p" nil)
-;;           (define-key hydra-on/keymap "C-c j" 'hydra-on/next-line)
-;;           (define-key hydra-on/keymap "C-c k" 'hydra-on/previous-line))
-;;         (prog1 (eval
-;;                 (hydra--format nil '(nil nil :hint nil)
-;;                                "\nodd: _n_ _p_\n" hydra-on/heads))
-;;           (define-key hydra-on/keymap "C-c j" nil)
-;;           (define-key hydra-on/keymap "C-c k" nil)
-;;           (define-key hydra-on/keymap "C-c n" 'hydra-on/next-line)
-;;           (define-key hydra-on/keymap "C-c p" 'hydra-on/previous-line))))
-#+END_SRC
+*** Low-priority TODOs:
+- make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs- make a graphical pdf editing tool in emacs using pdf-view-mode.
+** Where does the name come from?
+="klin"=rotate("link", 1)=

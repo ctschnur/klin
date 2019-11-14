@@ -1,4 +1,4 @@
-;;; klin-optional.el --- klin-optional.el                      -*- lexical-binding: t; -*-
+;; klin-optional.el --- klin-optional.el                      -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
 
@@ -44,7 +44,7 @@
 
 
 
-(defvar my-open-the-annotated-version-first nil
+(defvar my-open-the-annotated-version-first t
   "Normally, the annotated version is not being opened first.
 But it now can be set to be opened first.")
 
@@ -55,12 +55,6 @@ But it now can be set to be opened first.")
   "Insert org link (filepath inside EVENT) to file changed in cloud."
   (interactive)
   (let* ((filepath (expand-file-name (nth 2 event))))
-    ;; removing the watcher immediateley
-    ;; (message "Event %S" event)
-    ;; (message "descriptor: ")
-    ;; (print (car (car event)))
-    ;; (message "action: ")
-    ;; (print (nth 1 event))
     (if (eq (nth 1 event) 'created)
         (progn
           ;; (message "CREATED recognized!")
@@ -76,19 +70,15 @@ But it now can be set to be opened first.")
             (message "not in org-mode, not inserting!"))))
     (if desc-global
         (file-notify-rm-watch desc-global))
-    ;; (run-at-time "1 sec"
-    ;;              nil
-    ;;              (lambda ()
-    ;;                (file-notify-rm-watch desc-global)
-    ;;                (message "Removed the filesystem watcher.")))
     ))
+
+(defvar cloud-scanner-folder
+  (expand-file-name "~/Dropbox/1LinkedApps/scanner/"))
 
 (defun klin-org-watch-and-insert-scanned-file ()
   "Launch file system watcher."
   (interactive)
-  (let* ((cloud-scanner-folder
-          (expand-file-name "~/Dropbox/1LinkedApps/scanner/"))
-         desc)
+  (let* (desc)
     (if (eq major-mode 'org-mode)
         (progn
           (setq desc (file-notify-add-watch cloud-scanner-folder
@@ -96,12 +86,66 @@ But it now can be set to be opened first.")
                                             'klin-watch-callback))
           (setq desc-global desc)
           (message "watching for changes in %s, descriptor: %S"
-                   cloud-scanner-folder
-                   desc))
+                   cloud-scanner-folder desc))
       (message "Not in org-mode, not setting up a watcher!."))))
 
 
 (defvar my-freehand-note-format-file-extension "xopp")
+
+
+(defvar desc-global-callback-continuous nil
+  "Continuous insertion of file names.")
+
+(defun klin-watch-callback-continuous (event)
+  "Insert org link (filepath inside EVENT) to file changed in cloud.
+and don't remove until a key has been pressed that removes this callback
+manually."
+  (interactive)
+  (let* ((filepath (expand-file-name (nth 2 event))))
+    (if (eq (nth 1 event) 'created)
+        (progn
+          ;; (message "CREATED recognized!")
+          ;; (insert "a")
+          (message "%s was added" filepath)
+          (if (eq major-mode 'org-mode)
+              (let* ()
+                (insert (concat "[["
+                                (klin-utils-get-reduced-file-path filepath)
+                                "]"
+                                "[scan:"
+                                (file-name-nondirectory filepath)
+                                "]]"))
+                (insert "\n"))
+            (message "not in org-mode, not inserting!"))))
+    ;; (if desc-global
+    ;;     (file-notify-rm-watch desc-global))
+    ))
+
+(defun watch-and-insert-arriving-files ()
+  (interactive)
+  (setq abort-continous-watcher nil)
+  (if (eq major-mode 'org-mode)
+      (let* (desc)
+        (setq desc (file-notify-add-watch cloud-scanner-folder
+                                          '(change attribute-change)
+                                          'klin-watch-callback-continuous))
+        (setq desc-global-callback-continuous desc)
+        (message "watching continuously for arriving files in %s, descriptor: %S"
+                 cloud-scanner-folder desc))
+    (message "Not in org-mode, not setting up a continuous watcher!."))
+  )
+
+(defun abort-continous-watcher ()
+  "This terminates (deletes) the continuous watcher."
+  (interactive)
+  (if desc-global-callback-continuous
+      (let* ()
+        ("Aborting continuous watcher.")
+        (file-notify-rm-watch desc-global-callback-continuous))
+    (message "Nothing to end here!"))
+  )
+
+
 
 (defun my-get-freehand-notes-filename-from-file-name-base (file-name-base)
   (concat file-name-base
@@ -221,6 +265,8 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
        link-content)
       (my-open-freehand-generated-pdf link-content)))
 
+
+
 (defun my-get-file-from-searchpaths (file-name-base)
   "Go through the search paths and find the 1st occurence of the file with FILE-NAME-BASE."
   (let* ((ctr 0)
@@ -285,6 +331,11 @@ to their filenames")
 (defun my-get-freehand-note-filepath-associated-pdf-filepath (freehand-note-filepath)
   "Get the assoc pdf file path."
   (concat (file-name-directory freehand-note-filepath) (file-name-base freehand-note-filepath) ".pdf"))
+
+(defun my-get-freehand-note-filepath-from-annotated-pdf-filepath (annotated-pdf-filepath)
+  (concat (file-name-sans-extension annotated-pdf-filepath)
+          "."
+          my-freehand-notes-extension))
 
 (defun my-get-freehand-note-template-file-path ()
   "Get xopp template file path."
@@ -489,12 +540,13 @@ Then, run this function to adjust."
             ;; (setq pdf-view-display-size (/ (* x window-size-width) document-size-width))
             (setq pdf-view-display-size (/ (* x screen-size-width) document-size-width))))
 
-        (pdf-view-redisplay)
-        ;; (pdf-view-create-page (pdf-view-current-page))
+        (run-with-idle-timer 0.1 nil 'my-run-after-pdf-view-mode-is-ready)
         )))
 
-(add-hook 'pdf-view-mode-hook 'pdf-view-set-comfortable-reading-size t)
-
+(defun my-run-after-pdf-view-mode-is-ready ()
+  (interactive)
+  (when (string-equal "pdf" (file-name-extension (buffer-file-name)))
+          (pdf-view-redisplay (selected-window))))
 
 ;; ------------------
 
