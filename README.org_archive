@@ -1,0 +1,54 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /home/chris/Dropbox/stuff/klin/README.org
+
+
+* Recently implemented features/TODO's: 
+  :PROPERTIES:
+  :ARCHIVE_TIME: 2019-11-14 jeu. 23:08
+  :ARCHIVE_FILE: ~/Dropbox/stuff/klin/README.org
+  :ARCHIVE_OLPATH: Klin - integration of tools for notetaking and academic writing
+  :ARCHIVE_CATEGORY: README
+  :END:
+- [ ] define a global variable associated to an org-mode document, that controls wether or not after a call to org-noter, the inline latex preview of the corresponding section is automatically rendered (not toggled, but rendered).
+- [ ] Fix issues:
+  - [ ] it seems like calling org-noter, sometimes the lines are either wrapped, or not. It is a toggle behaviour that occurs in the target, when from inside an org-noter document you directly launch another org-noter session (target).
+- [ ] quick scanning of double-sided handwritten notes and insertion of links into org file:
+  - [ ] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 
+  - [ ] implement a merge function that takes two selected files (within the selected region of the org-mode buffer) and merges (collates pages) them into an output file that is put in the same directory and is linked to by another org-mode link inserted afterwards. The command 
+#+BEGIN_SRC sh
+pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
+#+END_SRC
+collates two scanned pdfs into one. 
+  - [ ] implement function that is run on an org-mode link (scanned pdf) and inserts an org-noter headline referring to that link into the org buffer, at the current position.
+- [ ] implement /pop-off/ function for org-noter, where a new frame is opened up containing the same frame configuration as the old org-noter frame, but showing the original (base) buffers (pdf window not dedicated, independend searching/scrolling of the pdf and the document windows, but still the ability remains to go back to the old org-noter session instantly, if you launch org-noter from inside the document buffer)
+- [ ] implement /pop-off/ function that creates a new frame /just above and with the same dimensions and scroll state/ as the window it was launched on.
+- [ ] write a function to uncouple (make un-dedicated) an org-noter pdf 
+      use this on the org-noter doc window:
+#+BEGIN_SRC emacs-lisp
+(let* () (set-window-dedicated-p (frame-selected-window) nil) (switch-to-buffer (buffer-base-buffer) nil t))
+#+END_SRC
+- [X] modify =org-noter= to be able to navigate a series of interleaved pdf documents in a widened org-mode buffer (to continuously scroll through the slides from my lectures and my handwritten additional ontes, which all are separate pdfs)
+- [X] PDF freehand annotation: make every pdf viewed in =pdf-view-mode= easily /freehand annotatable/, using the great tool xournalpp. This can be especially useful if you have a convertible laptop on which you can do both freehand drawing and use emacs at the same time.
+  - [X] make a hydra from within =pdf-view-mode= that scans for/opens up an xournalpp freehand annotation file corresponding to the current pdf
+  - [X] export pdf automatically in the background and revert it's buffer in emacs, every time when the annotation file is being saved from within the xouranlpp GUI.
+  - [X] Create fresh xournalpp file with a background already attached to it.
+- [X] find out why cite link suddenly didn't work
+- [X] make =org-noter= notes easily renderable to latex
+- [X] make helm-source for opening a selection of PDFs from reference.bib in new frame for quick interactive browsing
+- [X] make function that watches my cloud "scanning" folder for quick scanning of snippets and immediate pdf link insertion into org-mode
+- [X] Detaching and attaching windows visually (used for scraps of scanned paper with similar, arbitrary names, so I won't type them to go look for these buffers)
+- [X] Jump to references (and to specific pages therein) that have associated pdf files, using additional custom bibtex fields =filepath={[Filepath of associated pdf file]}= and =file-page-offset={[Page number where arabic counting starts]}=
+  - [X] associate a /collective/ bibtex file (references) to an org-mode file (contains notes)
+  - [X] make a function that scans the current emacs buffers for org-mode files referencing /collective/ bibtex files.
+  - [X] for every pdf that you might want to reference (e.g. some e-book, lecture notes, ...), create a /self-/ bibtex entry.
+    - [X] make it easy to in a bibtex buffer, act on the current bibtex entry pull it down from the internet/manually fix its fields
+      - [X] create a hydra acting on the bibtex entry under cursor, giving access to functions that update it's fields
+- [X] automatically insert scanned-in pdf as a link into org-mode as it arrives in a cloud folder (e.g.: scan pages using a smartphone's camera and dropbox's pdf scanning functionality)
+
+** Other /nice-to-have/ or /long-term/ ideas:
+- create function that makes interactive latex editing/viewing easy (all in org-mode buffer) by inserting a cursor into the rendered latex equation and having a hotkey toggle between source and rendered representation (might be revolutionary, but will require some time to implement)
+- make elscreen create new buffers to fill in the gap after killing an elscreen buffer with a number in between minimum and maximum
+** Low-priority TODOs:
+- make your custom org link to more seamlessly integrate with org-mode of cross-linking to referenced pdfs- make a graphical pdf editing tool in emacs using pdf-view-mode.

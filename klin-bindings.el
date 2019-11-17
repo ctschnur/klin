@@ -39,6 +39,7 @@
 
 
 ;; ------- if not (yet) in org-noter -------
+(require 'klin-org-noter)
 (define-key org-mode-map (kbd "C-S-M-l") 'org-noter)
 (define-key org-mode-map (kbd "C-S-M-p") 'org-noter-jump-into-it-prev-note)
 (define-key org-mode-map (kbd "C-S-M-n") 'org-noter-jump-into-it-next-note)
@@ -57,10 +58,6 @@
 (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
 ;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
 (define-key org-mode-map (kbd "C-M-, b j") 'org-ref-open-citation-at-point)
-(define-key org-mode-map (kbd "C-M-, w s") 'klin-org-watch-and-insert-scanned-file)
-;; (define-key org-mode-map (kbd "C-M-, w c") nil)
-(define-key org-mode-map (kbd "C-M-, w c s") 'watch-and-insert-arriving-files)
-(define-key org-mode-map (kbd "C-M-, w c a") 'abort-continous-watcher)
 (define-key org-mode-map (kbd "C-M-, b c") 'klin-bibtex-jump-to-collective-bib-file)
 
 
@@ -136,6 +133,99 @@
 
 (define-key org-mode-map (kbd "C-M-, o") ; o: open
   'org-run-context-aware-hydra)
+
+
+;; ----------
+(defun org-run-context-aware-hydra-filesystem-watchers ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-from-org-watch
+                                      (:columns 3 :exit t)
+                                      "klin: open from org"
+                                      ("w s s"
+                                       (lambda ()
+                                         (interactive)
+                                         (klin-org-watch-and-insert-scanned-file))
+                                       "watch for single file")
+                                      ("w s q"
+                                       (lambda ()
+                                         (interactive)
+                                         ())
+                                       "watch for single file quit")
+                                      ("w c s"
+                                       (lambda ()
+                                         (interactive)
+                                         (watch-and-insert-arriving-files))
+                                       "watch continuously quit")
+                                      ("w c q"
+                                       (lambda ()
+                                         (interactive)
+                                         (abort-continous-watcher))
+                                       "watch continuously quit")
+                                      ("q" nil "cancel"))))))
+
+    (hydra-klin-from-org-watch/body)
+    (fmakunbound 'hydra-klin-from-org-watch/body)
+    (setq hydra-klin-from-org-watch/body nil)))
+
+(define-key org-mode-map (kbd "C-M-, w") ; o: open
+  'org-run-context-aware-hydra-filesystem-watchers)
+
+
+;; (define-key org-mode-map (kbd "C-M-, w ") 'watch-and-insert-arriving-files)
+;; (define-key org-mode-map (kbd "C-M-, w s") 'klin-org-watch-and-insert-scanned-file)
+;; (define-key org-mode-map (kbd "C-M-, w c s") 'watch-and-insert-arriving-files)
+;; (define-key org-mode-map (kbd "C-M-, w c a") 'abort-continous-watcher)
+
+
+(defun org-run-context-aware-hydra-rendering ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   (let* ((prop-value (org-global-prop-value render-latex-preview-prop-key)) list-of-heads)
+                                     `(defhydra hydra-klin-rendering-from-org
+                                        (:columns 3 :exit t)
+                                        "klin: open from org"
+                                        ("r"
+                                         (lambda ()
+                                           (interactive)
+                                           (turn-on-latex-toggling-and-render-all-previews))
+                                         "(re-)render latex previews")
+                                        ("t"
+                                         (lambda ()
+                                           (interactive)
+                                           (turn-on-latex-toggling-and-render-all-previews)
+                                           (if (not (buffer-narrowed-p))
+                                               (org-global-prop-set render-latex-preview-prop-key
+                                                                    "t")
+                                             (user-error "Global property not edited. This buffer just is a clone and probably narrowed.")))
+                                         "(re-)render latex previews and set prop. to \"t\"")
+                                        ("f"
+                                         (lambda ()
+                                           (interactive)
+                                           (turn-off-latex-toggling-and-render-all-previews)
+                                           (when (org-remove-latex-fragment-image-overlays ,(point-min)
+                                                                                           ,(point-max))
+                                             (message "LaTeX fragment images removed from section")
+                                             (turn-off-latex-toggling-and-render-all-previews)
+                                             (if (not (buffer-narrowed-p))
+                                                 (org-global-prop-set render-latex-preview-prop-key
+                                                                      "f")
+                                               (user-error "Global property not edited. This buffer just is a clone and prbably narrowed."))
+                                             )
+                                           )
+                                         "remove latex previews, set prop. to \"f\"")
+                                        ("T"
+                                         (lambda ()
+                                           (interactive)
+                                           (toggle-org-dynamic-preview-latex-fragment))
+                                         "Toggle dynamic preview.")
+                                        ("q" nil "cancel")))))))
+  (hydra-klin-rendering-from-org/body)
+  (fmakunbound 'hydra-klin-rendering-from-org/body)
+  (setq hydra-klin-rendering-from-org/body nil)))
+
+(define-key org-mode-map (kbd "C-M-, r") ; r: render
+  'org-run-context-aware-hydra-rendering)
 
 (defun pdf-view-run-context-aware-hydra ()
   (interactive)
@@ -257,7 +347,7 @@
   )
 
 (add-hook 'pdf-view-mode-hook #'my-add-pdf-view-comfortable-read-key)
-(add-hook 'pdf-view-mode-hook #'pdf-view-set-comfortable-reading-size t)
+;; (add-hook 'pdf-view-mode-hook #'pdf-view-set-comfortable-reading-size t)
 ;; -------
 
 ;; ------- within a bibtex buffer
@@ -354,12 +444,16 @@
                    (lambda ()
                      (interactive)
                      (push-buffer nil t))
-                   "into -> window")
+                   "into new elcreen tab")
                   ("c"
                    (lambda ()
                      (interactive)
                      (clear-popped-buffer-and-frame))
-                   "into -> window")))
+                   "clear")
+                  ("q"
+                   nil
+                   "quit")))
+
 
 ;; (global-set-key (kbd "C-. p o f")
 ;;                 (lambda () (pop-buffer 'pop-off 'new-frame)))

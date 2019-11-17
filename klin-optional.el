@@ -33,6 +33,7 @@
 (require 'org-noter)
 
 (require 'klin-utils)
+(require 'klin-conventions)
 
 (require 'cl-lib)
 
@@ -89,9 +90,14 @@ But it now can be set to be opened first.")
                    cloud-scanner-folder desc))
       (message "Not in org-mode, not setting up a watcher!."))))
 
-
-(defvar my-freehand-note-format-file-extension "xopp")
-
+(defun abort-watcher-single ()
+  "This terminates (deletes) the single watcher."
+  (interactive)
+  (if desc-global
+      (let* ()
+        ("Aborting single watcher")
+        (file-notify-rm-watch desc-global))
+    (message "Nothing to end here!")))
 
 (defvar desc-global-callback-continuous nil
   "Continuous insertion of file names.")
@@ -123,7 +129,6 @@ manually."
 
 (defun watch-and-insert-arriving-files ()
   (interactive)
-  (setq abort-continous-watcher nil)
   (if (eq major-mode 'org-mode)
       (let* (desc)
         (setq desc (file-notify-add-watch cloud-scanner-folder
@@ -132,8 +137,7 @@ manually."
         (setq desc-global-callback-continuous desc)
         (message "watching continuously for arriving files in %s, descriptor: %S"
                  cloud-scanner-folder desc))
-    (message "Not in org-mode, not setting up a continuous watcher!."))
-  )
+    (message "Not in org-mode, not setting up a continuous watcher!.")))
 
 (defun abort-continous-watcher ()
   "This terminates (deletes) the continuous watcher."
@@ -142,8 +146,7 @@ manually."
       (let* ()
         ("Aborting continuous watcher.")
         (file-notify-rm-watch desc-global-callback-continuous))
-    (message "Nothing to end here!"))
-  )
+    (message "Nothing to end here!")))
 
 
 
@@ -300,6 +303,18 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 
 (org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
 
+
+(defun my-open-cited-book-pdf-file (&optional link-content)
+  (interactive)
+  (message (concat "hi, " link-content))
+  (let* ((bibtexkey link-content)
+         (description (buffer-substring-no-properties (org-element-property :contents-begin (org-element-context))
+                                                      (org-element-property :contents-end (org-element-context)))))
+    (klin-org-open-link (list nil bibtexkey description))))
+
+(require 'org-ref)
+(org-add-link-type "cite" #'my-open-cited-book-pdf-file)
+
 (defvar my-freehand-notes-extension "xopp")
 
 (defvar my-annotating-freehand-notes-filename-tag "-ann"
@@ -307,6 +322,9 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 openend to be annotated with the freehand notes program, the annotating
 freehand notes file (and it's generated (exported) pdf file, automatically) get a tag appended
 to their filenames")
+
+(defun my-get-timestamp ()
+  (format-time-string "%Y-%m-%d--%H-%M-%S"))
 
 (defun my-get-new-freehand-note-filename-unique-base-component ()
   "Essentially a timestamp."
@@ -451,17 +469,19 @@ with a standard unique file name"
 
 ;; --------
 
+(require 'cl-lib)
+
 (defun org-global-props-key-re (key)
   "Construct a regular expression matching key and an optional plus and eating the spaces behind.
 Test for existence of the plus: (match-beginning 1)"
   (concat "^" (regexp-quote key) "\\(\\+\\)?[[:space:]]+"))
 
-(defun org-global-props (property &optional buffer)
+(defun org-global-props (&optional buffer)
   "Get the plists of global org properties of current buffer."
   (with-current-buffer (or buffer (current-buffer))
-    (org-element-map (org-element-parse-buffer) 'keyword (lambda (el) (when (string-equal (org-element-property :key el) property) (nth 1 el))))))
+    (org-element-map (org-element-parse-buffer) 'keyword (lambda (el) (when (string-equal (org-element-property :key el) "PROPERTY") (nth 1 el))))))
 
-(defun org-global-prop-value (property key)
+(defun org-global-prop-value (key)
   "Get global org property KEY of current buffer.
 Adding up values for one key is supported."
   (let ((key-re (org-global-props-key-re key))
@@ -476,7 +496,42 @@ Adding up values for one key is supported."
             val)))
     ret))
 
-(defun org-global-prop-set (property key value)
+(defun org-global-prop-set (key value)
+  "Set the value of the first occurence of
+#+PROPERTY: KEY
+add it at the beginning of file if there is none."
+  (save-excursion
+    (let* ((key-re (org-global-props-key-re key))
+       (prop (cl-find-if (lambda (prop)
+                   (string-match key-re (plist-get prop :value)))
+                 (org-global-props))))
+      (if prop
+      (progn
+        (assert (null (match-beginning 1)) "First occurence of key %s is followed by +." key)
+        (goto-char (plist-get prop :begin))
+        (kill-region (point) (plist-get prop :end)))
+    (goto-char 1))
+      (insert "#+PROPERTY: " key " " value "\n"))))
+
+
+(defun org-global-keyword-key-value-set (keyword key value)
+  "Set the value of the first occurence of
+#+PROPERTY: KEY
+add it at the beginning of file if there is none."
+  (save-excursion
+    (let* ((key-re (org-global-props-key-re key))
+       (prop (cl-find-if (lambda (prop)
+                   (string-match key-re (plist-get prop :value)))
+                 (org-global-props))))
+      (if prop
+      (progn
+        (assert (null (match-beginning 1)) "First occurence of key %s is followed by +." key)
+        (goto-char (plist-get prop :begin))
+        (kill-region (point) (plist-get prop :end)))
+    (goto-char 1))
+      (insert "#+" keyword ": " key " " value "\n"))))
+
+(defun org-global-keyword-add-set (keyword key value)
   "Set the value of the first occurence of
 #+PROPERTY: KEY
 add it at the beginning of file if there is none."
@@ -536,11 +591,13 @@ Then, run this function to adjust."
                                                  (split-string shell-command-output "\n")))
             (setq document-size-width (float (nth 0 pdf-width-height-tuple)))
             (setq document-size-height (float (nth 1 pdf-width-height-tuple)))
-
-            ;; (setq pdf-view-display-size (/ (* x window-size-width) document-size-width))
             (setq pdf-view-display-size (/ (* x screen-size-width) document-size-width))))
 
-        (run-with-idle-timer 0.1 nil 'my-run-after-pdf-view-mode-is-ready)
+        ;; it needs 0.1 s if pdf-view-mode is just started and this function is called as a hook
+        ;; if called manually, after pdf-view-mode is fully rendered in initialized, it needs
+        ;; basically 0 time
+        ;; actually, the only way of starting it should be manually
+        (run-with-idle-timer 0.01 nil 'my-run-after-pdf-view-mode-is-ready)
         )))
 
 (defun my-run-after-pdf-view-mode-is-ready ()
@@ -549,6 +606,237 @@ Then, run this function to adjust."
           (pdf-view-redisplay (selected-window))))
 
 ;; ------------------
+
+(defun clone-indirect-buffer-other-frame (newname display-flag &optional norecord)
+  "Like `clone-indirect-buffer' but display in another window."
+  (interactive
+   (progn
+     (if (get major-mode 'no-clone-indirect)
+     (error "Cannot indirectly clone a buffer in %s mode" mode-name))
+     (list (if current-prefix-arg
+           (read-buffer "Name of indirect buffer: " (current-buffer)))
+       t)))
+  ;; (let ((pop-up-windows t))
+  (let ((pop-up-frames t)) ; <==========
+    (clone-indirect-buffer newname display-flag norecord)))
+
+(defun get-org-mode-cloning-parameters ()
+  (let* ((cloning-params '()))
+    ;; window-start
+    (push (window-start) cloning-params)))
+
+(defun get-pdf-view-mode-cloning-parameters ()
+  (let* ((cloning-params '()))
+    ;; bookmark record
+    (push (pdf-view-bookmark-make-record) cloning-params))
+  )
+
+(defun set-org-mode-cloning-parameters (org-mode-cloning-params)
+  (if org-mode-cloning-params
+      (let* ()
+        ;; window-start
+        (set-window-start (selected-window) (nth 0 org-mode-cloning-params)))))
+
+(defun set-pdf-view-mode-cloning-parameters (cloning-params)
+  (if cloning-params
+      (let* (;; the bookmark record includes as the buffer name as car
+             ;; so: replace the old buffer name with the new one in the bookmark record
+             (bmk-orig (car cloning-params))
+             (bmk-adapted (push (buffer-name) (cdr bmk-orig))))
+        ;; bookmark record
+        ;; (revert-buffer nil t)
+        (pdf-view-mode)
+        (pdf-view-redisplay-pages)
+        (pdf-view-bookmark-jump bmk-adapted) ;; doesn't work on clones for some reason
+
+        )))
+
+
+(defun get-proper-mode-cloning-parameters ()
+  (cond
+   ((string-equal (file-name-extension (buffer-file-name)) "org")
+    (get-org-mode-cloning-parameters))
+   ((string-equal (file-name-extension (buffer-file-name)) "pdf")
+    (get-pdf-view-mode-cloning-parameters))
+   ))
+
+(defun set-proper-mode-cloning-parameters (cloning-params)
+  (cond
+   ((string-equal (file-name-extension (buffer-file-name)) "org")
+    (set-org-mode-cloning-parameters cloning-params))
+   ((string-equal (file-name-extension (buffer-file-name)) "pdf")
+    (set-pdf-view-mode-cloning-parameters cloning-params))
+   ))
+
+(defun klin-clone-into-new-frame ()
+  (interactive)
+  (let* ((cur-buf (current-buffer))
+         (cloning-params (get-proper-mode-cloning-parameters))
+         (new-frame (make-frame `((width . (text-pixels . ,(window-size nil t t)))
+                                  (height . (text-pixels . ,(window-size nil nil t)))
+                                  (left . ,(+ (car (frame-position)) (window-pixel-left)))
+                                  (top . ,(+ (cdr (frame-position)) (window-pixel-top))))))
+         (new-window (car (window-list new-frame)))
+         new-buffer)
+    (with-selected-window new-window
+      (setq new-buffer (make-indirect-buffer cur-buf
+                                             (generate-new-buffer-name (buffer-name cur-buf))
+                                             nil))
+
+      ;; (setq clone-buffer (clone-indirect-buffer (buffer-file-name) t))
+      (if (not (equal (current-buffer) new-buffer))
+          (switch-to-buffer new-buffer nil t))
+
+      ;; set buffer-file-name (mostly, that's useful e.g. for saving ability)
+      (with-current-buffer new-buffer
+        (setq buffer-file-name (buffer-file-name cur-buf)))
+      (with-current-buffer new-buffer
+        (set-proper-mode-cloning-parameters cloning-params)))))
+
+
+;; override this, because if you launch this function from a clone,
+;; it actually jumps to the bookmark in the original pdf
+;; so, make it check first if the buffer (clone buffer) you are on
+;; when running this function, is visiting the file (pdf)
+(require 'pdf-view)
+(defun pdf-view-bookmark-jump (bmk)
+  "Switch to bookmark BMK.
+
+This function is like `bookmark-jump', but it always uses the
+selected window for display and does not run any hooks.  Also, it
+works only with bookmarks created by
+`pdf-view-bookmark-make-record'."
+
+  (let* ((file (bookmark-prop-get bmk 'filename))
+         ;; return the current buffer if it is visiting the file
+         (buffer (or (when (string-equal (expand-file-name (buffer-file-name))
+                                         (expand-file-name file))
+                       (current-buffer))
+                     (find-buffer-visiting file)
+                     (find-file-noselect file))))
+    (switch-to-buffer buffer)
+    (let (bookmark-after-jump-hook)
+      (pdf-view-bookmark-jump-handler bmk)
+      (run-hooks 'bookmark-after-jump-hook))))
+
+(defun pdf-view-bookmark-jump-handler (bmk)
+  "The bookmark handler-function interface for bookmark BMK.
+
+See also `pdf-view-bookmark-make-record'."
+  (let ((page (bookmark-prop-get bmk 'page))
+        (slice (bookmark-prop-get bmk 'slice))
+        (size (bookmark-prop-get bmk 'size))
+        (origin (bookmark-prop-get bmk 'origin))
+        (file (bookmark-prop-get bmk 'filename))
+        (show-fn-sym (make-symbol "pdf-view-bookmark-after-jump-hook")))
+    (fset show-fn-sym
+          (lambda ()
+            (remove-hook 'bookmark-after-jump-hook show-fn-sym)
+            (unless (derived-mode-p 'pdf-view-mode)
+              (pdf-view-mode))
+            (with-selected-window
+                (or (get-buffer-window (current-buffer) 0)
+                    (selected-window))
+
+              (message (concat "this buffer: "
+                                 (prin1-to-string (current-buffer))
+                                 "this window: "
+                                 (prin1-to-string (selected-window))))
+              (when size
+                (setq-local pdf-view-display-size size))
+              (when slice
+                (apply 'pdf-view-set-slice slice))
+              (when (numberp page)
+                (pdf-view-goto-page page))
+              (when origin
+                (let ((size (pdf-view-image-size t)))
+                  (image-set-window-hscroll
+                   (round (/ (* (car origin) (car size))
+                             (frame-char-width))))
+                  (image-set-window-vscroll
+                   (round (/ (* (cdr origin) (cdr size))
+                             (frame-char-height)))))))))
+    (add-hook 'bookmark-after-jump-hook show-fn-sym)
+    (set-buffer (or (when (string-equal (expand-file-name (buffer-file-name))
+                                         (expand-file-name file))
+                       (current-buffer))
+                    (find-buffer-visiting file)
+                    (find-file-noselect file)))))
+
+(defun get-two-files-and-ask-merge ()
+  "Select two org links by marking the region.
+Then run this function to extract the two file paths and
+suggest a command to be run."
+  (interactive)
+  (if (not (region-active-p))
+      (user-error "You must select a region."))
+
+  (let* ((region-substr (buffer-substring-no-properties (region-beginning)
+                                                        (region-end)))
+         (links '())
+         cmd-str
+         (output-pdf-filename (concat "merged-" (my-get-timestamp) ".pdf"))
+         equal-directory-path
+         output-file-dir-path (expand-file-name "./")
+         output-filepath)
+    (with-temp-buffer
+      (let* (point-recent)
+        (insert region-substr)
+        (org-mode)
+        (goto-char (point-min))
+        (org-next-link)
+        (setq point-recent (point))
+        (setq links (append (list (expand-file-name (org-element-property :path (org-element-context))))
+                            links))
+
+        (org-next-link)
+        (if (eq (point) point-recent)
+            (user-error (concat "Please select two links! here: links="
+                            (prin1-to-string links))))
+        (setq links (append (list (expand-file-name (org-element-property :path (org-element-context))))
+                            links))))
+    ;; now contruct the command; template: pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
+
+    (if (not (= (length links) 2))
+        (user-error (concat "Please select two links! here: links="
+                            (prin1-to-string links))))
+
+    (if (string-equal (setq equal-directory-path (file-name-directory (nth 0 links))) (file-name-directory (nth 1 links)))
+        (setq output-file-dir-path (expand-file-name equal-directory-path))
+      (setq equal-directory-path nil)
+      (setq output-file-dir-path (expand-file-name "./")))
+
+    (setq output-filepath (concat output-file-dir-path output-pdf-filename))
+    (setq cmd-str (concat "pdftk A="
+                          (prin1-to-string (nth 0 links))
+                          " B="
+                          (prin1-to-string (nth 1 links))
+                          " shuffle A B output "
+                          (prin1-to-string (expand-file-name output-filepath))))
+
+    (setq cmd-str (read-string "Run the command: " cmd-str))
+    (shell-command-to-string cmd-str)
+    (if (file-exists-p output-filepath)
+        (progn
+          (unless (string-equal ""
+                                (save-excursion
+                                  (buffer-substring-no-properties (progn
+                                                                    (beginning-of-line)
+                                                                    (point))
+                                                                  (progn
+                                                                    (end-of-line)
+                                                                    (point)))))
+            (insert "\n"))
+          (insert (with-temp-buffer
+                    (org-mode)
+                    (org-insert-link t
+                                     output-filepath
+                                     (file-name-nondirectory output-filepath))
+                    (buffer-substring-no-properties (point-min)
+                                                    (point-max))))
+          (insert "\n")))
+    ))
+
 
 (provide 'klin-optional)
 ;;; klin-optional.el ends here

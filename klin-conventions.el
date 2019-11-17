@@ -1,3 +1,4 @@
+
 ;;; klin-conventions.el --- Conventions for the klin package  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
@@ -25,6 +26,10 @@
 ;;; Code:
 
 (defvar pdf-library-dir (expand-file-name "~/Dropbox/2TextBooks/"))
+
+(defvar render-latex-preview-prop-key "render-latex-preview")
+
+(defvar my-freehand-note-format-file-extension "xopp")
 
 (provide 'klin-conventions)
 ;;; klin-conventions.el ends here

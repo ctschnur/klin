@@ -33,15 +33,17 @@
 (require 'org)
 (require 'klin-bibtex)
 
+(defun klin-org-link-cite-get-page-from-description (description)
+  (string-match "p\\.\\s-*\\([-0-9]*\\)" description)
+  (match-string 1 description))
+
 (defun klin-org-open-link (mylist)
   "Open link with link info stored in MYLIST."
   (let* (; (linktyp (nth 0 mylist))
          (bibtexkey (nth 1 mylist))
          (description (nth 2 mylist))
-         page-str
+         (page-str (klin-org-link-cite-get-page-from-description description))
          (collective-bib-file (car (klin-org-org-ref-find-bibliography-fullfilenames))))
-    (string-match "p\\.\\s-*\\([-0-9]*\\)" description)
-    (setq page-str (match-string 1 description))
 
     ;; now go into the bibtex buffer and execute from there
     (with-bib-file-buffer collective-bib-file

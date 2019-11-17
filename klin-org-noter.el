@@ -253,16 +253,145 @@ notes file, even if it finds one."
                    (org-noter))
                  (throw 'break t))))))))))
 
+  (my-after-org-noter-is-ready)
   ;; run this after some time, when the window has been opened rendered
+  (run-with-idle-timer 0.05 nil (lambda ()
+                                  (interactive)
+                                  (org-noter-goto-org-document-and-widen-buffer
+                                   (org-noter--get-notes-window))))
 
-  (run-with-idle-timer 0.25 nil 'my-after-org-noter-is-ready)
+  (run-with-idle-timer 0.05 nil (lambda ()
+                                  (interactive)
+                                  (let* ((notes-window (org-noter--get-notes-window)))
+                                    (when notes-window
+                                      (select-window notes-window)))))
   )
 
 
+;; override org-noter--doc-goto-location to afterwards go to the notes buffer, if one exists
+(defun org-noter--doc-goto-location (location)
+  "Go to location specified by LOCATION."
+  (org-noter--with-valid-session
+   (let ((window (org-noter--get-doc-window))
+         (mode (org-noter--session-doc-mode session)))
+     (with-selected-window window
+       (cond
+        ((run-hook-with-args-until-success 'org-noter--doc-goto-location-hook mode location))
+
+        ((memq mode '(doc-view-mode pdf-view-mode))
+         (if (eq mode 'doc-view-mode)
+             (doc-view-goto-page (car location))
+           (pdf-view-goto-page (car location))
+           ;; NOTE(nox): This timer is needed because the tooltip may introduce a delay,
+           ;; so syncing multiple pages was slow
+           (when (>= org-noter-arrow-delay 0)
+             (when org-noter--arrow-location (cancel-timer (aref org-noter--arrow-location 0)))
+             (setq org-noter--arrow-location
+                   (vector (run-with-idle-timer org-noter-arrow-delay nil 'org-noter--show-arrow)
+                           window
+                           (cdr location)))))
+         (image-scroll-up (- (org-noter--conv-page-percentage-scroll (cdr location))
+                             (window-vscroll))))
+
+        ((eq mode 'nov-mode)
+         (setq nov-documents-index (car location))
+         (nov-render-document)
+         (goto-char (cdr location))
+         (recenter)))
+       ;; NOTE(nox): This needs to be here, because it would be issued anyway after
+       ;; everything and would run org-noter--nov-scroll-handler.
+       (redisplay))))
+  (let* ((notes-window (org-noter--get-notes-window)))
+    (when notes-window
+      (select-window notes-window))))
+
+
+(defun render-org-mode-buffer-latex-previews (&optional only-run-if-in-this-buffer cursor-position-before)
+  (interactive)
+  (let* ((run-it t)
+         do-buffers-match)
+    (when only-run-if-in-this-buffer
+      (progn
+        (setq run-it nil)
+        (if (eq (current-buffer) only-run-if-in-this-buffer)
+            (progn
+              (setq do-buffers-match t)
+              (setq run-it t))
+          ;; dont
+          (message "Not in the right buffer for latex preview rendering!"))))
+
+    (when run-it
+      (org-format-latex "ltximg/org-ltximg"
+                                        ; prefix
+                        nil ; beg
+                        nil ; end
+                        (file-name-directory (buffer-file-name)) ; dir
+
+                        'overlays ; overlays
+                        "Creating images for org-noter widened document..."
+                                        ; msg
+
+                        'forbuffer ; forbuffer
+
+                        'dvipng ; processing-type
+                        )
+      (when (and cursor-position-before only-run-if-in-this-buffer
+                 do-buffers-match)
+        ;; restore cursor position
+        (goto-char cursor-position-before)))))
+
+(defun turn-on-latex-toggling-and-render-all-previews (&optional rendering-delay-in-seconds)
+  "And restore your cursor position."
+  (interactive)
+  (let* ((cursor-position-before (point))
+         (buffer-before (current-buffer))
+         command-to-render)
+    (if rendering-delay-in-seconds
+        (setq command-to-render `(run-with-idle-timer ,rendering-delay-in-seconds
+                                                      nil
+                                                      (lambda ()
+                                                        (render-org-mode-buffer-latex-previews (current-buffer) ,cursor-position-before))))
+      (setq command-to-render `(run-with-idle-timer 1
+                                                    nil
+                                                    (lambda ()
+                                                      (render-org-mode-buffer-latex-previews (current-buffer) ,cursor-position-before)))))
+    (cs-turn-on-org-dynamic-preview-latex-fragment)
+    (eval command-to-render)))
+
+(defun turn-off-latex-toggling-and-render-all-previews (&optional rendering-delay-in-seconds)
+  "And restore your cursor position."
+  (interactive)
+  (let* ((cursor-position-before (point))
+         (buffer-before (current-buffer)))
+    (org-remove-latex-fragment-image-overlays (point-min) (point-max))
+    (cs-turn-off-org-dynamic-preview-latex-fragment)))
+
+
+(defun my-wrap-lines-correctly ()
+  (interactive)
+  (let* ()
+    (toggle-truncate-lines -1)
+    (visual-line-mode 1)))
+
+(defvar-local my-org-noter-buffer-lines-wrapped-correctly nil)
+
+(defun my-org-noter-wrap-lines-correctly ()
+  "Sometimes, after launching an org-noter session, lines weren't wrapped correctly. This fixes it."
+  (interactive)
+  (let* ((notes-window (org-noter--get-notes-window)))
+    (if (and notes-window
+             (not my-org-noter-buffer-lines-wrapped-correctly))
+        (progn
+          (select-window notes-window)
+          (my-wrap-lines-correctly)
+          (setq my-org-noter-buffer-lines-wrapped-correctly t)
+          (message "Lines should be correctly wrapped now."))
+      (message "No notes window yet available for wrapping lines correctly!"))))
+
 (defun my-after-org-noter-is-ready ()
   (interactive)
-  ;; CHANGED:
-  (org-noter-goto-org-document-and-widen-buffer)
+  ;; (with-selected-window (org-noter--get-notes-window)
+  ;;   (my-org-noter-wrap-lines-correctly))
   ;; (cs-highlight-org-noter-section)
   ;; (let ((window (org-noter--get-notes-window)))
   ;;   (select-frame-set-input-focus (window-frame window))
@@ -276,11 +405,15 @@ notes file, even if it finds one."
 
   ;; (with-selected-window (org-noter--get-doc-window)
   ;;   (pdf-view-set-comfortable-reading-size))
-  (select-window (org-noter--get-notes-window))
+  (let* ((org-noter-notes-window (org-noter--get-notes-window)))
+    (if org-noter-notes-window
+        (select-window org-noter-notes-window)))
   ;; (org-display-inline-images)
-  (org-toggle-latex-fragment '(16))  ;; this means C-u C-u as prefix argument here
-  (cs-turn-on-org-dynamic-preview-latex-fragment)
-  (setq org-export-with-sub-superscripts nil)
+  ;; (org-toggle-latex-fragment '(16))  ;; this means C-u C-u as prefix argument here
+  ;; (unless (do-not-render-latex-previews-p)
+  ;;   (turn-on-latex-toggling-and-render-all-previews))
+
+  (setq org-export-with-sub-superscripts nil)  ; latex now renders text-only subscripts properly
   (message "Done."))
 
 (defun org-toggle-latex-fragment-with-prefix-arg ()
@@ -290,18 +423,46 @@ programmatically."
   (setq current-prefix-arg '(4)) ; C-u
   (call-interactively 'org-toggle-latex-fragment))
 
+(defvar-local my-org-noter-buffer-widened nil)
+
+(defun my-org-noter-widen-buffer ()
+    "This removes the narrowing and enables seeing things above first heading.
+Useful if you want to add e.g. some LATEX_HEADER."
+    (interactive)
+    (widen)
+    ;; (message "the org-noter buffer has been widened")
+    )
+
 ;; afterwards by default go to the org document and widen the buffer
-(defun org-noter-goto-org-document-and-widen-buffer ()
+(defun org-noter-goto-org-document-and-widen-buffer (&optional explicit-notes-window)
   (interactive)
-  (let* ((notes-window (org-noter--get-notes-window)))
+  (let* ((notes-window (if explicit-notes-window
+                           explicit-notes-window
+                         (org-noter--get-notes-window))))
     (if notes-window
         (progn
-          (select-window notes-window)
-          (org-noter-widen-buffer)
-          (message "Notes buffer has been widened"))
-      (message "No notes window yet available for widening"))
-    ))
+          (with-selected-window notes-window
+           ;;(select-window notes-window)
+           (my-org-noter-widen-buffer))
+          ;; (setq my-org-noter-buffer-widened t)
+          ;; (message "Notes buffer has been widened")
+          )
+      (message "No notes window yet available for widening"))))
 
+
+(defun do-not-render-latex-previews-p ()
+    "Determine if in the org file, a property instruction is set at the top that aims at preventing
+the rendering of inline latex previews."
+    (interactive)
+    (let* ((result (org-global-prop-value render-latex-preview-prop-key)))
+        (or (not result)
+            (string-equal result "f")
+            (string-equal result "false")
+            (string-equal result "False")
+            (string-equal result "F")
+            (string-equal result "FALSE")
+            (string-equal result "nil")
+            (string-equal result "NIL"))))
 
 ;; --- other highlighting function
 
@@ -347,52 +508,66 @@ programmatically."
 Then launch org-noter in there."
   (interactive)
   (let* ((point-before (point))
-         (point-page (save-excursion (re-search-forward (regexp-quote ":NOTER_PAGE:") nil t)
-                                     (when (not (eq (point) point-before))
-                                       (point))))
-         (point-doc (save-excursion (re-search-forward (regexp-quote ":NOTER_DOCUMENT:") nil t)
-                                    (when (not (eq (point) point-before))
-                                      (point)))))
+         (point-page (save-excursion
+                       (re-search-forward (regexp-quote ":NOTER_PAGE:")
+                                          nil
+                                          t)
+                       (when (not (eq (point) point-before))
+                         (point))))
+         (point-doc (save-excursion
+                      (re-search-forward (regexp-quote ":NOTER_DOCUMENT:")
+                                         nil
+                                         t)
+                      (when (not (eq (point) point-before))
+                        (point)))))
     (cond
-     ((and point-page (not point-doc))
+     ((and point-page
+           (not point-doc))
       (goto-char point-page))
-     ((and point-doc (not point-page))
+     ((and point-doc
+           (not point-page))
       (goto-char point-doc))
      ((and point-doc point-page)
-      (if (< (abs (- (point) point-doc))
-             (abs (- (point) point-page)))
+      (if (< (abs (- (point)
+                     point-doc)) (abs (- (point)
+                     point-page)))
           (goto-char point-doc)
-        (goto-char point-page))))
-
-    (org-noter-goto-org-document-and-widen-buffer)
-    (org-noter)
-    (org-noter-goto-org-document-and-widen-buffer)))
+        (goto-char point-page)))))
+  (org-noter)
+  (org-noter-goto-org-document-and-widen-buffer))
 
 (defun org-noter-jump-into-it-prev-note ()
   "In an org-buffer (not org-noter), search the prev NOTER_PAGE or NOTER_DOCUMENT property.
 Then launch org-noter in there."
   (interactive)
   (let* ((point-before (point))
-         (point-page (save-excursion (re-search-backward (regexp-quote ":NOTER_PAGE:") nil t)
-                                     (when (not (eq (point) point-before))
-                                       (point))))
-         (point-doc (save-excursion (re-search-backward (regexp-quote ":NOTER_DOCUMENT:") nil t)
-                                    (when (not (eq (point) point-before))
-                                       (point)))))
+         (point-page (save-excursion
+                       (re-search-backward (regexp-quote ":NOTER_PAGE:")
+                                           nil
+                                           t)
+                       (when (not (eq (point) point-before))
+                         (point))))
+         (point-doc (save-excursion
+                      (re-search-backward (regexp-quote ":NOTER_DOCUMENT:")
+                                          nil
+                                          t)
+                      (when (not (eq (point) point-before))
+                        (point)))))
     (cond
-     ((and point-page (not point-doc))
+     ((and point-page
+           (not point-doc))
       (goto-char point-page))
-     ((and point-doc (not point-page))
+     ((and point-doc
+           (not point-page))
       (goto-char point-doc))
      ((and point-doc point-page)
-      (if (< (abs (- (point) point-doc))
-             (abs (- (point) point-page)))
+      (if (< (abs (- (point)
+                     point-doc)) (abs (- (point)
+                     point-page)))
           (goto-char point-doc)
-        (goto-char point-page))))
-
-    (org-noter-goto-org-document-and-widen-buffer)
-    (org-noter)
-    (org-noter-goto-org-document-and-widen-buffer)))
+        (goto-char point-page)))))
+  (org-noter)
+  (org-noter-goto-org-document-and-widen-buffer))
 
 ;; copy org-noter-sync-previous-note and make an adapted function that is mapped to a different key
 ;; that switches up into the really wanted pdf
@@ -423,7 +598,6 @@ As such, it will only work when the notes window exists."
            (org-noter--doc-goto-location (org-noter--parse-location-property previous))
            (org-noter--focus-notes-region (org-noter--make-view-info-for-single-note session previous)))
        (user-error "There is no previous note"))))
-  ;; (select-window (org-noter--get-doc-window))
   (org-noter-goto-org-document-and-widen-buffer))
 
 (defun org-noter-sync-current-note ()
@@ -438,10 +612,7 @@ As such, it will only work when the notes window exists."
              (org-noter--doc-goto-location location)
            (user-error "No note selected")))
      (user-error "You are inside a different document")))
-  ;; (let ((window (org-noter--get-notes-window)))
-  ;;   (select-frame-set-input-focus (window-frame window))
-  ;;   (select-window window))
-  (org-noter-goto-org-document-and-widen-buffer))
+    (org-noter-goto-org-document-and-widen-buffer))
 
 (defun org-noter-sync-next-note ()
   "Go to the location of the next note, in relation to where the point is.
@@ -463,12 +634,7 @@ As such, it will only work when the notes window exists."
            (org-noter--doc-goto-location (org-noter--parse-location-property next))
            (org-noter--focus-notes-region (org-noter--make-view-info-for-single-note session next)))
        (user-error "There is no next note"))))
-  ;; (select-window (org-noter--get-doc-window))
-  ;; (let ((window (org-noter--get-notes-window)))
-  ;;   (select-frame-set-input-focus (window-frame window))
-  ;;   (select-window window))
-  (org-noter-goto-org-document-and-widen-buffer)
-  )
+    (org-noter-goto-org-document-and-widen-buffer))
 
 (defun org-noter-sync-prev-note-in-prev-pdf ()
   "Call this from within the notes window. Go to the location of the previous note, in relation to where the point is.
@@ -498,7 +664,6 @@ As such, it will only work when the notes window exists."
        ;; CHANGED: now go and search for a previous heading with org-notes in it
        (select-window (org-noter--get-notes-window))
        (org-noter-goto-org-document-and-widen-buffer)
-       ;;        (org-noter-widen-buffer)
        (let* ((cur-pos (point))
               (doc-root-begin (plist-get (car (cdr (org-noter--parse-root)))
                                          :contents-begin))
@@ -518,13 +683,7 @@ As such, it will only work when the notes window exists."
                (org-noter))
            (user-error "There is no previous note, not even a previous document")))
        )))
-  ;; (select-window (org-noter--get-doc-window))
-  ;; (let ((window (org-noter--get-notes-window)))
-  ;;   (select-frame-set-input-focus (window-frame window))
-  ;;   (select-window window))
-  (org-noter-goto-org-document-and-widen-buffer)
-  ;;   (org-noter-widen-buffer)
-  )
+  (org-noter-goto-org-document-and-widen-buffer))
 
 (defun org-noter-sync-next-note-in-next-pdf ()
   "Go to the location of the next note, in relation to where the point is.
@@ -548,7 +707,6 @@ As such, it will only work when the notes window exists."
        (message "There is no next note for this document")
        ;; CHANGED: now go and search for a next heading with org-notes in it
        (select-window (org-noter--get-notes-window))
-       ;; (org-noter-widen-buffer)
        (org-noter-goto-org-document-and-widen-buffer)
        (let* ((cur-pos (point))
               (doc-root-end (plist-get (car (cdr (org-noter--parse-root)))
@@ -572,49 +730,110 @@ As such, it will only work when the notes window exists."
                  (if (setq notes-window-then (org-noter--get-notes-window))
                      (progn
                        (org-noter-goto-org-document-and-widen-buffer)
-                       ;; (org-noter-widen-buffer)
                        (set-window-start (selected-window) ws)
                        (goto-char jump-to-pos))))
                (goto-char jump-to-pos)
                (org-noter))
            (user-error "There is no next note, not even a next document")))
        )))
-  ;; (select-window (org-noter--get-doc-window))
-  ;; (let ((window (org-noter--get-notes-window)))
-  ;;   (select-frame-set-input-focus (window-frame window))
-  ;;   (select-window window))
-  ;; (org-noter-widen-buffer)
-  (org-noter-goto-org-document-and-widen-buffer)
-  )
+  (org-noter-goto-org-document-and-widen-buffer))
 
-(defun org-noter-switch-to-base-buffer ()
+(defun org-noter-switch-to-base-buffer (
+                                        ;;&optional doc-too
+                                        )
   "Switch to base buffer, but keep point and background scroll position."
   (interactive)
-  (let* ((ws (window-start)) notes-window-then
-         point-pos-then
-         notes-buffer
-         notes-buffer-base-buffer
-         )
-    (if (org-noter--get-notes-window)
-        (progn
-          (org-noter--with-selected-notes-window
-           (setq point-pos-then (point))
-           (setq notes-buffer-base-buffer (buffer-base-buffer))
+  (let* ((notes-window (org-noter--get-notes-window))
+         (doc-window (org-noter--get-doc-window)))
+    (let* ((ws (window-start)) notes-window-then
+           point-pos-then
+           notes-buffer
+           notes-buffer-base-buffer
            )
-          (select-window (org-noter--get-notes-window))
-          (switch-to-buffer notes-buffer-base-buffer nil t)
-          ;; (set-window-start (selected-window) ws)
-          (goto-char point-pos-then)
-          (message "In base-buffer now"))
-      (user-error "Not in org-noter session"))))
+      (if (org-noter--get-notes-window)
+          (progn
+            (org-noter--with-selected-notes-window
+             (setq point-pos-then (point))
+             (setq notes-buffer-base-buffer (buffer-base-buffer))
+             )
+            (select-window (org-noter--get-notes-window))
+            (switch-to-buffer notes-buffer-base-buffer nil t)
+            ;; (set-window-start (selected-window) ws)
+            (goto-char point-pos-then)
+            ;; unfold all headings to the way of the cursor
+            (org-show-entry)
+            (message "In base-buffer now"))
+        (user-error "Not in org-noter session")))
+    ;; (when doc-too)
+    (when t
+      (let* ()
+        ;; (select-window (org-noter--get-notes-window))
+        ;; go to the doc window, too
+        (with-selected-window doc-window
+          (when (string-equal (file-name-extension (buffer-file-name))
+                              "pdf")
+            (let* ((bmk-record (pdf-view-bookmark-make-record)))
+              (undedicate-window-and-switch-to-base-buffer)
+              (pdf-view-bookmark-jump bmk-record))))))))
 
-(add-hook 'org-noter-doc-mode-hook
-          'org-noter-goto-org-document-and-widen-buffer t)
+;; (add-hook 'org-noter-doc-mode-hook
+;;           'org-noter-goto-org-document-and-widen-buffer t)
+
+
+(defun org-noter-switch-to-base-buffer (
+                                        ;;&optional doc-too
+                                        )
+  "Switch to base buffer, but keep point and background scroll position."
+  (interactive)
+  (let* ((notes-window (org-noter--get-notes-window))
+         (doc-window (org-noter--get-doc-window)))
+    (let* ((ws (window-start)) notes-window-then
+           point-pos-then
+           notes-buffer
+           notes-buffer-base-buffer
+           )
+      (if (org-noter--get-notes-window)
+          (progn
+            (org-noter--with-selected-notes-window
+             (setq point-pos-then (point))
+             (setq notes-buffer-base-buffer (buffer-base-buffer))
+             )
+            (select-window (org-noter--get-notes-window))
+            (switch-to-buffer notes-buffer-base-buffer nil t)
+            ;; (set-window-start (selected-window) ws)
+            (goto-char point-pos-then)
+            ;; unfold all headings to the way of the cursor
+            (org-show-entry)
+            (message "In base-buffer now"))
+        (user-error "Not in org-noter session")))
+    ;; (when doc-too)
+    (when t
+      (let* ()
+        ;; (select-window (org-noter--get-notes-window))
+        ;; go to the doc window, too
+        (with-selected-window doc-window
+          (when (string-equal (file-name-extension (buffer-file-name))
+                              "pdf")
+            (let* ((bmk-record (pdf-view-bookmark-make-record)))
+              (undedicate-window-and-switch-to-base-buffer)
+              (pdf-view-bookmark-jump bmk-record))))))))
+
 
 (add-hook 'org-noter-notes-mode-hook
           (lambda ()
             (setq line-spacing 0.25)
             (redraw-frame (selected-frame))))
+
+(defun undedicate-window-and-switch-to-base-buffer ()
+  "For a pdf, restore the scroll state of the clone's buffer."
+  (interactive)
+  (let* ()
+    (set-window-dedicated-p (frame-selected-window)
+                            nil)
+    (switch-to-buffer (buffer-base-buffer)
+                      nil
+                      t)
+    ))
 
 (defun org-noter-insert-pdf-headings ()
   (interactive)
@@ -662,24 +881,6 @@ As such, it will only work when the notes window exists."
 
       (setq ctr (+ ctr 1)))
     ))
-
-;; (defun org-noter-insert-multiple-pdf-headings ()
-;;   (interactive)
-;;   (let* ((org-noter-buffer (current-buffer)))
-;;     (helm :sources `(((name . "Add headings to org-noter file for these PDFs: ")
-;;                       (candidates . (lambda ()
-;;                                       (ask-for-org-noter-pdf-headings ,bibfile-buffer)))
-;;                       (action . (lambda (candidate)
-;;                                   ;; (message "yes: %s" candidate)
-;;                                   ;; (print (helm-marked-candidates))
-;;                                   ;; (add-to-list 'klin-bibtex-tmplistofpdfstoopen
-;;                                   ;;              (car candidate) t)
-;;                                   (let* ((pdf-filepaths-to-open
-;;                                           (mapcar (lambda (elem)
-;;                                                     (car elem))
-;;                                                   (helm-marked-candidates))))
-;;                                     (klin-tabs-open-pdfs-in-new-frame pdf-filepaths-to-open)))))))))
-
 
 (provide 'klin-org-noter)
 ;;; klin-org-noter.el ends here

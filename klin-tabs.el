@@ -234,10 +234,15 @@ same buffer will always update that buffer, no matter what."
   (interactive)
   ;; Try to find another function that accomplishes the refresh
   ;; but preserves the scroll state
-  (let* ((orig-file-name (buffer-file-name))
-         (orig-buffer (current-buffer))
+  (let* ((orig-file-name (if (not (buffer-base-buffer))
+                             (buffer-file-name)
+                           (buffer-file-name (buffer-base-buffer))))
+         (orig-buffer (if (not (buffer-base-buffer))
+                             (current-buffer)
+                           (buffer-base-buffer)))
          (bmk-record (pdf-view-bookmark-make-record))
-         (clone-buffer (clone-indirect-buffer nil t))
+         (clone-buffer (with-current-buffer orig-buffer
+                         (clone-indirect-buffer nil t)))
          )
     ;; for some reason, the buffer-file-name is nil
     ;; if you make an indirect clone.
@@ -262,7 +267,6 @@ same buffer will always update that buffer, no matter what."
     ;; now do the refreshing thing with normal mode, etc...
     )
   )
-
 ;; (defun update-pdf-view-buffer-on-buffer-list-update-hook ()
 ;;   "Update the pdf to include all annotations created in cloned buffer.
 ;; Every time you visit a new buffer, check it's mode for pdf-view-mode.
