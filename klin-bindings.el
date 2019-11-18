@@ -78,6 +78,31 @@
           (auto-revert-mode 1))
       (user-error "No such pdf exists"))))
 
+
+;; ------ search from org --------
+
+(defun org-run-search-hydra ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-search-from-org
+                                      (:columns 3 :exit t)
+                                      "klin: search/grep from org"
+                                      ("p g l"
+                                       (lambda ()
+                                         (interactive)
+                                         (pdfgrep-on-linked-files))
+                                       "pdfgrep on linked pdf files")
+                                      ("q" nil "cancel"))))))
+    (hydra-klin-search-from-org/body)
+    (fmakunbound 'hydra-klin-search-from-org/body)
+    (setq hydra-klin-search-from-org/body nil)))
+
+(define-key org-mode-map (kbd "C-M-, s") ; s: search
+  'org-run-search-hydra)
+
+
+;; --------- open from org ---------
+
 (defun org-run-context-aware-hydra ()
   (interactive)
   (let* ((hydra-body (eval (remove nil
@@ -136,47 +161,50 @@
 
 
 ;; ----------
-(defun org-run-context-aware-hydra-filesystem-watchers ()
+
+(defun org-run-watch-hydra ()
   (interactive)
   (let* ((hydra-body (eval (remove nil
-                                   `(defhydra hydra-klin-from-org-watch
-                                      (:columns 3 :exit t)
-                                      "klin: open from org"
-                                      ("w s s"
+                                   `(defhydra hydra-klin-watch-from-org
+                                      (:columns 3 ;; :exit t
+                                                )
+                                      "klin: watch from org"
+                                      ("s"
                                        (lambda ()
                                          (interactive)
                                          (klin-org-watch-and-insert-scanned-file))
-                                       "watch for single file")
-                                      ("w s q"
-                                       (lambda ()
-                                         (interactive)
-                                         ())
-                                       "watch for single file quit")
-                                      ("w c s"
+                                       "watch single")
+                                      ("c"
                                        (lambda ()
                                          (interactive)
                                          (watch-and-insert-arriving-files))
-                                       "watch continuously quit")
-                                      ("w c q"
+                                       "watch cont.")
+                                      ("m"
                                        (lambda ()
                                          (interactive)
-                                         (abort-continous-watcher))
-                                       "watch continuously quit")
-                                      ("q" nil "cancel"))))))
+                                         ;; (message "hi")
+                                         (get-two-files-and-ask-merge))
+                                       "merge")
+                                      ("q"
+                                       (lambda ()
+                                         (interactive)
+                                         (quit-watch))
+                                       "quit watch")
+                                      )))))
+    (hydra-klin-watch-from-org/body)
+    (fmakunbound 'hydra-klin-watch-from-org/body)
+    (setq hydra-klin-watch-from-org/body nil)))
 
-    (hydra-klin-from-org-watch/body)
-    (fmakunbound 'hydra-klin-from-org-watch/body)
-    (setq hydra-klin-from-org-watch/body nil)))
-
-(define-key org-mode-map (kbd "C-M-, w") ; o: open
-  'org-run-context-aware-hydra-filesystem-watchers)
+(define-key org-mode-map (kbd "C-M-, w")
+  'org-run-watch-hydra)
 
 
-;; (define-key org-mode-map (kbd "C-M-, w ") 'watch-and-insert-arriving-files)
-;; (define-key org-mode-map (kbd "C-M-, w s") 'klin-org-watch-and-insert-scanned-file)
-;; (define-key org-mode-map (kbd "C-M-, w c s") 'watch-and-insert-arriving-files)
-;; (define-key org-mode-map (kbd "C-M-, w c a") 'abort-continous-watcher)
 
+;; ("c t"
+;;  (lambda ()
+;;    (interactive)
+;;    (get-two-files-and-ask-merge))
+;;  "collate 2 pdfs")
 
 (defun org-run-context-aware-hydra-rendering ()
   (interactive)
@@ -328,10 +356,20 @@
       (lambda ()
         (interactive)
         (my-create-new-freehand-note))
-      "freehand note")))
-;; ----------
+      "freehand note")
+    ("o n h p s"
+     (lambda ()
+       (interactive)
+       (org-noter-insert-pdf-headings))
+     "org-noter headings from pdfs select")
+    ("o n h p l"
+     (lambda ()
+       (interactive)
+       (org-noter-insert-pdf-headings (find-all-org-mode-links-in-selected-region)))
+     "org-noter headings from pdf links")
+    ))
 
-;; --------
+;; ----------
 
 ;; ------- within a normal pdf
 (define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
@@ -445,6 +483,11 @@
                      (interactive)
                      (push-buffer nil t))
                    "into new elcreen tab")
+                  ("k l"
+                   (lambda ()
+                     (interactive)
+                     (klin-clone-into-new-frame))
+                   "clone (klone) into new frame")
                   ("c"
                    (lambda ()
                      (interactive)

@@ -90,14 +90,7 @@ But it now can be set to be opened first.")
                    cloud-scanner-folder desc))
       (message "Not in org-mode, not setting up a watcher!."))))
 
-(defun abort-watcher-single ()
-  "This terminates (deletes) the single watcher."
-  (interactive)
-  (if desc-global
-      (let* ()
-        ("Aborting single watcher")
-        (file-notify-rm-watch desc-global))
-    (message "Nothing to end here!")))
+
 
 (defvar desc-global-callback-continuous nil
   "Continuous insertion of file names.")
@@ -139,22 +132,18 @@ manually."
                  cloud-scanner-folder desc))
     (message "Not in org-mode, not setting up a continuous watcher!.")))
 
-(defun abort-continous-watcher ()
-  "This terminates (deletes) the continuous watcher."
+
+(defun quit-watch ()
   (interactive)
-  (if desc-global-callback-continuous
-      (let* ()
-        ("Aborting continuous watcher.")
-        (file-notify-rm-watch desc-global-callback-continuous))
-    (message "Nothing to end here!")))
-
-
+  (when desc-global-callback-continuous
+    (message "Aborting continuous watcher.")
+    (file-notify-rm-watch desc-global-callback-continuous))
+  (when desc-global
+    (message "Aborting single watcher.")
+    (file-notify-rm-watch desc-global)))
 
 (defun my-get-freehand-notes-filename-from-file-name-base (file-name-base)
-  (concat file-name-base
-          "."
-          my-freehand-note-format-file-extension
-          ))
+  (concat file-name-base "." my-freehand-note-format-file-extension))
 
 
 (defun my-start-process-freehand-note-program (freehand-note-filepath)
@@ -304,13 +293,22 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 (org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
 
 
+(defun org-link-get-description ()
+  (buffer-substring-no-properties (org-element-property :contents-begin (org-element-context))
+                                  (org-element-property :contents-end (org-element-context))))
+
 (defun my-open-cited-book-pdf-file (&optional link-content)
   (interactive)
   (message (concat "hi, " link-content))
   (let* ((bibtexkey link-content)
-         (description (buffer-substring-no-properties (org-element-property :contents-begin (org-element-context))
-                                                      (org-element-property :contents-end (org-element-context)))))
+         (description (org-link-get-description)))
     (klin-org-open-link (list nil bibtexkey description))))
+
+(defun my-get-org-link-at-point-cited-reference-pdf-file-path ()
+  (interactive)
+  (let* ((bibtexkey (org-element-property :path (org-element-context)))
+         (description (org-link-get-description)))
+    (klin-org-get-link-filepath (list nil bibtexkey description))))
 
 (require 'org-ref)
 (org-add-link-type "cite" #'my-open-cited-book-pdf-file)
@@ -668,14 +666,18 @@ Then, run this function to adjust."
     (set-pdf-view-mode-cloning-parameters cloning-params))
    ))
 
+(defun make-frame-same-dim-as-cur-window ()
+  (interactive)
+  (make-frame `((width . (text-pixels . ,(window-size nil t t)))
+                                  (height . (text-pixels . ,(window-size nil nil t)))
+                                  (left . ,(+ (car (frame-position)) (window-pixel-left)))
+                                  (top . ,(+ (cdr (frame-position)) (window-pixel-top))))))
+
 (defun klin-clone-into-new-frame ()
   (interactive)
   (let* ((cur-buf (current-buffer))
          (cloning-params (get-proper-mode-cloning-parameters))
-         (new-frame (make-frame `((width . (text-pixels . ,(window-size nil t t)))
-                                  (height . (text-pixels . ,(window-size nil nil t)))
-                                  (left . ,(+ (car (frame-position)) (window-pixel-left)))
-                                  (top . ,(+ (cdr (frame-position)) (window-pixel-top))))))
+         (new-frame (make-frame-same-dim-as-cur-window))
          (new-window (car (window-list new-frame)))
          new-buffer)
     (with-selected-window new-window

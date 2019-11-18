@@ -33,6 +33,7 @@
 (require 'klin-pdf-frames)
 (require 'klin-presentations)
 (require 'klin-xournalpp)
+(require 'klin-pdfgrep)
 
 ;; (require 'klin-hydras)
 (require 'klin-bindings)

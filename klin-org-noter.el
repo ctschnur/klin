@@ -390,30 +390,15 @@ notes file, even if it finds one."
 
 (defun my-after-org-noter-is-ready ()
   (interactive)
-  ;; (with-selected-window (org-noter--get-notes-window)
-  ;;   (my-org-noter-wrap-lines-correctly))
-  ;; (cs-highlight-org-noter-section)
-  ;; (let ((window (org-noter--get-notes-window)))
-  ;;   (select-frame-set-input-focus (window-frame window))
-  ;;   (select-window window))
-  ;; (org-latex-fragment)
-  ;; (call-interactively 'org-toggle-latex-fragment-with-prefix-arg)
   (let ((inhibit-read-only t))
     (remove-text-properties (point-min)
                             (point-max)
                             '(read-only t)))
-
-  ;; (with-selected-window (org-noter--get-doc-window)
-  ;;   (pdf-view-set-comfortable-reading-size))
   (let* ((org-noter-notes-window (org-noter--get-notes-window)))
     (if org-noter-notes-window
         (select-window org-noter-notes-window)))
-  ;; (org-display-inline-images)
-  ;; (org-toggle-latex-fragment '(16))  ;; this means C-u C-u as prefix argument here
-  ;; (unless (do-not-render-latex-previews-p)
-  ;;   (turn-on-latex-toggling-and-render-all-previews))
-
-  (setq org-export-with-sub-superscripts nil)  ; latex now renders text-only subscripts properly
+  ;; latex now renders text-only subscripts properly
+  (setq org-export-with-sub-superscripts nil)
   (message "Done."))
 
 (defun org-toggle-latex-fragment-with-prefix-arg ()
@@ -835,52 +820,41 @@ As such, it will only work when the notes window exists."
                       t)
     ))
 
-(defun org-noter-insert-pdf-headings ()
+(defun org-noter-insert-pdf-headings (&optional pdf-file-paths)
   (interactive)
-  (let* ((pdf-file-paths
-          (helm-read-file-name "Add org-noter headlines for these PDFs:"
-                               :initial-input
-                               (if (buffer-file-name)
-                                   (file-name-directory (buffer-file-name))
-                                 (buffer-base-buffer (buffer-file-name)))
-                               :marked-candidates t))
-         (ctr 0)
-         make-them-top-level
+  (let* ((ctr 0) make-them-top-level
          use-relative-file-paths)
-
+    (unless pdf-file-paths
+      (setq pdf-file-paths (helm-read-file-name "Add org-noter headlines for these PDFs:"
+                                                :initial-input (if (buffer-file-name)
+                                                                   (file-name-directory (buffer-file-name))
+                                                                 (buffer-base-buffer (buffer-file-name))):marked-candidates
+                                                t)))
     ;; check if they are all pdfs
     (unless (eq (length (remove nil
                                 (mapcar (lambda (filepath)
                                           (when (string-equal (file-name-extension filepath)
                                                               "pdf")
                                             filepath))
-                                        pdf-file-paths)))
-                (length pdf-file-paths))
+                                        pdf-file-paths))) (length pdf-file-paths))
       (user-error "They aren't all pdfs, please make sure that all are PDFs"))
-
     (if (yes-or-no-p "Should they be top-level-headings?")
         (setq make-them-top-level t))
-
     (if (yes-or-no-p "Use relative filepaths?")
         (setq use-relative-file-paths t))
-
     (while (< ctr (length pdf-file-paths))
       ;; jump to the end of the current subtree (to insert the headings there)
       (org-end-of-subtree)
       (if make-them-top-level
           (org-insert-heading nil nil t)
         (org-insert-heading))
-
       (insert (file-name-base (nth ctr pdf-file-paths)))
-
       (org-insert-property-drawer)
       (org-set-property "NOTER_DOCUMENT"
                         (if use-relative-file-paths
                             (file-relative-name (nth ctr pdf-file-paths))
                           (klin-utils-get-reduced-file-path (nth ctr pdf-file-paths))))
-
-      (setq ctr (+ ctr 1)))
-    ))
+      (setq ctr (+ ctr 1)))))
 
 (provide 'klin-org-noter)
 ;;; klin-org-noter.el ends here

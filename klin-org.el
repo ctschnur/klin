@@ -37,6 +37,18 @@
   (string-match "p\\.\\s-*\\([-0-9]*\\)" description)
   (match-string 1 description))
 
+
+(defun klin-org-get-link-filepath (mylist)
+  "Open link with link info stored in MYLIST."
+  (let* ((bibtexkey (nth 1 mylist))
+         (description (nth 2 mylist))
+         (collective-bib-file (car (klin-org-org-ref-find-bibliography-fullfilenames))))
+
+    ;; (klin-bibtex-get-field "filepath" bibtexkey)
+    ;; now go into the bibtex buffer and execute from there
+    (with-bib-file-buffer collective-bib-file
+                          (klin-bibtex-get-field "filepath" bibtexkey))))
+
 (defun klin-org-open-link (mylist)
   "Open link with link info stored in MYLIST."
   (let* (; (linktyp (nth 0 mylist))
