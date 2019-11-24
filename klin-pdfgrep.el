@@ -51,7 +51,9 @@ used to advice `compilation-goto-locus'."
           (pdf-isearch-hl-matches nil edges t)
           ;; scroll the current match into view
           (pdf-util-scroll-to-edges (apply 'pdf-util-edges-union
-                                           edges-of-current-match)))
+                                           edges-of-current-match))
+          ;; (put-tooltip-arrow edges-of-current-match)
+          )
         ))))
 
 
@@ -163,7 +165,7 @@ used to advice `compilation-goto-locus'."
             (if (and (string-equal (file-name-extension pdf-path)
                                    "pdf")
                      (file-exists-p pdf-path))
-                (push pdf-path org-linked-pdfs))))
+                (setq org-linked-pdfs (append org-linked-pdfs (list pdf-path))))))
       (mapcar (lambda (path)
                 (expand-file-name (string-trim path)))
               (delq nil
@@ -191,7 +193,7 @@ used to advice `compilation-goto-locus'."
             (if (and (string-equal (file-name-extension pdf-path)
                                    "pdf")
                      (file-exists-p pdf-path))
-                (push pdf-path org-noter-linked-pdfs))))
+                (setq org-noter-linked-pdfs (append org-noter-linked-pdfs (list pdf-path))))))
       (delq nil
             (delete-dups org-noter-linked-pdfs))))
   )

@@ -114,7 +114,11 @@ manually."
                                 "[scan:"
                                 (file-name-nondirectory filepath)
                                 "]]"))
-                (insert "\n"))
+                (insert "\n")
+                ;; (when (y-or-n-p-with-timeout "Abort watching? "
+                ;;                              5 nil )
+                ;;   (quit-watch))
+                )
             (message "not in org-mode, not inserting!"))))
     ;; (if desc-global
     ;;     (file-notify-rm-watch desc-global))
@@ -142,9 +146,46 @@ manually."
     (message "Aborting single watcher.")
     (file-notify-rm-watch desc-global)))
 
+(defun pdf-link-pdf-reverse-page-order ()
+  (interactive)
+  (let* ((file-path (expand-file-name (org-element-property :path (org-element-context)))))
+    (pdf-reverse-page-order file-path)
+    ))
+
+(defun pdf-reverse-page-order (file-path)
+  (shell-command-to-string (read-shell-command "Run 'Reverse PDF page order' command: "
+                                                 (concat "pdfjam "
+                                                         (prin1-to-string file-path)
+                                                         " 'last-1' --outfile "
+                                                         (prin1-to-string file-path)))))
+
+(defun pdf-merge-two-pdfs-from-scan-from-my-printer ()
+  "I scan pages from my printer like so: all even pages -> 1 pdf file, all odd pages, reverse order -> 1 pdf file.  To collate them properly, I have to first act on the 2nd file, an org file link, and reverse the PDF file's page order.  Then I run collate command on both files."
+  (interactive)
+  (save-excursion
+    ;; get 2nd file
+    (let* ((all-org-mode-links (find-all-org-mode-links-in-selected-region))
+           first-link
+           second-link)
+      (if (equal (length all-org-mode-links) 2)
+          (progn
+            (setq first-link (nth 0 all-org-mode-links))
+            (setq second-link (nth 1 all-org-mode-links))
+            (if (string-equal first-link second-link)
+                (unless (yes-or-no-p "Hold on, ... they are equal links! Continue anyway?")
+                  (user-error "Aborted")))
+
+            (if (region-active-p)
+                (progn
+                  ;; reverse page order on the 2nd one
+                  (pdf-reverse-page-order second-link)
+                  ;; continue to merge them
+                  (get-two-files-and-ask-merge)
+                  )))
+        (user-error "Please select two org-mode file links")))))
+
 (defun my-get-freehand-notes-filename-from-file-name-base (file-name-base)
   (concat file-name-base "." my-freehand-note-format-file-extension))
-
 
 (defun my-start-process-freehand-note-program (freehand-note-filepath)
   (let* ((freehand-note-filename (file-name-nondirectory freehand-note-filepath))
@@ -154,6 +195,52 @@ manually."
                                             (my-get-freehand-process-buffer-name freehand-notes-filename-base)
                                             ;; (my-command-to-launch-freehand-program new-freehand-note-filename)
                                             (concat "pwd ; xournalpp " (prin1-to-string freehand-note-filename))))))
+
+(defun pdf-view--rotate (&optional counterclockwise-p page-p)
+  "Rotate PDF 90 degrees.  Requires pdftk to work.\n
+Clockwise rotation is the default; set COUNTERCLOCKWISE-P to
+non-nil for the other direction.  Rotate the whole document by
+default; set PAGE-P to non-nil to rotate only the current page.
+\nWARNING: overwrites the original file, so be careful!"
+  ;; error out when pdftk is not installed
+  (if (null (executable-find "pdftk"))
+      (error "Rotation requires pdftk")
+    ;; only rotate in pdf-view-mode
+    (when (eq major-mode 'pdf-view-mode)
+      (let* ((rotate (if counterclockwise-p "left" "right"))
+             (file   (format "\"%s\"" (pdf-view-buffer-file-name)))
+             (page   (pdf-view-current-page))
+             (pages  (cond ((not page-p)                        ; whole doc?
+                            (format "1-end%s" rotate))
+                           ((= page 1)                          ; first page?
+                            (format "%d%s %d-end"
+                                    page rotate (1+ page)))
+                           ((= page (pdf-info-number-of-pages)) ; last page?
+                            (format "1-%d %d%s"
+                                    (1- page) page rotate))
+                           (t                                   ; interior page?
+                            (format "1-%d %d%s %d-end"
+                                    (1- page) page rotate (1+ page))))))
+        ;; empty string if it worked
+        (if (string= "" (shell-command-to-string
+                         (format (concat "pdftk %s cat %s "
+                                         "output %s.NEW "
+                                         "&& mv %s.NEW %s")
+                                 file pages file file file)))
+            (pdf-view-revert-buffer nil t)
+          (error "Rotation error!"))))))
+
+(defun pdf-view-rotate-clockwise (&optional arg)
+  "Rotate PDF page 90 degrees clockwise.  With prefix ARG, rotate
+entire document."
+  (interactive "P")
+  (pdf-view--rotate nil (not arg)))
+
+(defun pdf-view-rotate-counterclockwise (&optional arg)
+  "Rotate PDF page 90 degrees counterclockwise.  With prefix ARG,
+rotate entire document."
+  (interactive "P")
+  (pdf-view--rotate :counterclockwise (not arg)))
 
 (defun my-start-process-freehand-note-program-pdf-exporter-background (freehand-note-filepath)
   "This works specifically for xournalpp.
@@ -342,7 +429,7 @@ to their filenames")
 
 (defun my-get-new-freehand-note-filename ()
   "Get filename base based off timestamp."
-  (concat my-get-new-freehand-note-filename-unique-base-component "." my-freehand-notes-extension))
+  (concat (my-get-new-freehand-note-filename-unique-base-component) "." my-freehand-notes-extension))
 
 (defun my-get-freehand-note-filepath-associated-pdf-filepath (freehand-note-filepath)
   "Get the assoc pdf file path."
@@ -771,32 +858,15 @@ Then run this function to extract the two file paths and
 suggest a command to be run."
   (interactive)
   (if (not (region-active-p))
-      (user-error "You must select a region."))
+      (user-error "You must select a region"))
 
-  (let* ((region-substr (buffer-substring-no-properties (region-beginning)
-                                                        (region-end)))
-         (links '())
+  (let* ((links (find-all-org-mode-links-in-selected-region))
          cmd-str
-         (output-pdf-filename (concat "merged-" (my-get-timestamp) ".pdf"))
+         (output-pdf-filename (concat (my-get-timestamp) ".pdf"))
          equal-directory-path
          output-file-dir-path (expand-file-name "./")
+         output-filepath-initially
          output-filepath)
-    (with-temp-buffer
-      (let* (point-recent)
-        (insert region-substr)
-        (org-mode)
-        (goto-char (point-min))
-        (org-next-link)
-        (setq point-recent (point))
-        (setq links (append (list (expand-file-name (org-element-property :path (org-element-context))))
-                            links))
-
-        (org-next-link)
-        (if (eq (point) point-recent)
-            (user-error (concat "Please select two links! here: links="
-                            (prin1-to-string links))))
-        (setq links (append (list (expand-file-name (org-element-property :path (org-element-context))))
-                            links))))
     ;; now contruct the command; template: pdftk A=odd.pdf B=even.pdf shuffle A B output collated_pages.pdf
 
     (if (not (= (length links) 2))
@@ -808,36 +878,193 @@ suggest a command to be run."
       (setq equal-directory-path nil)
       (setq output-file-dir-path (expand-file-name "./")))
 
-    (setq output-filepath (concat output-file-dir-path output-pdf-filename))
-    (setq cmd-str (concat "pdftk A="
-                          (prin1-to-string (nth 0 links))
-                          " B="
-                          (prin1-to-string (nth 1 links))
-                          " shuffle A B output "
-                          (prin1-to-string (expand-file-name output-filepath))))
+    (setq output-filepath-initially (concat output-file-dir-path output-pdf-filename))
+    (let* ((default-command (concat "pdftk A="
+                                    (prin1-to-string (nth 0 links))
+                                    " B="
+                                    (prin1-to-string (nth 1 links))
+                                    " shuffle A B output "
+                                    (prin1-to-string (expand-file-name output-filepath-initially))))
+           (cmd-str (read-shell-command "Collate two PDFs: "
+                                        (cons default-command (- (string-bytes default-command)
+                                                                 (string-bytes "pdf\""))))))
+      ;; get the new output filepath
+      (with-temp-buffer
+        (insert cmd-str)
+        (goto-char (point-min))
+        (re-search-forward " output ")
+        (setq output-filepath (expand-file-name (read (buffer-substring-no-properties (point)
+                                                                                (progn
+                                                                                  (end-of-line)
+                                                                                  (point)))))))
 
-    (setq cmd-str (read-string "Run the command: " cmd-str))
-    (shell-command-to-string cmd-str)
-    (if (file-exists-p output-filepath)
-        (progn
-          (unless (string-equal ""
-                                (save-excursion
-                                  (buffer-substring-no-properties (progn
-                                                                    (beginning-of-line)
-                                                                    (point))
-                                                                  (progn
-                                                                    (end-of-line)
-                                                                    (point)))))
-            (insert "\n"))
-          (insert (with-temp-buffer
-                    (org-mode)
-                    (org-insert-link t
-                                     output-filepath
-                                     (file-name-nondirectory output-filepath))
-                    (buffer-substring-no-properties (point-min)
-                                                    (point-max))))
-          (insert "\n")))
+      (shell-command-to-string cmd-str)
+      (if (file-exists-p output-filepath)
+          (progn
+            (unless (string-equal ""
+                                  (save-excursion
+                                    (buffer-substring-no-properties (progn
+                                                                      (beginning-of-line)
+                                                                      (point))
+                                                                    (progn
+                                                                      (end-of-line)
+                                                                      (point)))))
+              (insert "\n"))
+            (insert (with-temp-buffer
+                      (org-mode)
+                      (org-insert-link t
+                                       (klin-utils-get-reduced-file-path output-filepath)
+                                       (file-name-nondirectory output-filepath))
+                      (buffer-substring-no-properties (point-min)
+                                                      (point-max))))
+            (insert "\n"))))
     ))
+
+
+;; --------- open pdf in chrome ---------
+
+(defun klin-open-pdf-in-chrome ()
+  "Open pdf in chrome."
+  (interactive)
+  (shell-command-to-string
+   (read-shell-command "Open PDF in chrome: "
+                       (concat "chromium-browser "
+                               (prin1-to-string (concat "file://"
+                                                        (buffer-file-name)
+                                                        "#page="
+                                                        (number-to-string (pdf-view-current-page))))
+                               " &"))))
+
+
+;; ----------- add text search to org link ------------
+
+(require 'org-pdfview)
+(org-add-link-type "pdfview" #'pdfview-follow-link)
+
+(require 'org-pdfview)
+(defun org-pdfview-store-link ()
+  "Store a link to a pdfview buffer.
+This time, include the page, but also a search string on the page, that may be selected.
+If you then jump to the link, search for this string on the page."
+  (when (eq major-mode 'pdf-view-mode)
+    (let* ((path buffer-file-name)
+           (page (pdf-view-current-page))
+           (link (concat "pdfview:"
+                         path
+                         "::"
+                         (number-to-string page)
+                         (when (pdf-view-active-region-p)
+                           ;; sth was selected
+                           (concat "::"
+                                   (string-escape-newlines (car (pdf-view-active-region-text)))
+                                   (let* ((match-number (get-match-number-of-selected-text-on-page)))
+                                     (when (and match-number
+                                                (> match-number 1))
+                                       (concat "::"
+                                               (number-to-string match-number))))))))
+           (description (file-name-nondirectory (buffer-file-name))))
+      (org-store-link-props :type "pdfview"
+                            :link link
+                            :description description))))
+
+(defun string-utils-escape-double-quotes (str-val)
+  "Return STR-VAL with every double-quote escaped with backslash."
+  (save-match-data
+    (replace-regexp-in-string "\"" "\\\\\"" str-val)))
+
+(defun string-escape-newlines (str-with-newlines)
+  (when (char-or-string-p str-with-newlines)
+    (replace-regexp-in-string (regexp-quote "\n") (regexp-quote "\\n") str-with-newlines)))
+
+(defun string-unescape-newlines (str-with-escaped-newlines)
+  (when (char-or-string-p str-with-escaped-newlines)
+    (replace-regexp-in-string (regexp-quote "\\n") (regexp-quote "\n") str-with-escaped-newlines)))
+
+(defun get-match-number-of-selected-text-on-page (&optional matches-edges-list selected-edges)
+  (interactive)
+  (when (pdf-view-active-region-p)
+    (unless selected-edges
+      (setq selected-edges (list (mapcar (lambda (cur-num)
+                                           (round cur-num))
+                                         (car (pdf-util-scale-relative-to-pixel (pdf-view-active-region)))))))
+    (unless matches-edges-list
+      (setq matches-edges-list (pdf-isearch-search-page (pdf-view-active-region-text))))
+    (let* ((intersection-areas (mapcar (lambda (cur-matching-edges)
+                                         (pdf-util-edges-intersection-area (car cur-matching-edges)
+                                                                           (car selected-edges)))
+                                       matches-edges-list))
+           lia
+           liai)
+      (when intersection-areas
+        (setq lia (-max intersection-areas))
+        (setq liai (car (--find-indices (eq lia it)
+                                        intersection-areas)))
+        (+ 1 liai)))))
+
+
+;; (defun trim-quotes-start-end (quoted-string)
+;;   (interactive)
+;;   (substring-no-properties quoted-string )
+;;   )
+
+(defun pdfview-follow-link (link)
+  (interactive)
+  (let* (;; (link-without-type (substring-no-properties link (length "pdfview:")))
+         (splits (split-string link "::"))
+         (path (nth 0 splits))
+         (page (string-to-number (nth 1 splits))))
+    (cond
+     ((<= (length splits) 2)
+      (org-open-file path 1)
+      (pdf-view-goto-page page))
+     ((> (length splits) 2)
+      (let* ((search-str (car (split-string (string-unescape-newlines (nth 2 splits))
+                                            "\n")))
+             (search-str-occ-num (if (nth 3 splits)
+                                     (string-to-number (nth 3 splits))
+                                   1)))
+        (org-open-file path 1)
+        (pdf-view-goto-page page)
+        (when search-str
+          (let* ((edges (pdf-isearch-search-page search-str))
+                 (edges-of-current-match (nth (- search-str-occ-num 1)
+                                              edges)))
+            (pdf-isearch-hl-matches nil edges t)
+            ;; scroll the current match into view
+            (pdf-util-scroll-to-edges (apply 'pdf-util-edges-union edges-of-current-match))
+            (put-tooltip-arrow edges-of-current-match)
+            )))))
+    (message link)
+    ;; (other-window -1)
+    ))
+
+(defun put-tooltip-arrow (edges-of-match)
+  (interactive)
+  (let* ((pdf-image-height (cdr (pdf-view-image-size)))
+         (pdf-image-height-highlight (nth 1
+                                          (car edges-of-match)))
+         (pdf-height-fraction-to-scroll-to (/ (float pdf-image-height-highlight)
+                                              (float pdf-image-height))))
+    (pdf-util-tooltip-arrow pdf-height-fraction-to-scroll-to)))
+
+(defun org-pdfview-open (link)
+  "Open LINK in pdf-view-mode."
+  (cond ((string-match "\\(.*\\)::\\([0-9]*\\)\\+\\+\\([[0-9]\\.*[0-9]*\\)"  link)
+         (let* ((path (match-string 1 link))
+                (page (string-to-number (match-string 2 link)))
+                (height (string-to-number (match-string 3 link))))
+           (org-open-file path 1)
+           (pdf-view-goto-page page)
+           (image-set-window-vscroll
+            (round (/ (* height (cdr (pdf-view-image-size))) (frame-char-height))))))
+        ((string-match "\\(.*\\)::\\([0-9]+\\)$"  link)
+         (let* ((path (match-string 1 link))
+                (page (string-to-number (match-string 2 link))))
+           (org-open-file path 1)
+           (pdf-view-goto-page page)))
+        (t
+         (org-open-file link 1))
+        ))
 
 
 (provide 'klin-optional)

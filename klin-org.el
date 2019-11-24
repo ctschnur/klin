@@ -324,6 +324,7 @@ So that it can be compiled into a latex file with references."
 #+LATEX_HEADER: \\usepackage[margin=1.15in]{geometry}
 #+LATEX_HEADER: \\usepackage{physics}
 #+LATEX_HEADER: \\usepackage{booktabs}
+#+LATEX_HEADER: \\usepackage{xcolor}
 #+OPTIONS: toc:nil
 #+BEGIN_EXPORT latex
 \\today

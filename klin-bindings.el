@@ -103,7 +103,7 @@
 
 ;; --------- open from org ---------
 
-(defun org-run-context-aware-hydra ()
+(defun org-run-context-aware-hydra-open ()
   (interactive)
   (let* ((hydra-body (eval (remove nil
                                    `(defhydra hydra-klin-open-from-org
@@ -140,24 +140,12 @@
                                          (klin-org-open-bibliographys-pdfs))
                                        "Open bibliography PDFs")
                                       ("q" nil "cancel"))))))
-    ;; (hydra-klin-open-from-org/body)
-    ;; (boundp 'hydra-klin-open-from-org/body)
-    ;; (when (boundp 'hydra-klin-open-from-org/body)
-    ;;   (hydra-klin-open-from-org/body))
-    ;; hydra-body
-    ;; hydra-klin-open-from-org/body
-    ;; (boundp 'hydra-klin-open-from-org/body)
-    ;; (bound-and-true-p hydra-klin-open-from-org/body)
-    ;; (boundp 'hydra-body)
-    ;; (bound-and-true-p hydra-body)
-    ;; (fmakunbound 'hydra-body)
-
     (hydra-klin-open-from-org/body)
     (fmakunbound 'hydra-klin-open-from-org/body)
     (setq hydra-klin-open-from-org/body nil)))
 
 (define-key org-mode-map (kbd "C-M-, o") ; o: open
-  'org-run-context-aware-hydra)
+  'org-run-context-aware-hydra-open)
 
 
 ;; ----------
@@ -179,12 +167,18 @@
                                          (interactive)
                                          (watch-and-insert-arriving-files))
                                        "watch cont.")
-                                      ("m"
+                                      ("m t f"
                                        (lambda ()
                                          (interactive)
                                          ;; (message "hi")
                                          (get-two-files-and-ask-merge))
                                        "merge")
+                                      ("m m s"
+                                       (lambda ()
+                                         (interactive)
+                                         ;; (message "hi")
+                                         (pdf-merge-two-pdfs-from-scan-from-my-printer))
+                                       "merge (from my scanner)")
                                       ("q"
                                        (lambda ()
                                          (interactive)
@@ -331,13 +325,51 @@
                                                (auto-revert-mode 1)
                                                (find-file-existing ,annotated-pdf-filepath))
                                              "switch to (annotated) pdf"))
+                                        ("i c"
+                                          (lambda ()
+                                            (interactive)
+                                            (klin-open-pdf-in-chrome))
+                                          "open in chrome")
                                         ("q" nil "cancel"))))))
+
       (hydra-klin-open-from-pdf-view/body)
       (fmakunbound 'hydra-klin-open-from-pdf-view/body)
       (setq hydra-klin-open-from-pdf-view nil))))
 
 (define-key pdf-view-mode-map (kbd "C-M-, o") ; o: open
   'pdf-view-run-context-aware-hydra)
+
+
+;; ----- process pdf file  ------------
+
+(defun pdf-view-run-context-aware-hydra-process ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-process-from-pdf-view
+                                      (:columns 3 :exit t)
+                                      "klin: process from pdf-view"
+                                      ("r c w"
+                                             (lambda ()
+                                               (interactive)
+                                               (auto-revert-mode 1)
+                                               (pdf-view-rotate-clockwise))
+                                             "rotate clockwise (overrides)")
+                                        ("r c c w"
+                                             (lambda ()
+                                               (interactive)
+                                               (auto-revert-mode 1)
+                                               (pdf-view-rotate-counterclockwise))
+                                             "rotate counter-clockwise (overrides)")
+
+                                      ("q" nil "cancel"))))))
+  (hydra-klin-process-from-pdf-view/body)
+  (fmakunbound 'hydra-klin-process-from-pdf-view/body)
+  (setq hydra-klin-process-from-pdf-view/body nil)))
+
+(define-key pdf-view-mode-map (kbd "C-M-, p") ; process
+  'pdf-view-run-context-aware-hydra-process)
+
+;; ----------
 
 (define-key org-mode-map (kbd "C-M-, p") ; p: process
   (defhydra hydra-klin-process-from-org (:columns 3)
@@ -348,6 +380,38 @@
 
 ;; ---------- presentations with org-mode, latex beamer and inkscape
 ;; (define-key org-mode-map (kbd "C-M-, i") 'klin-open-in-inkscape)
+
+
+(defun klin-run-hydra-latex-tools ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra klin-hydra-latex-tools
+                                      (:columns 3 ;; :exit t
+                                                )
+                                      "klin: watch from org"
+                                      ("o i i"
+                                       (lambda ()
+                                         (interactive)
+                                         (klin-open-in-inkscape))
+                                       "open in Inkscape")
+                                      ("q"
+                                       (lambda ()
+                                         (interactive)
+                                         (quit-watch))
+                                       "cancel")
+                                      )))))
+    (klin-hydra-latex-tools/body)
+    (fmakunbound 'klin-hydra-latex-tools/body)
+    (setq klin-hydra-latex-tools/body nil)))
+
+
+;; (require 'latex)
+(with-eval-after-load 'latex
+  (define-key LaTeX-mode-map (kbd "C-M-, t")
+    'klin-run-hydra-latex-tools))
+;; (load "latex.el")
+
+;; ---------
 
 (define-key org-mode-map (kbd "C-M-, i")
   (defhydra hydra-insert-into-org ()
@@ -374,11 +438,53 @@
 ;; ------- within a normal pdf
 (define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
 
+(defun klin-delete-other-windows-show-pdf-comfortably ()
+  (interactive)
+  (when (eq major-mode 'pdf-view-mode)
+    (set-window-parameter (selected-window) 'pdf-toggle-param
+                          (current-window-configuration))
+    (delete-other-windows)
+    (pdf-view-redisplay)
+    (pdf-view-set-comfortable-reading-size)
+    (pdf-view-redisplay)))
+
+(defun klin-delete-other-windows-show-pdf-comfortably-winner-undo ()
+  (interactive)
+  (let* ((pdf-window (selected-window))
+         (toggle-param (window-parameter (selected-window) 'pdf-toggle-param)))
+    (when toggle-param
+      (set-window-configuration toggle-param)
+      (set-window-parameter (selected-window)
+                            'pdf-toggle-param
+                            nil))
+
+    (when (eq (selected-window) pdf-window)
+      (pdf-view-redisplay)
+      (pdf-view-set-comfortable-reading-size)
+      (pdf-view-redisplay))))
+
+(defun klin-toggle-pdf-only-view ()
+  (interactive)
+  (when (eq major-mode 'pdf-view-mode)
+    (let* ((pdf-window (selected-window))
+           (toggle-param (window-parameter (selected-window) 'pdf-toggle-param)))
+      (if toggle-param
+          (klin-delete-other-windows-show-pdf-comfortably-winner-undo)
+        (klin-delete-other-windows-show-pdf-comfortably))
+    ;; (cond
+    ;;  ((and (eq major-mode 'pdf-view-mode)
+    ;;        (eq (length (window-list)) 1))
+    ;;   (klin-delete-other-windows-show-pdf-comfortably-winner-undo))
+    ;;  ((and (eq major-mode 'pdf-view-mode)
+    ;;        (> (length (window-list)) 1))
+    ;;   (klin-delete-other-windows-show-pdf-comfortably)))
+    )))
+
 (defun my-add-pdf-view-comfortable-read-key ()
   (interactive)
   (evil-define-key 'normal pdf-view-mode-map (kbd "B") 'pdf-history-backward)
   (evil-define-key 'normal pdf-view-mode-map (kbd "F") 'pdf-history-forward)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'pdf-view-set-comfortable-reading-size)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'klin-toggle-pdf-only-view)
   (evil-define-key 'normal pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
   (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
   ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
@@ -416,6 +522,9 @@
     ("g t i" (lambda ()
            (interactive)
            (klin-bibtex-grab-template-isbn)) "grab template from ISBN")
+    ("g t d" (lambda ()
+           (interactive)
+           (call-interactively 'get-bibtex-from-doi)) "grab template from DOI")
     ("f p" (lambda ()
              (interactive)
              (klin-bibtex-entry-fix-filepath-field)) "fix file-path")
