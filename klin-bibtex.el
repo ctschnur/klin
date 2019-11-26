@@ -221,7 +221,7 @@ is given, search in the current bib buffer."
                                         bibtexkey))
          (file-page-offset (if (eq 'string (type-of result))
                                (string-to-number result)
-                             1))
+                             0))
          (filepath (klin-bibtex-get-field "filepath" bibtexkey))
          (page (- (+ (if page page 0) file-page-offset)
                   ;; 1
