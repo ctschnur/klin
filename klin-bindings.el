@@ -325,11 +325,11 @@
                                                (auto-revert-mode 1)
                                                (find-file-existing ,annotated-pdf-filepath))
                                              "switch to (annotated) pdf"))
-                                        ("i c"
+                                        ("i b"
                                           (lambda ()
                                             (interactive)
-                                            (klin-open-pdf-in-chrome))
-                                          "open in chrome")
+                                            (klin-open-pdf-in-browser))
+                                          "open in browser")
                                         ("q" nil "cancel"))))))
 
       (hydra-klin-open-from-pdf-view/body)
@@ -503,22 +503,13 @@
 
 ;; (global-set-key (kbd "C-M-,") nil)
 (define-key bibtex-mode-map (kbd "C-M-, p")
-  (defhydra hydra-klin-from-bibtex (:columns 3)
+  (defhydra hydra-klin-from-bibtex (:columns 1)
     "klin in bibtex (edit)"
-    ("o p c" (lambda ()
-           (interactive)
-           (klin-bibtex-process-open-current-pdf)) "open pdf")
     ("o p b"
       (lambda ()
         (interactive)
         (klin-bibtex-open-pdf-from-bibtex))
       "open pdf")
-    ("n" (lambda ()
-           (interactive)
-           (klin-bibtex-process-next-pdf)) "next")
-    ("p" (lambda ()
-           (interactive)
-           (klin-bibtex-process-previous-pdf)) "previous")
     ("g t i" (lambda ()
            (interactive)
            (klin-bibtex-grab-template-isbn)) "grab template from ISBN")
@@ -531,19 +522,25 @@
     ("f o" (lambda ()
              (interactive)
              (klin-bibtex-entry-fix-file-page-offset)) "fix file-page-offset")
+    ("e i c" (lambda ()
+               (interactive)
+               (klin-bibtex-integrate-bib-entry-into-collective)) "integrate into collective")
     ("c o" (lambda ()
            (interactive)
            (klin-bibtex-compare-entry-to-original-bibfile))
      "comp. coll[..].bib, self.bib")
-    ("e i c" (lambda ()
-               (interactive)
-               (klin-bibtex-integrate-bib-entry-into-collective)) "integrate into collective")
     ("F" (lambda ()
            (interactive)
            (klin-bibtex-process-finish-current-pdf)) "finish current")
     ("c l" (lambda ()
            (interactive)
            (klin-bibtex-process-clean-whole-list)) "clean out list")
+    ("n" (lambda ()
+           (interactive)
+           (klin-bibtex-process-next-pdf)) "next")
+    ("p" (lambda ()
+           (interactive)
+           (klin-bibtex-process-previous-pdf)) "previous")
     ("q" (lambda ()
            (interactive)
            (if (y-or-n-p (format "Close this frame? "))
@@ -556,21 +553,24 @@
 ;; -------- globally important klin keys
 ;; browsing open, opening, and closing open pdfs
 ;; (global-set-key (kbd "C-. p") 'klin-pdf-helm-browse-pdf-buffers)
-(global-set-key (kbd "C-. P") 'klin-tabs-open-pdfs)
 (global-set-key (kbd "C-. b") 'klin-bibtex-set-bibfiles-for-pdfs)
 
 ;; (global-set-key (kbd "C-M-, e") nil)
 
 (global-set-key (kbd "C-M-, m")          ; pop off/on
                 (defhydra hydra-klin-pop-or-push
-                  ()
+                  (:columns 1)
                   "klin buffer pop/push"
+                  ("s b n f"
+                   (lambda ()
+                     (interactive)
+                     (klin-open-same-buffer-in-new-frame))
+                   "open same buffer in new frame")
                   ("o f"
                    (lambda ()
                      (interactive)
                      (hydra-disable)
-                     (pop-buffer t t)
-                     )
+                     (pop-buffer t t))
                    "off -> (new) frame")
                   ("o o"
                    (lambda ()
@@ -606,14 +606,30 @@
                    nil
                    "quit")))
 
-
-;; (global-set-key (kbd "C-. p o f")
-;;                 (lambda () (pop-buffer 'pop-off 'new-frame)))
-;; (global-set-key (kbd "C-. p i w")
-;;                 (lambda () (push-buffer)))
-
-
 ;; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
+
+(defun klin-run-library-hydra ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-library
+                                      (:columns 1 :exit t)
+                                      "klin: search/grep from org"
+                                      ("g n"
+                                       (lambda ()
+                                         (interactive)
+                                         (call-interactively 'grep-find-in-notes-directories))
+                                       "grep notes")
+                                      ("t o p"
+                                       (lambda ()
+                                         (interactive)
+                                         (klin-tabs-open-pdfs))
+                                       "tabs open pdfs")
+                                      ("q" nil "cancel"))))))
+    (hydra-klin-library/body)
+    (fmakunbound 'hydra-klin-library/body)
+    (setq hydra-klin-library/body nil)))
+
+(global-set-key (kbd "C-M-, l") 'klin-run-library-hydra)
 
 (provide 'klin-bindings)
 

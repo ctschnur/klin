@@ -340,9 +340,18 @@ notes file, even if it finds one."
         ;; restore cursor position
         (goto-char cursor-position-before)))))
 
+(defun set-latex-fragment-rendering-size-based-automatically ()
+  (interactive)
+  (let* ((offset-num 1.5)
+         (latex-fragment-scale-per-text-scale 0.3))
+    (if (equal text-scale-mode-amount 0)
+        (plist-put org-format-latex-options :scale offset-num)
+      (plist-put org-format-latex-options :scale (+ offset-num (* text-scale-mode-amount latex-fragment-scale-per-text-scale))))))
+
 (defun turn-on-latex-toggling-and-render-all-previews (&optional rendering-delay-in-seconds)
   "And restore your cursor position."
   (interactive)
+  (set-latex-fragment-rendering-size-based-automatically)
   (let* ((cursor-position-before (point))
          (buffer-before (current-buffer))
          command-to-render)

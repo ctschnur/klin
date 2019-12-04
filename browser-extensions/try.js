@@ -59,6 +59,10 @@ alert("Hi");
 //     copyStringToClipboard(link_str);
 // }
 
+(function () {alert("hey"); var link_str = String.prototype.concat(PDFViewerApplication.baseUrl).substr("file://".length).concat("::").concat(PDFViewerApplication.page); alert(link_str);)();
+
+// console.log(link_str);
+
 
 // // in PDF.js, this makes a string file:///home/user/Desktop/example.pdf to
 // // home/user/Desktop/example.pdf::[page-currently-shown-in-PDF.js]

@@ -31,5 +31,9 @@
 
 (defvar my-freehand-note-format-file-extension "xopp")
 
+(defvar firefox-list-open-tabs-script-filename (expand-file-name "~/Dropbox/stuff/klin/browser-extensions/get_firefox_open_tabs.sh"))
+
+(defvar my-org-notes-directory (expand-file-name "~/Dropbox"))
+
 (provide 'klin-conventions)
 ;;; klin-conventions.el ends here

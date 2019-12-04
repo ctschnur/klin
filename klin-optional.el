@@ -923,17 +923,18 @@ suggest a command to be run."
 
 ;; --------- open pdf in chrome ---------
 
-(defun klin-open-pdf-in-chrome ()
+(defun klin-open-pdf-in-browser ()
   "Open pdf in chrome."
   (interactive)
-  (shell-command-to-string
-   (read-shell-command "Open PDF in chrome: "
-                       (concat "chromium-browser "
-                               (prin1-to-string (concat "file://"
-                                                        (buffer-file-name)
-                                                        "#page="
-                                                        (number-to-string (pdf-view-current-page))))
-                               " &"))))
+  (let* ((shell-command-string (read-shell-command "Open PDF in browser: "
+                                                   (concat "x-www-browser "
+                                                           (prin1-to-string (concat "file://"
+                                                                                    (buffer-file-name)
+                                                                                    "#page="
+                                                                                    (number-to-string (pdf-view-current-page))))
+                                                           ;; " &"
+                                                           ))))
+    (start-process-shell-command "browser-open-cmd-name" "browser-open-cmd-buf" shell-command-string)))
 
 
 ;; ----------- add text search to org link ------------
@@ -988,7 +989,7 @@ If you then jump to the link, search for this string on the page."
                                            (round cur-num))
                                          (car (pdf-util-scale-relative-to-pixel (pdf-view-active-region)))))))
     (unless matches-edges-list
-      (setq matches-edges-list (pdf-isearch-search-page (pdf-view-active-region-text))))
+      (setq matches-edges-list (pdf-isearch-search-page (car (pdf-view-active-region-text)))))
     (let* ((intersection-areas (mapcar (lambda (cur-matching-edges)
                                          (pdf-util-edges-intersection-area (car cur-matching-edges)
                                                                            (car selected-edges)))
@@ -1007,6 +1008,20 @@ If you then jump to the link, search for this string on the page."
 ;;   (substring-no-properties quoted-string )
 ;;   )
 
+
+(defconst path-of-foo (file-name-directory (or load-file-name buffer-file-name)))
+
+(defun klin-url-opened-in-firefox (url)
+  (interactive)
+  (car (remove nil (mapcar (lambda (str)
+                             (string-equal (cut-hastags-off-path str) (cut-hastags-off-path url)))
+                           (split-string (shell-command-to-string firefox-list-open-tabs-script-filename)
+                                         "\n")))))
+
+(defun cut-hastags-off-path (url)
+  (interactive)
+  (car (split-string url "#")))
+
 (defun pdfview-follow-link (link)
   (interactive)
   (let* (;; (link-without-type (substring-no-properties link (length "pdfview:")))
@@ -1015,8 +1030,19 @@ If you then jump to the link, search for this string on the page."
          (page (string-to-number (nth 1 splits))))
     (cond
      ((<= (length splits) 2)
-      (org-open-file path 1)
-      (pdf-view-goto-page page))
+      (cond
+       ((file-exists-p path)
+        (org-open-file path 1)
+        (pdf-view-goto-page page))
+       ((klin-is-this-link-to-be-opened-in-a-browser link)
+        (when (string-equal (file-name-extension (cut-hastags-off-path path)) "pdf")
+          (if (klin-url-opened-in-firefox path)
+            (when (y-or-n-p-with-timeout (concat path " is already opened in browser. Open another instance?")
+                                         3 nil)
+              (browse-url (concat path
+                                  "#page="
+                                  (number-to-string page))))
+            (browse-url (concat path "#page=" (number-to-string page))))))))
      ((> (length splits) 2)
       (let* ((search-str (car (split-string (string-unescape-newlines (nth 2 splits))
                                             "\n")))
@@ -1047,25 +1073,50 @@ If you then jump to the link, search for this string on the page."
                                               (float pdf-image-height))))
     (pdf-util-tooltip-arrow pdf-height-fraction-to-scroll-to)))
 
-(defun org-pdfview-open (link)
-  "Open LINK in pdf-view-mode."
-  (cond ((string-match "\\(.*\\)::\\([0-9]*\\)\\+\\+\\([[0-9]\\.*[0-9]*\\)"  link)
-         (let* ((path (match-string 1 link))
-                (page (string-to-number (match-string 2 link)))
-                (height (string-to-number (match-string 3 link))))
-           (org-open-file path 1)
-           (pdf-view-goto-page page)
-           (image-set-window-vscroll
-            (round (/ (* height (cdr (pdf-view-image-size))) (frame-char-height))))))
-        ((string-match "\\(.*\\)::\\([0-9]+\\)$"  link)
-         (let* ((path (match-string 1 link))
-                (page (string-to-number (match-string 2 link))))
-           (org-open-file path 1)
-           (pdf-view-goto-page page)))
-        (t
-         (org-open-file link 1))
-        ))
 
+;; (require 'org-pdfview)
+;; (defun org-pdfview-open (link)
+;;   "Open LINK in pdf-view-mode."
+;;   (cond ((string-match "\\(.*\\)::\\([0-9]*\\)\\+\\+\\([[0-9]\\.*[0-9]*\\)"  link)
+;;          (let* ((path (match-string 1 link))
+;;                 (page (string-to-number (match-string 2 link)))
+;;                 (height (string-to-number (match-string 3 link))))
+;;            (org-open-file path 1)
+;;            (pdf-view-goto-page page)
+;;            (image-set-window-vscroll
+;;             (round (/ (* height (cdr (pdf-view-image-size))) (frame-char-height))))))
+;;         ((string-match "\\(.*\\)::\\([0-9]+\\)$"  link)
+;;          (let* ((path (match-string 1 link))
+;;                 (page (string-to-number (match-string 2 link))))
+;;            (org-open-file path 1)
+;;            (pdf-view-goto-page page)))
+;;         (t
+;;          (org-open-file link 1))
+;;         ))
+
+(defun klin-is-this-link-to-be-opened-in-a-browser (link-str)
+  (< 0 (length (split-string link-str "://"))))
+
+(defun klin-open-same-buffer-in-new-frame ()
+  (interactive)
+  (let* ((cur-buf (current-buffer))
+         (new-frame (make-frame-same-dim-as-cur-window))
+         (new-window (car (window-list new-frame))))
+    (with-selected-window new-window
+      (find-file (buffer-file-name cur-buf)))))
+
+(defun grep-find-in-notes-directories ()
+  (interactive)
+  (when (file-exists-p my-org-notes-directory)
+    (let* ((default-command-until-search-term (concat "find " my-org-notes-directory " -type f -name \"*.org\" -exec grep --color -nH --null -e "))
+           (default-command-from-search-term " \{\} +")
+           (new-frame (make-frame-same-dim-as-cur-window)))
+      (select-frame new-frame)
+      (grep-find (read-shell-command "Run grep (like this): "
+                                     (cons (concat default-command-until-search-term
+                                                   default-command-from-search-term)
+                                           (+ 1
+                                              (string-bytes default-command-until-search-term))))))))
 
 (provide 'klin-optional)
 ;;; klin-optional.el ends here
