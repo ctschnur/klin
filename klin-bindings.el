@@ -215,7 +215,7 @@
                                         ("t"
                                          (lambda ()
                                            (interactive)
-                                           (turn-on-latex-toggling-and-render-all-previews)
+                                           (turn-on-latex-toggling-and-render-previews)
                                            (if (not (buffer-narrowed-p))
                                                (org-global-prop-set render-latex-preview-prop-key
                                                                     "t")
@@ -629,7 +629,7 @@
     (fmakunbound 'hydra-klin-library/body)
     (setq hydra-klin-library/body nil)))
 
-(global-set-key (kbd "C-M-, l") 'klin-run-library-hydra)
+(global-set-key (kbd "C-M-, L") 'klin-run-library-hydra)
 
 (provide 'klin-bindings)
 

@@ -1118,5 +1118,16 @@ If you then jump to the link, search for this string on the page."
                                            (+ 1
                                               (string-bytes default-command-until-search-term))))))))
 
+(defun org-get-headline-with-text-bounds ()
+  (save-excursion
+    (save-restriction
+      (widen)
+      (ignore-errors (outline-up-heading 1))
+      (let* ((elt (org-element-at-point))
+             (title (org-element-property :title elt))
+             (beg (progn (org-end-of-meta-data t) (point)))
+             (end (progn (outline-next-visible-heading 1) (point))))
+        (list beg end)))))
+
 (provide 'klin-optional)
 ;;; klin-optional.el ends here
