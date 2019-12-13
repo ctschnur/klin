@@ -37,14 +37,22 @@ Why this isn't implemented yet:
   - using the PDF.js /PDF Viewer/ plugin this is interactively possible, but only through the javascript console (as of 26/11/2019). Since the PDF.js /PDF Viewer/ plugin supporting PDF.js exposes urls like ~chrome-extension://oemmndcbldboiebfnladdacbdfmadadm/file:///path/to/example.pdf~, one is unable to run javascript on that page, since (actually luckily), it is impossible (for security reasons) to run javascript code on urls starting with ~chrome-extension://~.
     So, until PDF.js is natively integrated into chrome (which I don't think will happen), or Firefox will allow at some point easily allow putting a string into the clipboard using Javascript (which I don't think will happen any time soon), or chrome's native pdf viewer exposes a function to get to the current page, the browser-based generation of accurate links (with page number) can not be implemented easily.
 
+** TODO's 
+*** TODO cite link export to latex needs to be fixed
+Under GNU Emacs 26.3 (build 2, x86_64-pc-linux-gnu, GTK+ Version 3.22.30) of 2019-09-16 and org mode version 9.2.6, links of the form ~[[cite:myBibtexKey][Description]]~ are getting exported as ~\href{myBibtexKey}{Description}~ and not /any more/ as ~\cite[Description]{myBibtexKey}~. Therefore, they do not appear in the references once ~\printbibliography~ is called. 
+This would need to be fixed, by e.g. writing a latex export function for this link type and integrating that into org mode. 
+
+
 ** Where does the name come from?
 "klin" is a one-step rotation of the word "link"
 
 ** Idiosyncracies
+
 *** Line wrapping in org-noter
 If an org-noter annotated headline is nested inside another headline, horizontal scrolling is activated when narrowing. With horizontal scrolling, emacs generally truncates lines.
 Solutions (so far): 
 - Make it a practice to make org-noter headlines not nested.
 - Or be content with line truncation (doesn't matter e.g. in latex output).
+
 *** Latex fragments preview in cloned buffers
 If the base buffer has it's latex fragments rendered, a clone generally hasn't. Once it's cloned, the text is the same, but not the overlay display of latex fragments. Re-rendering these in a cloned buffer (e.g. a narrowed org-noter headline) is a task that has to be done manually. It is not automatically done, since in org-noter notes buffers, idle timers are run. The automatic rendering of latex preview fragments can interfere with the functions run in those idle timers and produce errors. To prevent this, latex fragments in clones aren't rendered automatically after clone creation.
