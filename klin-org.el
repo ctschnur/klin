@@ -1,3 +1,4 @@
+
 ;;; klin-org.el --- Klin functions to call from org document  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
@@ -441,6 +442,21 @@ So that it can be compiled into a latex file with references."
 
       (open-pdf-document-other-frame-or-window filepath nil nil -1)
       t)))
+
+(require 'org-ref)
+(org-add-link-type "cite" #'my-open-cited-book-pdf-file #'my-org-cite-export)
+
+(defun my-org-cite-export (link description format)
+  "Export a man page link from Org files."
+  (let ((path link)
+        (desc (or description link)))
+    (pcase format
+      ;; (`html (format "<a target=\"_blank\" href=\"%s\">%s</a>" path desc))
+      ;; (`latex (format "\\href{%s}{%s}" path desc))
+      (`latex (format "\\cite[%s]{%s}" desc path))
+      ;; (`texinfo (format "@uref{%s,%s}" path desc))
+      (`ascii (format "%s (%s)" desc path))
+      (_ path))))
 
 ;; --------
 

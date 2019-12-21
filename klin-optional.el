@@ -397,9 +397,6 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
          (description (org-link-get-description)))
     (klin-org-get-link-filepath (list nil bibtexkey description))))
 
-(require 'org-ref)
-(org-add-link-type "cite" #'my-open-cited-book-pdf-file)
-
 (defvar my-freehand-notes-extension "xopp")
 
 (defvar my-annotating-freehand-notes-filename-tag "-ann"
