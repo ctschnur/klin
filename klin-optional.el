@@ -953,7 +953,27 @@ If you then jump to the link, search for this string on the page."
   (when (char-or-string-p str-with-escaped-newlines)
     (replace-regexp-in-string (regexp-quote "\\n") (regexp-quote "\n") str-with-escaped-newlines)))
 
+(defun normalize-pdf-view-active-region-edges (edges)
+  "Get edges of mouse-selected active region, in the right order, meaning
+   left1, top1, left2, top2,
+   where left1 should be < left2,
+         top1 should be < top2.
+  If they should be equal, set the second coordinate to be one pixel greater."
+  (list (min (nth 0 edges) (nth 2 edges))
+        (min (nth 1 edges) (nth 3 edges))
+        (if (eq (nth 0 edges) (nth 2 edges))
+            (+ (nth 2 edges) 1)
+          (max (nth 0 edges) (nth 2 edges)))
+        (if (eq (nth 1 edges) (nth 3 edges))
+            (+ (nth 3 edges) 1)
+          (max (nth 1 edges) (nth 3 edges)))))
+
 (defun get-match-number-of-selected-text-on-page (&optional matches-edges-list selected-edges)
+  "Get the mouse-selected rectangle, match it with all the other rectangles from the
+  search of the currenlty selected text, figure out a single overlapping rectangle and the
+  occurrence number of the selected text on the page. Idiosyncracy: (pdf-view-active-region)
+  returns the mouse-dragged edges, not the edges that the renderer displays as a selection,
+  after dragging."
   (interactive)
   (when (pdf-view-active-region-p)
     (unless selected-edges
@@ -962,24 +982,24 @@ If you then jump to the link, search for this string on the page."
                                          (car (pdf-util-scale-relative-to-pixel (pdf-view-active-region)))))))
     (unless matches-edges-list
       (setq matches-edges-list (pdf-isearch-search-page (car (pdf-view-active-region-text)))))
-    (let* ((intersection-areas (mapcar (lambda (cur-matching-edges)
-                                         (pdf-util-edges-intersection-area (car cur-matching-edges)
-                                                                           (car selected-edges)))
-                                       matches-edges-list))
+    (let* ((intersection-areas
+            (mapcar (lambda (cur-matching-edges)
+                      (pdf-util-edges-intersection-area (car cur-matching-edges)
+                                                        (normalize-pdf-view-active-region-edges (car selected-edges))))
+                    matches-edges-list))
            lia
            liai)
       (when intersection-areas
-        (setq lia (-max intersection-areas))
-        (setq liai (car (--find-indices (eq lia it)
-                                        intersection-areas)))
-        (+ 1 liai)))))
-
-
-;; (defun trim-quotes-start-end (quoted-string)
-;;   (interactive)
-;;   (substring-no-properties quoted-string )
-;;   )
-
+        (if (remove 0 intersection-areas)
+            (progn
+              (setq lia (-max intersection-areas))
+              (setq liai (car (--find-indices (eq lia it)
+                                              intersection-areas)))
+              (+ 1 liai))
+          (user-error (concat "selected-edges=" (prin1-to-string selected-edges) ", "
+                              "matches-edges-list=" (prin1-to-string matches-edges-list) ", "
+                              "intersection-areas=" (prin1-to-string intersection-areas) ", "
+                              "liai=" (prin1-to-string liai))))))))
 
 (defconst path-of-foo (file-name-directory (or load-file-name buffer-file-name)))
 
