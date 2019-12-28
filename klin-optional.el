@@ -379,7 +379,6 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 
 (org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
 
-
 (defun org-link-get-description ()
   (buffer-substring-no-properties (org-element-property :contents-begin (org-element-context))
                                   (org-element-property :contents-end (org-element-context))))
@@ -479,34 +478,6 @@ ppFIXME: automatically terminate the entr session after closing xournal."
   "Checks if point is over link."
   (eq 'link (car (org-element-context))))
 
-;; (defun my-make-freehand-program-proc-and-proc-buf-name ()
-;;   (list (make-temp-name "freehand-proc-")
-;;         ))
-
-;; TODO: figure out why this function is still there
-(defun klin-org-noter-create-new-xournalpp-note (&optional insert-link-p)
-  (interactive)
-  (let* ((new-freehand-note-filename (my-get-new-freehand-note-filename))
-         (link-content (file-name-base new-freehand-note-filename)))
-    (if (not (file-exists-p new-freehand-note-filename))
-        (if (and insert-link-p
-                 (not (my-is-point-over-link)))
-            (progn
-              ;; insert a link containing the name base of the freehand note file
-              (insert (concat "[[freehand:"
-                              link-content
-                              "]["
-                              link-content
-                              "]]"))
-
-              ;; copy the template to filepath
-              (copy-file (my-get-freehand-note-template-file-path)
-                         new-freehand-note-filename)
-              (my-run-freehand-notes-program-with-file link-content))
-          (user-error "Point is over link"))
-      (user-error "File already exist."))))
-
-
 (require 'klin-xournalpp)
 
 (defun my-create-new-freehand-note (&optional arg original-filepath)
@@ -520,12 +491,16 @@ with a standard unique file name"
           (setq new-freehand-note-filename (my-get-new-freehand-note-filename))
           (if (not (file-exists-p new-freehand-note-filename))
               (progn
-                ;; copy the template to filepath
-                (copy-file (my-get-freehand-note-template-file-path)
-                           new-freehand-note-filename)
-                (setq link-content (file-name-base new-freehand-note-filename))
-                (my-run-freehand-notes-program-with-file link-content)
-                t)
+                (if (yes-or-no-p "Create file and insert link?")
+                    (progn
+                      ;; copy the template to filepath
+                      (copy-file (my-get-freehand-note-template-file-path)
+                                 new-freehand-note-filename)
+                      (setq link-content (file-name-base new-freehand-note-filename))
+                      (my-run-freehand-notes-program-with-file link-content)
+                      ;; insert the link
+                      (insert (concat "[[freehand:" link-content "]]"))
+                      t)))
             (message "File already exists"))))
 
     (if (eq arg 'ann)

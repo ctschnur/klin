@@ -81,6 +81,22 @@ Run this function from a pdfview buffer."
       (pdf-view-goto-page page))
     new-frame))
 
+(defun open-pdf-document-in-selected-frame (&optional filepath page fit-to-page)
+  (unless page (setq page 1))
+  (let* ((cur-frame (selected-frame)))
+    (with-selected-frame cur-frame
+      ;; split the window to show the first page
+      ;; (split-window-sensibly)
+      (let* ((new-window (split-window-below)))
+        (with-selected-window new-window
+          (find-file-existing filepath)
+          (pdf-view-goto-page page))
+        (select-window new-window)
+        (if fit-to-page
+            (progn
+              (pdf-view-fit-page-to-window)))
+        (list cur-frame new-window)))))
+
 (defun open-pdf-document-other-frame-or-window
     (filepath &optional page maximize frame-or-window)
   "Open the pdf file at FILEPATH in another window and on a certain PAGE.

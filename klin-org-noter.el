@@ -27,6 +27,8 @@
 (require 'org)
 (require 'org-noter)
 
+(setq org-noter-always-create-frame t)
+
 (defun org-noter (&optional arg)
   "Start `org-noter' session.
 

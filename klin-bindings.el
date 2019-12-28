@@ -414,7 +414,7 @@
 ;; ---------
 
 (define-key org-mode-map (kbd "C-M-, i")
-  (defhydra hydra-insert-into-org ()
+  (defhydra hydra-insert-into-org (:exit t)
     "klin: insert into org"
     ("f h"
       (lambda ()

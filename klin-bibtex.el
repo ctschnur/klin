@@ -156,10 +156,9 @@ the pdf filename out by the buffer file name."
   "Prompt user to enter the page offset number NUM of a pdf.
 This may be called inside an opened pdf, to e.g. manually add a
 page-offset field to a bibtex entry."
-  (interactive
-   (list
-    (read-number "pdf page offset number (\"which pdf page is book page 0?\"): ")))
-  (message "number is %s." (number-to-string num))
+  (interactive (list (read-number "pdf page offset number (\"which pdf page is book page 0?\"): ")))
+  (message "number is %s."
+           (number-to-string num))
   num)
 
 (defun bibtex-get-field-from-entry-under-cursor
@@ -601,7 +600,7 @@ If KEY is not set, edit entry under cursor."
     (and (not (string-equal result ""))
          result)))
 
-(defun klin-bibtex-entry-fix-file-page-offset (&optional key)
+(defun klin-bibtex-entry-fix-file-page-offset (&optional key open-seperate-frame)
   "Asks for the KEY's entry's pdf file page offset, with the choice of opening the pdf."
   (interactive)
   (let* ((bib-buffer (current-buffer))
@@ -625,12 +624,17 @@ If KEY is not set, edit entry under cursor."
                                           "")
                                         " .pdf$ ")))))
 
-    (setq pdf-frame (open-pdf-document-new-frame (expand-file-name pdf-filepath) 1))
+    ;; (setq pdf-frame (open-pdf-document-new-frame (expand-file-name pdf-filepath) 1))
 
-    (with-selected-frame pdf-frame
-      (setq offset-number (call-interactively 'klin-ask-pdf-offset-number)))
+    ;; split the window to open the pdf
+    (let* ((frame-and-window
+            (open-pdf-document-in-selected-frame (expand-file-name pdf-filepath) 1 1))
+           (pdf-frame (car frame-and-window))
+           (pdf-window (cadr frame-and-window)))
+      (with-selected-frame pdf-frame
+        (setq offset-number (call-interactively 'klin-ask-pdf-offset-number))))
 
-    (delete-frame pdf-frame)
+    ;; (delete-frame pdf-frame)
     (pop-to-buffer bib-buffer)
     (bibtex-set-field "file-page-offset"
                       (number-to-string offset-number)))
