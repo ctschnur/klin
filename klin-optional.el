@@ -1121,5 +1121,45 @@ If you then jump to the link, search for this string on the page."
              (end (progn (outline-next-visible-heading 1) (point))))
         (list beg end)))))
 
+
+
+(setq klin-template-dir "~/code_templates/")
+
+(defun klin-populate-template (&optional source-path target-path open-dired-there)
+  (interactive)
+  (unless open-dired-there
+    (setq open-dired-there t))
+  (let* ((klin-template-dir "~/code_templates/")
+         (default-command-until-source "cp -r ")
+         (helm-ff-auto-update-initial-value nil))
+    (when (file-exists-p klin-template-dir)
+      (setq source-path (helm-read-file-name "Select a src file or dir: "
+                                             :initial-input (if source-path source-path klin-template-dir)))
+      (setq target-path (helm-read-file-name "Select and type target file or dir: "
+                                             :initial-input (if target-path target-path (file-name-directory (buffer-file-name)))))
+      (shell-command-to-string (read-string "Populate folder structure (like this): "
+                                                   ;; (cons (concat default-command-until-source
+                                                   ;;               ) (+ 1
+                                        ; ;               (string-bytes default-command-until-search-term)))
+                                                   (concat default-command-until-source
+                                                           (prin1-to-string source-path)
+                                                           " "
+                                                           (prin1-to-string target-path))))))
+  (when open-dired-there
+    (dired target-path))
+  target-path)
+
+(defun klin-create-physics-note ()
+  (interactive)
+  (let* ((physics-notes-path "~/Dropbox/org/notes/grad/")
+         (physics-notes-src-path (concat klin-template-dir "physics-notes"))
+         (created-folder-path (klin-populate-template (when physics-notes-src-path physics-notes-src-path) physics-notes-path nil))
+         (notes-file-path (concat (file-name-as-directory created-folder-path) "note.org")))
+    (if (file-exists-p notes-file-path)
+        (progn
+          (find-file-existing notes-file-path)
+          (goto-char (point-max)))
+      (user-error (concat notes-file-path " does not exist, can't open it.")))))
+
 (provide 'klin-optional)
 ;;; klin-optional.el ends here

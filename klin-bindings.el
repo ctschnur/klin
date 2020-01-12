@@ -241,6 +241,16 @@
                                            (interactive)
                                            (toggle-org-dynamic-preview-latex-fragment))
                                          "Toggle dynamic preview.")
+                                        ("l"
+                                         (lambda ()
+                                           (interactive)
+                                           (org-toggle-link-display))
+                                         "org toggle link display")
+                                        ("i"
+                                         (lambda ()
+                                           (interactive)
+                                           (org-toggle-inline-images))
+                                         "org toggle inline images")
                                         ("q" nil "cancel")))))))
   (hydra-klin-rendering-from-org/body)
   (fmakunbound 'hydra-klin-rendering-from-org/body)
@@ -619,6 +629,11 @@
                                          (interactive)
                                          (call-interactively 'grep-find-in-notes-directories))
                                        "grep notes")
+                                      ("c n"
+                                       (lambda ()
+                                         (interactive)
+                                         (call-interactively 'klin-create-physics-note))
+                                       "create new physics note")
                                       ("t o p"
                                        (lambda ()
                                          (interactive)
@@ -630,6 +645,7 @@
     (setq hydra-klin-library/body nil)))
 
 (global-set-key (kbd "C-M-, L") 'klin-run-library-hydra)
+
 
 (provide 'klin-bindings)
 
