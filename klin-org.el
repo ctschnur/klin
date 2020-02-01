@@ -49,17 +49,14 @@
     (with-bib-file-buffer collective-bib-file
                           (klin-bibtex-get-field "filepath" bibtexkey))))
 
-(defun klin-org-open-link (mylist)
-  "Open link with link info stored in MYLIST."
-  (let* (; (linktyp (nth 0 mylist))
-         (bibtexkey (nth 1 mylist))
-         (description (nth 2 mylist))
-         (page-str (klin-org-link-cite-get-page-from-description description))
+(defun klin-org-open-link (link-info)
+  "Open link with link info stored in link-info."
+  (let* (;; (page-str (klin-org-link-cite-get-page-from-description description))
          (collective-bib-file (car (klin-org-org-ref-find-bibliography-fullfilenames))))
 
     ;; now go into the bibtex buffer and execute from there
     (with-bib-file-buffer collective-bib-file
-                          (klin-bibtex-open-pdf-from-bibtex bibtexkey (string-to-number page-str)))))
+                          (klin-bibtex-open-pdf-from-bibtex link-info))))
 
 
 (defun klin-org-open-bibliographys-pdfs ()
@@ -331,6 +328,21 @@ So that it can be compiled into a latex file with references."
 #+END_EXPORT
 ")))
 
+(defun klin-org-insert-latex-references-section ()
+  "Inserts the latex overhead into an org-mode buffer.
+So that it can be compiled into a latex file with references."
+  (interactive)
+  (goto-char (point-max))
+  ;; (org-insert-heading)
+  (let ((inhibit-read-only t))
+    (insert "\n\n")
+    (insert
+     "#+BEGIN_EXPORT latex
+\\printbibliography
+#+END_EXPORT"
+     ))
+  )
+
 (defun klin-org-insert-pdf-link ()
   "Insert a formatted link to a pdf."
   (interactive)
@@ -381,9 +393,11 @@ So that it can be compiled into a latex file with references."
 
     (if pdf-filepath-in-collective-bibfile-p
         (insert (concat "["
-                        "[cite:" key "]"
-                        "[p." (number-to-string
-                               print-page) "]"
+                        "[cite:" key
+                        "::" (number-to-string pdf-page)
+                        "]"
+                        ;; "[p." (number-to-string
+                        ;;        print-page) "]"
                                "]")))))
 
 
@@ -445,16 +459,39 @@ So that it can be compiled into a latex file with references."
 (require 'org-ref)
 (org-add-link-type "cite" #'my-open-cited-book-pdf-file #'my-org-cite-export)
 
+(defun strip-text-properties (txt)
+  (set-text-properties 0 (length txt) nil txt)
+      txt)
+
 (defun my-org-cite-export (link description format)
   "Export a man page link from Org files."
-  (let ((path link)
-        (desc (or description link)))
+  (let* ((path link)
+         (desc (strip-text-properties description))
+         (link-info (klin-get-assoc-list-from-link-str link))
+         (bibtex-key (when link-info
+                       (if (cdr (assoc 'bibtex-key link-info))
+                           (cdr (assoc 'bibtex-key link-info))
+                         (klin-bibtex-get-field "=key="))))
+         (pdf-page (when link-info
+                     (let* ((result (cdr (assoc 'pdf-page link-info))))
+                       result)))
+         (doc-page (when link-info
+                     (let* ((result (cdr (assoc 'doc-page link-info))))
+                       result))))
     (pcase format
       ;; (`html (format "<a target=\"_blank\" href=\"%s\">%s</a>" path desc))
       ;; (`latex (format "\\href{%s}{%s}" path desc))
-      (`latex (format "\\cite[%s]{%s}" desc path))
+      (`latex
+       ;; (format "\\cite[%s]{%s}" desc bibtex-key)
+       (concat "\\cite"
+               (if desc
+                   (concat "[" desc "]")
+                 "")
+               (concat "{" bibtex-key "}")))
       ;; (`texinfo (format "@uref{%s,%s}" path desc))
-      (`ascii (format "%s (%s)" desc path))
+
+      (`ascii
+       (format "%s (%s)" desc path))
       (_ path))))
 
 ;; --------

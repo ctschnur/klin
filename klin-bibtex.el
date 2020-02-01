@@ -209,33 +209,48 @@ is given, search in the current bib buffer."
 
 (require 'klin-optional)
 
-(defun klin-bibtex-open-pdf-from-bibtex (&optional bibtexkey page)
+(defun klin-bibtex-open-pdf-from-bibtex (&optional link-info bibtex-key-final page-final
+                                                   filepath-final)
   "From within a bibtex buffer, open BIBTEXKEY's pdf file on PAGE, respecting page offset."
   (interactive)
-
-  (unless bibtexkey
-    (setq bibtexkey (klin-bibtex-get-field "=key=")))
-
-  (let* ((result (klin-bibtex-get-field "file-page-offset"
-                                        bibtexkey))
-         (file-page-offset (if (eq 'string (type-of result))
-                               (string-to-number result)
-                             0))
-         (filepath (klin-bibtex-get-field "filepath" bibtexkey))
-         (page (- (+ (if page page 0) file-page-offset)
-                  ;; 1
-                  0)))
-
-    (if my-open-the-annotated-version-first
-        ;; check if there is an annotated version
-        (let* ((annotated-pdf-filepath (concat (file-name-nondirectory filepath)
-                                               (my-get-freehand-note-annotating-filename (file-name-base filepath)))))
-          (if (file-exists-p annotated-pdf-filepath)
-              (progn
-                (setq filepath annotated-pdf-filepath)
-                (message "Showing the *annotated* version")))))
-
-    (open-pdf-document-other-frame-or-window filepath page nil -1)))
+  (let* ((bibtex-key (when link-info
+                       (if (cdr (assoc 'bibtex-key link-info))
+                           (cdr (assoc 'bibtex-key link-info))
+                         (klin-bibtex-get-field "=key="))))
+         (pdf-page (when link-info
+                     (let* ((result (cdr (assoc 'pdf-page link-info))))
+                       result)))
+         (doc-page (when link-info
+                     (let* ((result (cdr (assoc 'doc-page link-info))))
+                       result)))
+         (file-page-offset (let* ((result (klin-bibtex-get-field "file-page-offset"
+                                                                 bibtex-key)))
+                             (if (eq 'string (type-of result))
+                                 (string-to-number result)
+                               0)))
+         (filepath (klin-bibtex-get-field "filepath" bibtex-key))
+         (page (if pdf-page
+                   pdf-page
+                 (- (+ (if doc-page doc-page 0)
+                       file-page-offset)
+                    ;; 1
+                    0))))
+    (unless filepath-final
+      (setq filepath-final filepath))
+    (unless page-final
+      (setq page-final page))
+    (unless bibtex-key-final
+      (setq bibtex-key-final bibtex-key)))
+  (if my-open-the-annotated-version-first
+      ;; check if there is an annotated version
+      (let* ((annotated-pdf-filepath (concat (file-name-nondirectory filepath-final)
+                                             (my-get-freehand-note-annotating-filename (file-name-base filepath-final)))))
+        (if (file-exists-p annotated-pdf-filepath)
+            (progn
+              (setq filepath-final annotated-pdf-filepath)
+              (message "Showing the *annotated* version")))))
+  (open-pdf-document-other-frame-or-window filepath-final
+                                           page-final nil -1))
 
 (defun klin-bibtex-grab-template-isbn (&optional isbn buf-to-return-to)
   "Fill an empty bib file with ISBN template an switch to buffer PDF-BUF-TO-RETURN-TO."

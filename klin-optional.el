@@ -380,15 +380,77 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 (org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
 
 (defun org-link-get-description ()
-  (buffer-substring-no-properties (org-element-property :contents-begin (org-element-context))
-                                  (org-element-property :contents-end (org-element-context))))
+  "With point on a link, get it's description."
+  (let* ((pos1 (org-element-property :contents-begin (org-element-context)))
+         (pos2 (org-element-property :contents-end (org-element-context))))
+    (when (and pos1 pos2)
+      (buffer-substring-no-properties pos1 pos2))))
 
-(defun my-open-cited-book-pdf-file (&optional link-content)
+(defun my-test ()
+  "Testing separating cite:mykey::123::p234"
+  (let* ((link-str "mykey::123::p234::ms=awefawef aewfewa aew::mso=3")
+         ;; (link-type (let* (result)
+         ;;              (string-match "\\`\\(.+?\\):" link-str)
+         ;;              (setq result (match-string 1 link-str))))
+         (bibtex-key (let* (result)
+                       (string-match "\\`\\(.+?\\)\\(\\'\\|:\\)"
+                                     link-str)
+                       (setq result (match-string 1 link-str))))
+         (pdf-page (let* (result)
+                     (string-match "::\\([0-9]+\\)" link-str)
+                     (setq result (match-string 1 link-str))
+                     (when result
+                       (string-to-number result))))
+         (doc-page (let* (result)
+                     (string-match "::p\\([0-9]+\\)" link-str)
+                     (setq result (match-string 1 link-str))
+                     (when result
+                       (string-to-number result))))
+         (marked-str (let* (result)
+                       (string-match "::ms=\\(.+?\\)\\(\\'\\|:\\)"
+                                     link-str)
+                       (setq result (match-string 1 link-str))))
+         (marked-str-occ (let* (result)
+                           (string-match "::mso=\\([0-9]+?\\)\\(\\'\\|:\\)"
+                                         link-str)
+                           (setq result (match-string 1 link-str))
+                           (when result
+                             (string-to-number result)))))))
+
+(defun klin-get-assoc-list-from-link-str (link-str)
+  `( ;; (link-type . ,(let* (result)
+    ;;                 (string-match "\\`\\(.+?\\):" link-str)
+    ;;                 (setq result (match-string 1 link-str))))
+    (bibtex-key . ,(let* (result)
+                     (string-match "\\`\\(.+?\\)\\(\\'\\|:\\)"
+                                   link-str)
+                     (setq result (match-string 1 link-str))))
+    (pdf-page . ,(let* (result)
+                   (when (string-match "::\\([0-9]+\\)" link-str)
+                     (setq result (match-string 1 link-str))
+                     (when result
+                       (string-to-number result)))))
+    (doc-page . ,(let* (result)
+                   (when (string-match "::p\\([0-9]+\\)" link-str)
+                     (setq result (match-string 1 link-str))
+                     (when result
+                       (string-to-number result)))))
+    (marked-str . ,(let* (result)
+                     (when (string-match "::ms=\\(.+?\\)\\(\\'\\|:\\)"
+                                         link-str)
+                       (setq result (match-string 1 link-str)))))
+    (marked-str-occ . ,(let* (result)
+                         (when (string-match "::mso=\\([0-9]+?\\)\\(\\'\\|:\\)"
+                                             link-str)
+                           (setq result (match-string 1 link-str))
+                           (when result
+                             (string-to-number result)))))
+    (description . ,(org-link-get-description))))
+
+(defun my-open-cited-book-pdf-file (&optional link-str)
+  "Dissect the LINK-STR."
   (interactive)
-  (message (concat "hi, " link-content))
-  (let* ((bibtexkey link-content)
-         (description (org-link-get-description)))
-    (klin-org-open-link (list nil bibtexkey description))))
+  (klin-org-open-link (klin-get-assoc-list-from-link-str link-str)))
 
 (defun my-get-org-link-at-point-cited-reference-pdf-file-path ()
   (interactive)

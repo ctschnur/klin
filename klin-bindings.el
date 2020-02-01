@@ -382,11 +382,14 @@
 ;; ----------
 
 (define-key org-mode-map (kbd "C-M-, p") ; p: process
-  (defhydra hydra-klin-process-from-org (:columns 3)
+  (defhydra hydra-klin-process-from-org (:columns 1)
     "klin: process in org"
     ("i l o" (lambda ()
            (interactive)
-           (klin-org-insert-latex-overhead)) "insert LaTeX overhead")))
+           (klin-org-insert-latex-overhead)) "insert LaTeX overhead")
+    ("i l r" (lambda ()
+           (interactive)
+           (klin-org-insert-latex-references-section)) "insert LaTeX references section")))
 
 ;; ---------- presentations with org-mode, latex beamer and inkscape
 ;; (define-key org-mode-map (kbd "C-M-, i") 'klin-open-in-inkscape)
