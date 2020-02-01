@@ -1,4 +1,3 @@
-
 ;;; klin-org.el --- Klin functions to call from org document  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  chris
@@ -459,6 +458,69 @@ So that it can be compiled into a latex file with references."
       (_ path))))
 
 ;; --------
+
+(defun find-all-links ()
+  "Find all links in org mode file."
+  (interactive)
+  (let* ()
+    (org-element-map (org-element-parse-buffer) 'link
+      (lambda (link)
+        (when (string= (org-element-property :type link) "file")
+          (org-element-property :path link))))))
+
+(defun goto-and-get-next-org-mode-pdf-link ()
+  (interactive)
+  (let* ((org-linked-pdfs '())
+         (previous-point (point-min))
+         type
+         path
+         pdf-path
+         pdf-page
+         link)
+
+    (org-next-link)
+    (cond
+     ((progn
+        (setq previous-point (point))
+        (setq type (org-element-property :type (org-element-context)))
+        (setq path (org-element-property :path (org-element-context)))
+        (setq pdf-path (car (split-string path "::")))
+        (and (stringp pdf-path)
+             (string-equal (file-name-extension pdf-path)
+                           "pdf")
+             (file-exists-p pdf-path)))
+      (setq link `((pdf-path . ,pdf-path)
+                   (pdf-page . ,(string-to-number (nth 1
+                                                       (split-string path "::"))))
+                   (marked-string . ,(let* ((result (nth 2
+                                                         (split-string path "::"))))
+                                       (when result
+                                         (string-to-number result))))
+                   (marked-string-occurrence . ,(let* ((result (nth 3
+                                                                    (split-string path "::"))))
+                                                  (when result
+                                                    (string-to-number result))))))))
+    (klin-run-link-processor-hydra link)))
+
+
+(defun klin-run-link-processor-hydra (&optional link)
+  "Hydra to go to the next link and edit it."
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-link-processor
+                                      (:columns 1)
+                                      ,(concat "klin: process link" (prin1-to-string link))
+                                      ("f r"
+                                       (lambda ()
+                                         (interactive)
+                                         (message "finding and replacing...")
+                                         ;; browse all bib files (in current context and from grep)
+                                         )
+                                       "find cite")
+                                      ("q" nil "cancel"))))))
+    (hydra-klin-link-processor/body)
+    (fmakunbound 'hydra-klin-link-processor/body)
+    (setq hydra-klin-link-processor/body nil)))
 
 (provide 'klin-org)
 ;;; klin-org.el ends here

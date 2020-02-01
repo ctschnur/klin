@@ -35,5 +35,7 @@
 
 (defvar my-org-notes-directory (expand-file-name "~/Dropbox"))
 
+(defvar klin-template-dir "~/code_templates/")
+
 (provide 'klin-conventions)
 ;;; klin-conventions.el ends here

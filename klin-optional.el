@@ -1065,27 +1065,6 @@ If you then jump to the link, search for this string on the page."
                                               (float pdf-image-height))))
     (pdf-util-tooltip-arrow pdf-height-fraction-to-scroll-to)))
 
-
-;; (require 'org-pdfview)
-;; (defun org-pdfview-open (link)
-;;   "Open LINK in pdf-view-mode."
-;;   (cond ((string-match "\\(.*\\)::\\([0-9]*\\)\\+\\+\\([[0-9]\\.*[0-9]*\\)"  link)
-;;          (let* ((path (match-string 1 link))
-;;                 (page (string-to-number (match-string 2 link)))
-;;                 (height (string-to-number (match-string 3 link))))
-;;            (org-open-file path 1)
-;;            (pdf-view-goto-page page)
-;;            (image-set-window-vscroll
-;;             (round (/ (* height (cdr (pdf-view-image-size))) (frame-char-height))))))
-;;         ((string-match "\\(.*\\)::\\([0-9]+\\)$"  link)
-;;          (let* ((path (match-string 1 link))
-;;                 (page (string-to-number (match-string 2 link))))
-;;            (org-open-file path 1)
-;;            (pdf-view-goto-page page)))
-;;         (t
-;;          (org-open-file link 1))
-;;         ))
-
 (defun klin-is-this-link-to-be-opened-in-a-browser (link-str)
   (< 0 (length (split-string link-str "://"))))
 
@@ -1097,18 +1076,25 @@ If you then jump to the link, search for this string on the page."
     (with-selected-window new-window
       (find-file (buffer-file-name cur-buf)))))
 
-(defun grep-find-in-notes-directories ()
+(defun grep-find-in-notes-directories (&optional new-frame)
   (interactive)
   (when (file-exists-p my-org-notes-directory)
     (let* ((default-command-until-search-term (concat "find " my-org-notes-directory " -type f -name \"*.org\" -exec grep --color -nH --null -e "))
            (default-command-from-search-term " \{\} +")
-           (new-frame (make-frame-same-dim-as-cur-window)))
-      (select-frame new-frame)
-      (grep-find (read-shell-command "Run grep (like this): "
+           (new-frame)
+           (command-string (read-shell-command "Run grep (like this): "
                                      (cons (concat default-command-until-search-term
                                                    default-command-from-search-term)
                                            (+ 1
-                                              (string-bytes default-command-until-search-term))))))))
+                                              (string-bytes default-command-until-search-term))))))
+      (unless new-frame
+        (setq new-frame t))
+
+      (when new-frame
+        (setq new-frame (make-frame-same-dim-as-cur-window))
+        (select-frame new-frame))
+
+      (grep-find command-string))))
 
 (defun org-get-headline-with-text-bounds ()
   (save-excursion
@@ -1121,9 +1107,6 @@ If you then jump to the link, search for this string on the page."
              (end (progn (outline-next-visible-heading 1) (point))))
         (list beg end)))))
 
-
-
-(setq klin-template-dir "~/code_templates/")
 
 (defun klin-populate-template (&optional source-path target-path open-dired-there)
   (interactive)
@@ -1160,6 +1143,26 @@ If you then jump to the link, search for this string on the page."
           (find-file-existing notes-file-path)
           (goto-char (point-max)))
       (user-error (concat notes-file-path " does not exist, can't open it.")))))
+
+(defun klin-populate-project-file-structure ()
+  (interactive)
+  (let* ((project-filestructure-path "~/Desktop")
+         (project-filestructure-src-path (concat klin-template-dir ""))
+         (created-folder-path (klin-populate-template (when project-filestructure-src-path project-filestructure-src-path) project-filestructure-path nil))
+         ;; (notes-file-path (concat (file-name-as-directory created-folder-path) "note.org"))
+         )
+    ;; (if (file-exists-p notes-file-path)
+    ;;     (progn
+    ;;       (find-file-existing notes-file-path)
+    ;;       (goto-char (point-max)))
+    ;;   (user-error (concat notes-file-path " does not exist, can't open it.")))
+    ))
+
+(defun klin-convert-pdfview-links-to-cites ()
+  "Scan org file for pdfview links and convert them to cites,
+if the path points to a pdf that has a self.bib"
+  (interactive)
+  (let* ()))
 
 (provide 'klin-optional)
 ;;; klin-optional.el ends here

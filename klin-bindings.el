@@ -627,8 +627,13 @@
                                       ("g n"
                                        (lambda ()
                                          (interactive)
-                                         (call-interactively 'grep-find-in-notes-directories))
+                                         (grep-find-in-notes-directories))
                                        "grep notes")
+                                      ("c p"
+                                       (lambda ()
+                                         (interactive)
+                                         (call-interactively 'klin-create-physics-note))
+                                       "create new physics note")
                                       ("c n"
                                        (lambda ()
                                          (interactive)
@@ -645,6 +650,49 @@
     (setq hydra-klin-library/body nil)))
 
 (global-set-key (kbd "C-M-, L") 'klin-run-library-hydra)
+
+
+(defun klin-run-project-launcher-hydra ()
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-project-launcher
+                                      (:columns 1 :exit t)
+                                      "klin: project launcher"
+                                      ("c p"
+                                       (lambda ()
+                                         (interactive)
+                                         (call-interactively 'klin-create-physics-note))
+                                       "create new physics note")
+                                      ("c n"
+                                       (lambda ()
+                                         (interactive)
+                                         (call-interactively 'klin-populate-project-file-structure))
+                                       "populate project file structure")
+                                      ("q" nil "cancel"))))))
+    (hydra-klin-project-launcher/body)
+    (fmakunbound 'hydra-klin-project-launcher/body)
+    (setq hydra-klin-project-launcher/body nil)))
+
+(global-set-key (kbd "C-M-, C") 'klin-run-project-launcher-hydra)
+
+(defun klin-run-link-processor-hydra (&optional link)
+  (interactive)
+  (let* ((hydra-body (eval (remove nil
+                                   `(defhydra hydra-klin-link-processor
+                                      (:columns 1)
+                                      ,(concat "klin: process link" (prin1-to-string link))
+                                      ("f r"
+                                       (lambda ()
+                                         (interactive)
+                                         (message "finding and replacing...")
+                                         )
+                                       "find cite")
+                                      ("q" nil "cancel"))))))
+    (hydra-klin-link-processor/body)
+    (fmakunbound 'hydra-klin-link-processor/body)
+    (setq hydra-klin-link-processor/body nil)))
+
+;; (global-set-key (kbd "C-M-, p") 'klin-run-link-processor-hydra)
 
 
 (provide 'klin-bindings)

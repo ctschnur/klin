@@ -19,19 +19,17 @@ This emacs-lisp library aims at creating a workflow to efficiently /link togethe
 - [[https://de.wikipedia.org/wiki/Portable_Document_Format][PDF]] (the files that you want to freehand-annotate are assumed to be pdfs)
 - [[https://github.com/mozilla/pdf.js][PDF.js]] as the standard PDF viewing library (with Javascript API) of the [[https://www.mozilla.org/de/firefox/new/][Mozilla Firefox]] web-browser
 
-** Recently implemented features, TODO's:
-- [ ] record a video showing off ~klin~'s capabilities
-- [ ] write function that converts all ~pdfview~ links to ~cite~ links (for pdf books, not necessarily for handwritten PDF notes)
+** Currently working on
+- [ ] write function that interactively converts all ~pdfview~ links to ~cite~ links
+  - [ ] the cite links need a property pdf-page (pp) and doc-page (dp), to avoid errors when converting pdf page numbers to book page numbers. After all, even if a pdf page offset is declared in a pdf's self.bib file, one can never be sure that the printed page numbering is actually consistent. 
 - [X] bookmarklet written to generate correctly formatted org-mode link to pdf with page from Firefox browser (PDF.js, Firefox' default PDF viewer)
 - [X] custom org link export to latex for ~cite~ link type
+
+*** Not-To-Do's
+Since I realized that ~org-noter~ does not entirely fit my workflow, I don't use it as much any longer. Thus, these functions (which would be great to have) I won't implement any time soon, since other things are more urgent: 
 - more optimizations for org-noter
   - [ ] implement /pop-off/ function for org-noter, where a new frame is opened up containing the same frame configuration as the old org-noter frame, but showing the original (base) buffers (pdf window not dedicated, independend searching/scrolling of the pdf and the document windows, but still the ability remains to go back to the old org-noter session instantly, if you launch org-noter from inside the document buffer)
   - [ ] implement function that gathers all org-noter frames, makes them all the same size and puts them one above the other
-- quick scanning of handwritten notes and insertion of links into org file:
-  - [X] automatically insert scanned-in pdf as a link into org-mode as it arrives in a cloud folder (e.g.: scan pages using a smartphone's camera and dropbox's pdf scanning functionality)
-  - [X] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 
-  - [X] collate two scanned pdfs into one: implement a merge function that takes two selected files (within the selected region of the org-mode buffer) and merges (collates pages) them into an output file that is put in the same directory and is linked to by another org-mode link inserted afterwards.
-  - [X] implement function that is run on an org-mode link (scanned pdf) and inserts an org-noter headline referring to that link into the org buffer, at the current position.
 
 ** Idiosyncracies
 *** org-noter
@@ -42,4 +40,11 @@ There are two easy options, both of which are not satisfying:
 - make it a practice to not nest org-noter headlines inside other headlines
 - be content with line truncation
 **** automatic rendering of latex fragments in org-noter notes buffers (clones)
-If the base buffer has it's latex fragments rendered, a clone generally hasn't. Once it's cloned, the text is the same, but not the overlay display of latex fragments. Re-rendering these in a cloned buffer (e.g. a narrowed org-noter headline) is a task that has to be done manually. It is not automatically done, since in org-noter notes buffers, idle timers are run. The automatic rendering of latex preview fragments can interfere with the functions run in those idle timers and produce errors. To prevent this, latex fragments in clones aren't rendered automatically after clone creation.
+Even though a base buffer may have it's latex fragments rendered, that doesn't transfer automatically to a cloned buffer. Once it's cloned, the text is the same, but not the overlay display of latex fragments. Re-rendering these in a cloned buffer (e.g. a narrowed org-noter headline) is a task that has to be done manually. I attempted to implement this, but decided to stop. When launching an org-mode notes buffer, various idle timers are run to make sure the notes buffer and the document buffer stay in sync. The automatic rendering of latex preview fragments (1) could be done as well after a certain idle time, but this did interfere with the functions run in org-noter's idle timers and produced errors. A second disadvantage is that automatic calls to render latex fragments are off-putting to the user since that task can make emacs stall for a period of time. 
+
+** Incomplete list of features
+- [X] quick scanning of handwritten notes and insertion of links into org file:
+  - [X] automatically insert scanned-in pdf as a link into org-mode as it arrives in a cloud folder (e.g.: scan pages using a smartphone's camera and dropbox's pdf scanning functionality)
+  - [X] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 
+  - [X] collate two scanned pdfs into one: implement a merge function that takes two selected files (within the selected region of the org-mode buffer) and merges (collates pages) them into an output file that is put in the same directory and is linked to by another org-mode link inserted afterwards.
+  - [X] implement function that is run on an org-mode link (scanned pdf) and inserts an org-noter headline referring to that link into the org buffer, at the current position.
