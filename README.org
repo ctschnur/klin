@@ -21,7 +21,10 @@ This emacs-lisp library aims at creating a workflow to efficiently /link togethe
 
 ** Currently working on
 - [ ] write function that interactively converts all ~pdfview~ links to ~cite~ links
-  - [ ] the cite links need a property pdf-page (pp) and doc-page (dp), to avoid errors when converting pdf page numbers to book page numbers. After all, even if a pdf page offset is declared in a pdf's self.bib file, one can never be sure that the printed page numbering is actually consistent. 
+  - [X] the cite links need a property pdf-page (pp) and doc-page (dp), to avoid errors when converting pdf page numbers to book page numbers. After all, even if a pdf page offset is declared in a pdf's self.bib file, one can never be sure that the printed page numbering is actually consistent. 
+  - [ ] to not have the problem of a long inline url in the exported pdf, put the url in a footnote, add the footnote into a citation-style link, i.e. [¹,➚] 
+  - [ ] upon conversion from pdfview to cite, a url field for the pdf needs to be added to the bib file (not just to the website hosting the pdf), to be able to instantly open the pdf at the page in the browser
+  - [ ] to be able to open a pdf link from within a pdf file, add a little /open in new tab/ icon to the link description upon export
 - [X] bookmarklet written to generate correctly formatted org-mode link to pdf with page from Firefox browser (PDF.js, Firefox' default PDF viewer)
 - [X] custom org link export to latex for ~cite~ link type
 

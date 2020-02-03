@@ -307,76 +307,7 @@ notes file, even if it finds one."
     (when notes-window
       (select-window notes-window))))
 
-
-(defun render-org-mode-buffer-latex-previews (&optional only-run-if-in-this-buffer cursor-position-before)
-  (interactive)
-  (let* ((run-it t)
-         do-buffers-match)
-    (when only-run-if-in-this-buffer
-      (progn
-        (setq run-it nil)
-        (if (eq (current-buffer) only-run-if-in-this-buffer)
-            (progn
-              (setq do-buffers-match t)
-              (setq run-it t))
-          ;; dont
-          (message "Not in the right buffer for latex preview rendering!"))))
-
-    (when run-it
-      (org-format-latex "ltximg/org-ltximg"
-                                        ; prefix
-                        nil ; beg
-                        nil ; end
-                        (file-name-directory (buffer-file-name)) ; dir
-
-                        'overlays ; overlays
-                        "Creating images for org-noter widened document..."
-                                        ; msg
-
-                        'forbuffer ; forbuffer
-
-                        'dvipng ; processing-type
-                        )
-      (when (and cursor-position-before only-run-if-in-this-buffer
-                 do-buffers-match)
-        ;; restore cursor position
-        (goto-char cursor-position-before)))))
-
-(defun set-latex-fragment-rendering-size-based-automatically ()
-  (interactive)
-  (let* ((offset-num 1.5)
-         (latex-fragment-scale-per-text-scale 0.3))
-    (if (equal text-scale-mode-amount 0)
-        (plist-put org-format-latex-options :scale offset-num)
-      (plist-put org-format-latex-options :scale (+ offset-num (* text-scale-mode-amount latex-fragment-scale-per-text-scale))))))
-
-(defun turn-on-latex-toggling-and-render-all-previews (&optional rendering-delay-in-seconds)
-  "And restore your cursor position."
-  (interactive)
-  (set-latex-fragment-rendering-size-based-automatically)
-  (let* ((cursor-position-before (point))
-         (buffer-before (current-buffer))
-         command-to-render)
-    (if rendering-delay-in-seconds
-        (setq command-to-render `(run-with-idle-timer ,rendering-delay-in-seconds
-                                                      nil
-                                                      (lambda ()
-                                                        (render-org-mode-buffer-latex-previews (current-buffer) ,cursor-position-before))))
-      (setq command-to-render `(run-with-idle-timer 1
-                                                    nil
-                                                    (lambda ()
-                                                      (render-org-mode-buffer-latex-previews (current-buffer) ,cursor-position-before)))))
-    (cs-turn-on-org-dynamic-preview-latex-fragment)
-    (eval command-to-render)))
-
-(defun turn-off-latex-toggling-and-render-all-previews (&optional rendering-delay-in-seconds)
-  "And restore your cursor position."
-  (interactive)
-  (let* ((cursor-position-before (point))
-         (buffer-before (current-buffer)))
-    (org-remove-latex-fragment-image-overlays (point-min) (point-max))
-    (cs-turn-off-org-dynamic-preview-latex-fragment)))
-
+(require 'cs-latex-fragments-preview)
 
 (defun my-wrap-lines-correctly ()
   (interactive)
@@ -412,13 +343,6 @@ notes file, even if it finds one."
   (setq org-export-with-sub-superscripts nil)
   (message "Done."))
 
-(defun org-toggle-latex-fragment-with-prefix-arg ()
-  "This only toggles it. TODO: I want a function that deliberately enables/disables
-programmatically."
-  (interactive)
-  (setq current-prefix-arg '(4)) ; C-u
-  (call-interactively 'org-toggle-latex-fragment))
-
 (defvar-local my-org-noter-buffer-widened nil)
 
 (defun my-org-noter-widen-buffer ()
@@ -445,20 +369,6 @@ Useful if you want to add e.g. some LATEX_HEADER."
           )
       (message "No notes window yet available for widening"))))
 
-
-(defun do-not-render-latex-previews-p ()
-    "Determine if in the org file, a property instruction is set at the top that aims at preventing
-the rendering of inline latex previews."
-    (interactive)
-    (let* ((result (org-global-prop-value render-latex-preview-prop-key)))
-        (or (not result)
-            (string-equal result "f")
-            (string-equal result "false")
-            (string-equal result "False")
-            (string-equal result "F")
-            (string-equal result "FALSE")
-            (string-equal result "nil")
-            (string-equal result "NIL"))))
 
 ;; --- other highlighting function
 

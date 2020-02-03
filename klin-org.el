@@ -467,7 +467,7 @@ So that it can be compiled into a latex file with references."
   "Export a man page link from Org files."
   (let* ((path link)
          (desc (strip-text-properties description))
-         (link-info (klin-get-assoc-list-from-link-str link))
+         (link-info (klin-get-assoc-list-from-cite-link-str link))
          (bibtex-key (when link-info
                        (if (cdr (assoc 'bibtex-key link-info))
                            (cdr (assoc 'bibtex-key link-info))

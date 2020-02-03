@@ -417,7 +417,7 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
                            (when result
                              (string-to-number result)))))))
 
-(defun klin-get-assoc-list-from-link-str (link-str)
+(defun klin-get-assoc-list-from-cite-link-str (link-str)
   `( ;; (link-type . ,(let* (result)
     ;;                 (string-match "\\`\\(.+?\\):" link-str)
     ;;                 (setq result (match-string 1 link-str))))
@@ -450,7 +450,7 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
 (defun my-open-cited-book-pdf-file (&optional link-str)
   "Dissect the LINK-STR."
   (interactive)
-  (klin-org-open-link (klin-get-assoc-list-from-link-str link-str)))
+  (klin-org-open-link (klin-get-assoc-list-from-cite-link-str link-str)))
 
 (defun my-get-org-link-at-point-cited-reference-pdf-file-path ()
   (interactive)
@@ -974,9 +974,72 @@ suggest a command to be run."
 ;; ----------- add text search to org link ------------
 
 (require 'org-pdfview)
-(org-add-link-type "pdfview" #'pdfview-follow-link)
+(org-add-link-type "pdfview" #'pdfview-follow-link #'my-org-pdfview-export)
+
+(defun klin-get-assoc-list-from-pdfview-link-str (link-str)
+  "Parse the contents of a pdfview LINK-STR into an association list."
+  `((pdf-url . ,(let* (result)
+                  (string-match "\\`\\(.+?\\)\\(\\'\\|::\\)"
+                                link-str)
+                  (setq result (match-string 1 link-str))))
+    (pdf-page . ,(let* (result)
+                   (when (string-match "::\\([0-9]+\\)" link-str)
+                     (setq result (match-string 1 link-str))
+                     (when result
+                       (string-to-number result)))))
+    ;; maybe do also marked string and marked string occurrence
+    (description . ,(org-link-get-description)))
+  )
+
+(defun my-org-pdfview-export (link description format)
+  "Export a pdfview link."
+  (let* ((path link)
+         (desc (strip-text-properties description))
+         (link-info (klin-get-assoc-list-from-pdfview-link-str link))
+         (pdf-url (when link-info
+                    (let* ((result (cdr (assoc 'pdf-url link-info))))
+                      result)))
+         (pdf-page (when link-info
+                     (let* ((result (cdr (assoc 'pdf-page link-info))))
+                       result)))
+         (url (org-latex-plain-text (concat pdf-url
+                                            "#page="
+                                            (if pdf-page
+                                                (number-to-string pdf-page)
+                                              ""))
+                                    nil)))
+    (pcase format
+      ;; (`html (format "<a target=\"_blank\" href=\"%s\">%s</a>" path desc))
+      ;; (`latex (format "\\href{%s}{%s}" path desc))
+      (`latex
+       ;; (format "\\cite[%s]{%s}" desc bibtex-key)
+
+       (concat (if desc
+                   (concat (org-latex-plain-text desc nil) "~")
+                 nil
+                 "")
+               "[\\,"
+               "\\footnote{"
+               (format "\\url{%s}" url)
+               "}"
+               ","
+               (format "\\href{%s}{%s}" url "$\\nearrow$")
+               "\\,]"))
+      ;; (`texinfo (format "@uref{%s,%s}" path desc))
+
+      (`ascii
+       (format "%s (%s)" desc path))
+      (_ path))))
 
 (require 'org-pdfview)
+
+;; (defun org-pdfview-convert-to-cite ()
+;;   "With cursor on a pdfview link, convert it to a cite link."
+;;   (interactive)
+;;   ;; first check if there is already a bibtex entry with the filepath (or url) in it linking to
+;;   ;; this file. If yes, just use that.
+;;   )
+
 (defun org-pdfview-store-link ()
   "Store a link to a pdfview buffer.
 This time, include the page, but also a search string on the page, that may be selected.
