@@ -696,6 +696,7 @@ Then, run this function to adjust."
              document-size-width
              document-size-height
              view-size-width
+             scale-factor
              (x (/ 1.0 1.618)))
 
         (pdf-view-scale-reset)
@@ -710,13 +711,22 @@ Then, run this function to adjust."
                                                  (split-string shell-command-output "\n")))
             (setq document-size-width (float (nth 0 pdf-width-height-tuple)))
             (setq document-size-height (float (nth 1 pdf-width-height-tuple)))
-            (setq pdf-view-display-size (/ (* x screen-size-width) document-size-width))))
+
+            ;; if it's not a4, just brute-force it to be a4
+            (setq document-size-height (float (nth 1 pdf-width-height-tuple)))
+
+            ;; if it's not a4, just brute-force it to be a4, i.e. desired width is 476
+            (setq scale-factor (/ document-size-width 476.0))
+            (setq scale-factor (/ 1.0 scale-factor))
+            (setq pdf-view-display-size (/ (* x screen-size-width)
+                                           (* scale-factor document-size-width)))))
 
         ;; it needs 0.1 s if pdf-view-mode is just started and this function is called as a hook
         ;; if called manually, after pdf-view-mode is fully rendered in initialized, it needs
         ;; basically 0 time
         ;; actually, the only way of starting it should be manually
         (run-with-idle-timer 0.01 nil 'my-run-after-pdf-view-mode-is-ready)
+        (pdf-view-redisplay)
         )))
 
 (defun my-run-after-pdf-view-mode-is-ready ()
@@ -995,7 +1005,8 @@ suggest a command to be run."
   "Export a pdfview link."
   (let* ((path link)
          (desc (strip-text-properties description))
-         (link-info (klin-get-assoc-list-from-pdfview-link-str link))
+         (link-info (klin-get-assoc-list-from-pdfview-link-str
+                     link))
          (pdf-url (when link-info
                     (let* ((result (cdr (assoc 'pdf-url link-info))))
                       result)))
@@ -1013,17 +1024,25 @@ suggest a command to be run."
       ;; (`latex (format "\\href{%s}{%s}" path desc))
       (`latex
        ;; (format "\\cite[%s]{%s}" desc bibtex-key)
-
        (concat (if desc
-                   (concat (org-latex-plain-text desc nil) "~")
+                   (concat (org-latex-plain-text desc nil)
+                           "~")
                  nil
                  "")
                "[\\,"
                "\\footnote{"
-               (format "\\url{%s}" url)
+               (if (file-exists-p pdf-url)
+                   (concat (file-name-base pdf-url)
+                           (if pdf-page
+                               (concat "; "
+                                       (number-to-string pdf-page))
+                             ""))
+                 (format "\\url{%s}" url))
                "}"
-               ","
-               (format "\\href{%s}{%s}" url "$\\nearrow$")
+               (if (file-exists-p pdf-url)
+                   ""
+                 (concat ","
+                         (format "\\href{%s}{%s}" url "$\\nearrow$")))
                "\\,]"))
       ;; (`texinfo (format "@uref{%s,%s}" path desc))
 

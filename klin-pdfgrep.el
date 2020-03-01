@@ -92,7 +92,6 @@ used to advice `compilation-goto-locus'."
         ;; (substring cur start (next-property-change start cur))
         ))))
 
-
 (defun pdfgrep-on-linked-files ()
   (interactive)
   (pdfgrep-mode 1)
@@ -121,7 +120,9 @@ used to advice `compilation-goto-locus'."
                                                (list elem elem))
                                              one-d-list)))
                     (action . (lambda (candidate)
-                                (mapcar (lambda (elem) (car elem)) (helm-marked-candidates))))))))
+                                (mapcar (lambda (elem)
+                                          (car elem))
+                                        (helm-marked-candidates))))))))
 
 
 (defun find-all-org-mode-links-in-selected-region ()

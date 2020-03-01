@@ -37,7 +37,6 @@
 (require 'hydra)
 (require 'pdf-view)
 
-
 ;; ------- if not (yet) in org-noter -------
 (require 'klin-org-noter)
 (define-key org-mode-map (kbd "C-S-M-l") 'org-noter)
@@ -200,64 +199,7 @@
 ;;    (get-two-files-and-ask-merge))
 ;;  "collate 2 pdfs")
 
-(defun org-run-context-aware-hydra-rendering ()
-  (interactive)
-  (let* ((hydra-body (eval (remove nil
-                                   (let* ((prop-value (org-global-prop-value render-latex-preview-prop-key)) list-of-heads)
-                                     `(defhydra hydra-klin-rendering-from-org
-                                        (:columns 3 :exit t)
-                                        "klin: open from org"
-                                        ("r"
-                                         (lambda ()
-                                           (interactive)
-                                           (turn-on-latex-toggling-and-render-all-previews))
-                                         "(re-)render latex previews")
-                                        ("t"
-                                         (lambda ()
-                                           (interactive)
-                                           (turn-on-latex-toggling-and-render-previews)
-                                           (if (not (buffer-narrowed-p))
-                                               (org-global-prop-set render-latex-preview-prop-key
-                                                                    "t")
-                                             (user-error "Global property not edited. This buffer just is a clone and probably narrowed.")))
-                                         "(re-)render latex previews and set prop. to \"t\"")
-                                        ("f"
-                                         (lambda ()
-                                           (interactive)
-                                           (turn-off-latex-toggling-and-render-all-previews)
-                                           (when (org-remove-latex-fragment-image-overlays ,(point-min)
-                                                                                           ,(point-max))
-                                             (message "LaTeX fragment images removed from section")
-                                             (turn-off-latex-toggling-and-render-all-previews)
-                                             (if (not (buffer-narrowed-p))
-                                                 (org-global-prop-set render-latex-preview-prop-key
-                                                                      "f")
-                                               (user-error "Global property not edited. This buffer just is a clone and prbably narrowed."))
-                                             )
-                                           )
-                                         "remove latex previews, set prop. to \"f\"")
-                                        ("T"
-                                         (lambda ()
-                                           (interactive)
-                                           (toggle-org-dynamic-preview-latex-fragment))
-                                         "Toggle dynamic preview.")
-                                        ("l"
-                                         (lambda ()
-                                           (interactive)
-                                           (org-toggle-link-display))
-                                         "org toggle link display")
-                                        ("i"
-                                         (lambda ()
-                                           (interactive)
-                                           (org-toggle-inline-images))
-                                         "org toggle inline images")
-                                        ("q" nil "cancel")))))))
-  (hydra-klin-rendering-from-org/body)
-  (fmakunbound 'hydra-klin-rendering-from-org/body)
-  (setq hydra-klin-rendering-from-org/body nil)))
 
-(define-key org-mode-map (kbd "C-M-, r") ; r: render
-  'org-run-context-aware-hydra-rendering)
 
 (defun pdf-view-run-context-aware-hydra ()
   (interactive)

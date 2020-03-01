@@ -307,7 +307,7 @@ notes file, even if it finds one."
     (when notes-window
       (select-window notes-window))))
 
-(require 'cs-latex-fragments-preview)
+;; (require 'cs-latex-fragments-preview)
 
 (defun my-wrap-lines-correctly ()
   (interactive)
