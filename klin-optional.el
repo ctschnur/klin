@@ -716,7 +716,7 @@ Then, run this function to adjust."
             (setq document-size-height (float (nth 1 pdf-width-height-tuple)))
 
             ;; if it's not a4, just brute-force it to be a4, i.e. desired width is 476
-            (setq scale-factor (/ document-size-width 476.0))
+            (setq scale-factor (/ document-size-width (* 1.2 476.0)))
             (setq scale-factor (/ 1.0 scale-factor))
             (setq pdf-view-display-size (/ (* x screen-size-width)
                                            (* scale-factor document-size-width)))))
@@ -1163,7 +1163,10 @@ If you then jump to the link, search for this string on the page."
   (let* (;; (link-without-type (substring-no-properties link (length "pdfview:")))
          (splits (split-string link "::"))
          (path (nth 0 splits))
-         (page (string-to-number (nth 1 splits))))
+         (page (string-to-number (let* ((page-tmp (nth 1 splits)))
+                                   (if page-tmp
+                                       page-tmp
+                                     "1")))))
     (cond
      ((<= (length splits) 2)
       (cond
@@ -1196,7 +1199,7 @@ If you then jump to the link, search for this string on the page."
             (pdf-util-scroll-to-edges (apply 'pdf-util-edges-union edges-of-current-match))
             (put-tooltip-arrow edges-of-current-match)
             )))))
-    (message link)
+    ;; (message link)
     ;; (other-window -1)
     ))
 
