@@ -55,7 +55,6 @@
 
 ;; -------- org-mode important klin keys
 (define-key org-mode-map (kbd "C-M-, l") 'klin-org-insert-pdf-link)
-;; (define-key org-mode-map (kbd "C-M-, o") 'klin-org-open-link-nearest-to-point)
 (define-key org-mode-map (kbd "C-M-, b j") 'org-ref-open-citation-at-point)
 (define-key org-mode-map (kbd "C-M-, b c") 'klin-bibtex-jump-to-collective-bib-file)
 
@@ -96,13 +95,12 @@
     (fmakunbound 'hydra-klin-search-from-org/body)
     (setq hydra-klin-search-from-org/body nil)))
 
-(define-key org-mode-map (kbd "C-M-, s") ; s: search
-  'org-run-search-hydra)
+(define-key org-mode-map (kbd "C-M-, s") 'org-run-search-hydra)
 
 
 ;; --------- open from org ---------
 
-(defun org-run-context-aware-hydra-open ()
+(defun klin-org-freehand-hydra ()
   (interactive)
   (let* ((hydra-body (eval (remove nil
                                    `(defhydra hydra-klin-open-from-org
@@ -143,8 +141,7 @@
     (fmakunbound 'hydra-klin-open-from-org/body)
     (setq hydra-klin-open-from-org/body nil)))
 
-(define-key org-mode-map (kbd "C-M-, o") ; o: open
-  'org-run-context-aware-hydra-open)
+(define-key org-mode-map (kbd "C-M-, f") 'klin-org-freehand-hydra)
 
 
 ;; ----------
@@ -191,17 +188,7 @@
 (define-key org-mode-map (kbd "C-M-, w")
   'org-run-watch-hydra)
 
-
-
-;; ("c t"
-;;  (lambda ()
-;;    (interactive)
-;;    (get-two-files-and-ask-merge))
-;;  "collate 2 pdfs")
-
-
-
-(defun pdf-view-run-context-aware-hydra ()
+(defun klin-run-pdfview-freehand-hydra ()
   (interactive)
   (let* ((link-content-from-pdf-view (file-name-base (buffer-file-name)))
          (annotated-pdf-filepath (concat (my-get-freehand-note-filepath-associated-pdf-filepath (my-get-freehand-note-annotating-filename
@@ -288,8 +275,7 @@
       (fmakunbound 'hydra-klin-open-from-pdf-view/body)
       (setq hydra-klin-open-from-pdf-view nil))))
 
-(define-key pdf-view-mode-map (kbd "C-M-, o") ; o: open
-  'pdf-view-run-context-aware-hydra)
+(define-key pdf-view-mode-map (kbd "C-M-, f") 'klin-run-pdfview-freehand-hydra)
 
 
 ;; ----- process pdf file  ------------
@@ -563,6 +549,7 @@
 
 ;; (global-set-key (kbd "C-M-, k") 'kill-frame-and-buffers-within)
 
+
 (defun klin-run-library-hydra ()
   (interactive)
   (let* ((hydra-body (eval (remove nil
@@ -620,6 +607,7 @@
 
 (global-set-key (kbd "C-M-, C") 'klin-run-project-launcher-hydra)
 
+
 (defun klin-run-link-processor-hydra (&optional link)
   (interactive)
   (let* ((hydra-body (eval (remove nil
@@ -638,6 +626,8 @@
     (setq hydra-klin-link-processor/body nil)))
 
 ;; (global-set-key (kbd "C-M-, p") 'klin-run-link-processor-hydra)
+
+(global-set-key (kbd "C-x C-p") 'counsel-fzf)
 
 
 (provide 'klin-bindings)

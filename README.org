@@ -1,25 +1,32 @@
 * ~klin~ - integration of notetaking tools in emacs
 ** What is this library?
-This emacs-lisp library aims at creating a workflow to efficiently /link together all digital and hand-written notes one may have on a topic/ (for me, those are largely university classes, but also personal research projects). At the same time, it integrates tools to make all linked notes /editable/, even scanned-in handwritten notes (using open-source freehand drawing tools).
+This emacs-lisp library aims at creating a workflow to efficiently /link together all digital and hand-written notes one may have on a topic/. At the same time, it integrates tools to make all linked notes /editable/, even scanned-in handwritten notes (using open-source freehand drawing tools).
 
 *** Where does the name come from?
-~klin~ is a one-step rotation of the word ~link~. It is supposed to /link/ information together,  reducing the amount of steps it takes to jump in-between personal notes (org-mode documents) and specific sections of PDF documents (e.g. referenced books and pages therein). As an alternative, one could of course always use a normal, browser-based wiki software to /link information together/. This would however not take advantage of the rich features of emacs and org-mode.
+~klin~ is a one-step rotation of the word ~link~. It is supposed to /link/ information together. Reducing the amount of steps it takes to jump in-between personal notes (org-mode documents) and specific sections of PDF documents (e.g. referenced books and pages therein). As an alternative, one could of course always use a normal, browser-based wiki software to /link information together/. The advantage of this software is the integration with emacs and org-mode.
 
-** What software is used?
-~klin~ integrates the following software (among others; all free; mostly open source): 
-- Linux (the owner of this library uses [[https://ubuntu.com/][ubuntu]]; Mac: most functionality should run there too, since it has a unix shell; this library uses unix-shell commands for many things, e.g. interaction between emacs and other programs. Windows: most tools used by this library are cross-platform, but windows does not come with a unix shell, which limits functionality)
-- [[https://www.gnu.org/software/emacs/][Emacs]] (one of the most powerful and most expandable/scriptable text editors (comparable to an operating system) there is (as of 2019))
-  - [[https://orgmode.org/][Org mode]] (one of the most powerful and most expandable digital notetaking/GTD systems, based on plain text; this README document was created using org-mode)
-  - [[https://github.com/politza/pdf-tools][pdf-tools]] (emacs' way of viewing/searching/annotating PDFs; pixel-wise continuous scrolling is sadly not supported (as of 2019))
-  - [[https://github.com/jkitchin/org-ref][org-ref]] (management of references for org-mode; several functions implemented in org-ref are used/built upon to manage bibliography/references)
+** Integrated software, installation
+- [[https://www.gnu.org/software/emacs/][Emacs]] (powerful and configurable text processing environment)
+  - [[https://orgmode.org/][Org mode]] (notetaking/GTD system based on plain-text files; this README document was created using org-mode)
+  - [[https://github.com/politza/pdf-tools][pdf-tools]] (pdf viewer integrated into emacs)
+  - [[https://github.com/jkitchin/org-ref][org-ref]] (provides functions to manage bibliographies, tailored to org-mode)
   - [[https://github.com/weirdNox/org-noter][org-noter]] (package for note-taking by interleaving pdfs with side-by-side viewing of pdf and org-mode notes; basic functionality is taken and modified/expanded upon to interleave different sections of different pdfs in different org-mode headlines and continuously scroll through them, always creating new org-noter sessions, but keeping the cursor in the notes buffer and keeping the notes buffer widened (not narrowed)).
   - [[https://github.com/abo-abo/hydra][Hydra]] (key package for quick summary of and access to useful functions in various contexts of the software; several conditional hydras are implemented in different contexts, all using lisp's /code as data/ capabilities)
-  - [[https://github.com/knu/elscreen][ElScreen]] (for tabbed viewing/switching between several pdfs, trying to make pdf viewing more browser-like)
-- [[https://github.com/xournalpp/xournalpp][Xournalpp]] (software to annotate pdfs, keeping the original pdf and the annotated one seperate; includes freehand annotation functionality)
-- [[https://de.wikipedia.org/wiki/Portable_Document_Format][PDF]] (the files that you want to freehand-annotate are assumed to be pdfs)
-- [[https://github.com/mozilla/pdf.js][PDF.js]] as the standard PDF viewing library (with Javascript API) of the [[https://www.mozilla.org/de/firefox/new/][Mozilla Firefox]] web-browser
+- [[https://github.com/xournalpp/xournalpp][Xournalpp]] (freehand pdf annotation software)
+Installation: 
+#+BEGIN_SRC shell
+sudo apt install xournal++
+#+END_SRC
+- [[https://github.com/clibs/entr][entr]] (monitoring changes of files; here: exporting a pdf automatically after annotation file has changed)
+#+BEGIN_SRC shell
+sudo apt install entr
+#+END_SRC
 
-** Currently working on
+- [[https://github.com/mozilla/pdf.js][PDF.js]] (pdf viewer with Javascript API, standard in the [[https://www.mozilla.org/de/firefox/new/][Mozilla Firefox]] web-browser)
+
+To take advantage of ~klin~'s features, one should install the above mentionend packages. 
+
+** To-Do
 - [ ] write function that interactively converts all ~pdfview~ links to ~cite~ links
   - [X] the cite links need a property pdf-page (pp) and doc-page (dp), to avoid errors when converting pdf page numbers to book page numbers. After all, even if a pdf page offset is declared in a pdf's self.bib file, one can never be sure that the printed page numbering is actually consistent. 
   - [ ] to not have the problem of a long inline url in the exported pdf, put the url in a footnote, add the footnote into a citation-style link, i.e. [¹,➚] 
@@ -45,7 +52,7 @@ There are two easy options, both of which are not satisfying:
 **** automatic rendering of latex fragments in org-noter notes buffers (clones)
 Even though a base buffer may have it's latex fragments rendered, that doesn't transfer automatically to a cloned buffer. Once it's cloned, the text is the same, but not the overlay display of latex fragments. Re-rendering these in a cloned buffer (e.g. a narrowed org-noter headline) is a task that has to be done manually. I attempted to implement this, but decided to stop. When launching an org-mode notes buffer, various idle timers are run to make sure the notes buffer and the document buffer stay in sync. The automatic rendering of latex preview fragments (1) could be done as well after a certain idle time, but this did interfere with the functions run in org-noter's idle timers and produced errors. A second disadvantage is that automatic calls to render latex fragments are off-putting to the user since that task can make emacs stall for a period of time. 
 
-** Incomplete list of features
+** List of features (incomplete)
 - [X] quick scanning of handwritten notes and insertion of links into org file:
   - [X] automatically insert scanned-in pdf as a link into org-mode as it arrives in a cloud folder (e.g.: scan pages using a smartphone's camera and dropbox's pdf scanning functionality)
   - [X] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 

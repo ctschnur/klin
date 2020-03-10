@@ -580,7 +580,6 @@ with a standard unique file name"
                     ;;            new-freehand-note-filename)
                     (cs-create-xournalpp-file-for-pdf (buffer-file-name)
                                                       (expand-file-name new-freehand-note-filename))
-
                     ;; TODO: add page degree of freedom to link
                     (my-run-freehand-notes-program-with-file link-content)
                     t)
@@ -1304,12 +1303,6 @@ If you then jump to the link, search for this string on the page."
     ;;       (goto-char (point-max)))
     ;;   (user-error (concat notes-file-path " does not exist, can't open it.")))
     ))
-
-(defun klin-convert-pdfview-links-to-cites ()
-  "Scan org file for pdfview links and convert them to cites,
-if the path points to a pdf that has a self.bib"
-  (interactive)
-  (let* ()))
 
 (provide 'klin-optional)
 ;;; klin-optional.el ends here
