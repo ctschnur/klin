@@ -1,11 +1,14 @@
 * ~klin~ - integration of notetaking tools in emacs
-** What is this library?
-This emacs-lisp library aims at creating a workflow to efficiently /link together all digital and hand-written notes one may have on a topic/. At the same time, it integrates tools to make all linked notes /editable/, even scanned-in handwritten notes (using open-source freehand drawing tools).
+** What is it?
+This program aims at creating a workflow to efficiently /link together all digital and hand-written notes one may have on a topic/. At the same time, it integrates tools to make all linked notes /editable/, even scanned-in handwritten notes (using open-source freehand drawing tools).
+
+It attempts to mimize the effort needed to jump in-between personal notes (org-mode documents) and specific sections of PDF documents (e.g. referenced books and pages therein, or even specific words within pages of pdfs). An alternative would be a browser-based wiki software. The advantage of this software is the integration with emacs and org-mode. 
 
 *** Where does the name come from?
-~klin~ is a one-step rotation of the word ~link~. It is supposed to /link/ information together. Reducing the amount of steps it takes to jump in-between personal notes (org-mode documents) and specific sections of PDF documents (e.g. referenced books and pages therein). As an alternative, one could of course always use a normal, browser-based wiki software to /link information together/. The advantage of this software is the integration with emacs and org-mode.
+~klin~ is a permutation of the word ~link~. It is supposed to /link/ information together. 
 
-** Integrated software, installation
+** Installation
+~klin~ is built on-top of the following software: 
 - [[https://www.gnu.org/software/emacs/][Emacs]] (powerful and configurable text processing environment)
   - [[https://orgmode.org/][Org mode]] (notetaking/GTD system based on plain-text files; this README document was created using org-mode)
   - [[https://github.com/politza/pdf-tools][pdf-tools]] (pdf viewer integrated into emacs)
@@ -18,13 +21,16 @@ Installation:
 sudo apt install xournal++
 #+END_SRC
 - [[https://github.com/clibs/entr][entr]] (monitoring changes of files; here: exporting a pdf automatically after annotation file has changed)
+Installation: 
 #+BEGIN_SRC shell
 sudo apt install entr
 #+END_SRC
-
 - [[https://github.com/mozilla/pdf.js][PDF.js]] (pdf viewer with Javascript API, standard in the [[https://www.mozilla.org/de/firefox/new/][Mozilla Firefox]] web-browser)
 
-To take advantage of ~klin~'s features, one should install the above mentionend packages. 
+To take full advantage of ~klin~'s features, one should install the above mentionend packages. 
+
+** Operating systems
+~klin~ is primarily built to work on linux, since it relies on the unix shell to address programs outside of emacs. 
 
 ** To-Do
 - [ ] write function that interactively converts all ~pdfview~ links to ~cite~ links
@@ -44,15 +50,15 @@ Since I realized that ~org-noter~ does not entirely fit my workflow, I don't use
 ** Idiosyncracies
 *** org-noter
 Integrating org-noter subheadings into an org file where you would want to also store other things except annotations is not advised, since the workflow is currently just a bit too messy (however, that might change in the future).
-**** Line wrapping in org-noter
+**** line wrapping in org-noter
 If an org-noter annotated headline is nested inside another headline, horizontal scrolling is activated when narrowing. With horizontal scrolling, emacs generally truncates lines.
 There are two easy options, both of which are not satisfying:
 - make it a practice to not nest org-noter headlines inside other headlines
 - be content with line truncation
 **** automatic rendering of latex fragments in org-noter notes buffers (clones)
-Even though a base buffer may have it's latex fragments rendered, that doesn't transfer automatically to a cloned buffer. Once it's cloned, the text is the same, but not the overlay display of latex fragments. Re-rendering these in a cloned buffer (e.g. a narrowed org-noter headline) is a task that has to be done manually. I attempted to implement this, but decided to stop. When launching an org-mode notes buffer, various idle timers are run to make sure the notes buffer and the document buffer stay in sync. The automatic rendering of latex preview fragments (1) could be done as well after a certain idle time, but this did interfere with the functions run in org-noter's idle timers and produced errors. A second disadvantage is that automatic calls to render latex fragments are off-putting to the user since that task can make emacs stall for a period of time. 
+Even though a base buffer may have it's latex fragments rendered, that doesn't transfer automatically to a cloned buffer. Once it's cloned, the text is the same, but not the overlay display of latex fragments. Re-rendering these in a cloned buffer (e.g. a narrowed org-noter headline) is a task that has to be done manually. I attempted to implement this, but decided to stop. When launching an org-noter notes buffer, various idle timers are run to make sure the notes buffer and the document buffer stay in sync. The automatic rendering of latex preview fragments (1) could be done as well after a certain idle time, but this did interfere with org-noter's idle timers and produced errors. A second disadvantage is that automatic calls to render latex fragments can be surprising to the user since that task can make emacs stall for a period of time. 
 
-** List of features (incomplete)
+** list of features (list is incomplete)
 - [X] quick scanning of handwritten notes and insertion of links into org file:
   - [X] automatically insert scanned-in pdf as a link into org-mode as it arrives in a cloud folder (e.g.: scan pages using a smartphone's camera and dropbox's pdf scanning functionality)
   - [X] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 
