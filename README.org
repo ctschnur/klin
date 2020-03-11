@@ -64,3 +64,7 @@ Even though a base buffer may have it's latex fragments rendered, that doesn't t
   - [X] in an org-mode buffer, make a function that continuously watches and inserts pdf files arriving in the scanner dump folder (folder fed by actual hardware scanner, over the cloud) and inserts links to these pdfs 
   - [X] collate two scanned pdfs into one: implement a merge function that takes two selected files (within the selected region of the org-mode buffer) and merges (collates pages) them into an output file that is put in the same directory and is linked to by another org-mode link inserted afterwards.
   - [X] implement function that is run on an org-mode link (scanned pdf) and inserts an org-noter headline referring to that link into the org buffer, at the current position.
+ 
+** ideas
+- write /clone into neighboring window/ function. 
+

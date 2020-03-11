@@ -825,6 +825,31 @@ Then, run this function to adjust."
       (with-current-buffer new-buffer
         (set-proper-mode-cloning-parameters cloning-params)))))
 
+(defun klin-clone-into-split-window ()
+  (interactive)
+  (let* ((cur-buf (current-buffer))
+         (cloning-params (get-proper-mode-cloning-parameters))
+         new-buffer
+         (new-window (split-window-sensibly)))
+
+    (if (not new-window)
+        (setq new-window (split-window-below)))
+
+    (with-selected-window new-window
+      (setq new-buffer (make-indirect-buffer cur-buf
+                                             (generate-new-buffer-name (buffer-name cur-buf))
+                                             nil))
+
+      ;; (setq clone-buffer (clone-indirect-buffer (buffer-file-name) t))
+      (if (not (equal (current-buffer) new-buffer))
+          (switch-to-buffer new-buffer nil t))
+
+      ;; set buffer-file-name (mostly, that's useful e.g. for saving ability)
+      (with-current-buffer new-buffer
+        (setq buffer-file-name (buffer-file-name cur-buf)))
+      (with-current-buffer new-buffer
+        (set-proper-mode-cloning-parameters cloning-params)))))
+
 
 ;; override this, because if you launch this function from a clone,
 ;; it actually jumps to the bookmark in the original pdf

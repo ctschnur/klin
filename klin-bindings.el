@@ -426,6 +426,7 @@
   (evil-define-key 'normal pdf-view-mode-map (kbd "B") 'pdf-history-backward)
   (evil-define-key 'normal pdf-view-mode-map (kbd "F") 'pdf-history-forward)
   (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'klin-toggle-pdf-only-view)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "S") 'klin-clone-into-split-window)
   (evil-define-key 'normal pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
   (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
   ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
@@ -533,7 +534,12 @@
                      (interactive)
                      (push-buffer nil t))
                    "into new elcreen tab")
-                  ("k l"
+                  ("k l f"
+                   (lambda ()
+                     (interactive)
+                     (klin-clone-into-new-frame))
+                   "clone (klone) into new frame")
+                  ("k 2"
                    (lambda ()
                      (interactive)
                      (klin-clone-into-new-frame))
