@@ -635,7 +635,6 @@
 
 (global-set-key (kbd "C-x C-p") 'counsel-fzf)
 
-
 (provide 'klin-bindings)
 
 ;;; klin-bindings.el ends here
