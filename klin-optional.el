@@ -1247,10 +1247,10 @@ If you then jump to the link, search for this string on the page."
     (with-selected-window new-window
       (find-file (buffer-file-name cur-buf)))))
 
-(defun grep-find-in-notes-directories (&optional new-frame)
+(defun grep-find-in-notes-directories (&optional new-frame notes-subdir)
   (interactive)
   (when (file-exists-p my-org-notes-directory)
-    (let* ((default-command-until-search-term (concat "find " my-org-notes-directory " -type f -name \"*.org\" -exec grep --color -nH --null -e "))
+    (let* ((default-command-until-search-term (concat "find " (concat (file-name-as-directory my-org-notes-directory) notes-subdir) " -type f -name \"*.org\" -exec grep --color -nH --null -e "))
            (default-command-from-search-term " \{\} +")
            (new-frame)
            (command-string (read-shell-command "Run grep (like this): "

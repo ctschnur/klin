@@ -33,7 +33,7 @@
 
 (defvar firefox-list-open-tabs-script-filename (expand-file-name "~/Dropbox/stuff/klin/browser-extensions/get_firefox_open_tabs.sh"))
 
-(defvar my-org-notes-directory (expand-file-name "~/Dropbox"))
+(defvar my-org-notes-directory (expand-file-name "~/Dropbox/org/notes/"))
 
 (defvar klin-template-dir "~/code_templates/")
 

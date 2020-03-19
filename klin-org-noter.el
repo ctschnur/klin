@@ -134,11 +134,11 @@ notes file, even if it finds one."
              ;; CHANGED:
              ;; (search-names (append org-noter-default-notes-file-names (list (concat document-base ".org"))))
              (search-names
-              (append org-noter-default-notes-file-names
+               (append org-noter-default-notes-file-names
                       (reverse (list
                                 ;; the order gets flipped around in the selection dialog,
                                 ;; that's why I'm flipping it here, too
-                                (klin-utils-pdf-get-org-notes-file-path document-base)
+                                (klin-utils-pdf-get-org-notes-file-path document-path)
                                 (concat document-base ".org")
                                 (concat "." document-base ".org")
                                 ))))
@@ -172,7 +172,7 @@ notes file, even if it finds one."
         (when (or arg (not notes-files-annotating))
           (when (or arg (not notes-files))
             (let* ((notes-file-name (completing-read "What name do you want the notes to have? "
-                                                     search-names nil t))
+                                                     search-names  nil t))
                    list-of-possible-targets
                    target)
 

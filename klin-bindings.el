@@ -376,64 +376,8 @@
 
 ;; ----------
 
-;; ------- within a normal pdf
-(define-key pdf-view-mode-map (kbd "C-M-, l") 'klin-pdf-pdfview-store-link)
-
-(defun klin-delete-other-windows-show-pdf-comfortably ()
-  (interactive)
-  (when (eq major-mode 'pdf-view-mode)
-    (set-window-parameter (selected-window) 'pdf-toggle-param
-                          (current-window-configuration))
-    (delete-other-windows)
-    (pdf-view-redisplay)
-    (pdf-view-set-comfortable-reading-size)
-    (pdf-view-redisplay)))
-
-(defun klin-delete-other-windows-show-pdf-comfortably-winner-undo ()
-  (interactive)
-  (let* ((pdf-window (selected-window))
-         (toggle-param (window-parameter (selected-window) 'pdf-toggle-param)))
-    (when toggle-param
-      (set-window-configuration toggle-param)
-      (set-window-parameter (selected-window)
-                            'pdf-toggle-param
-                            nil))
-
-    (when (eq (selected-window) pdf-window)
-      (pdf-view-redisplay)
-      (pdf-view-set-comfortable-reading-size)
-      (pdf-view-redisplay))))
-
-(defun klin-toggle-pdf-only-view ()
-  (interactive)
-  (when (eq major-mode 'pdf-view-mode)
-    (let* ((pdf-window (selected-window))
-           (toggle-param (window-parameter (selected-window) 'pdf-toggle-param)))
-      (if toggle-param
-          (klin-delete-other-windows-show-pdf-comfortably-winner-undo)
-        (klin-delete-other-windows-show-pdf-comfortably))
-    ;; (cond
-    ;;  ((and (eq major-mode 'pdf-view-mode)
-    ;;        (eq (length (window-list)) 1))
-    ;;   (klin-delete-other-windows-show-pdf-comfortably-winner-undo))
-    ;;  ((and (eq major-mode 'pdf-view-mode)
-    ;;        (> (length (window-list)) 1))
-    ;;   (klin-delete-other-windows-show-pdf-comfortably)))
-    )))
-
-(defun my-add-pdf-view-comfortable-read-key ()
-  (interactive)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "B") 'pdf-history-backward)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "F") 'pdf-history-forward)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'klin-toggle-pdf-only-view)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "S") 'klin-clone-into-split-window)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
-  (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
-  ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
-  )
-
-(add-hook 'pdf-view-mode-hook #'my-add-pdf-view-comfortable-read-key)
-;; (add-hook 'pdf-view-mode-hook #'pdf-view-set-comfortable-reading-size t)
+(require 'klin-pdf-toggle)
+(require 'klin-image-toggle)
 ;; -------
 
 ;; ------- within a bibtex buffer
@@ -565,7 +509,7 @@
                                       ("g n"
                                        (lambda ()
                                          (interactive)
-                                         (grep-find-in-notes-directories))
+                                         (grep-find-in-notes-directories nil "academics"))
                                        "grep notes")
                                       ("c p"
                                        (lambda ()

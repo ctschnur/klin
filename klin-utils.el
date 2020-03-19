@@ -80,8 +80,7 @@ this/ (ancillary dir)
 (defun klin-utils-pdf-get-org-notes-file-path (pdf-filepath)
   (concat
    (klin-utils-pdf-get-notes-dir-path pdf-filepath)
-   "notes.org")
-  )
+   "notes.org"))
 
 ;; (defun klin-utils-pdf-get-org-notes-bibliography-file-path (org-notes-file-path)
 ;;   (concat
