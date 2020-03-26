@@ -31,7 +31,7 @@
   (interactive)
   (when (eq major-mode 'pdf-view-mode)
     (set-window-parameter (selected-window) 'pdf-toggle-param
-                          (current-window-configuration))
+                          (list (current-window-configuration) (buffer-file-name)))
     (delete-other-windows)
     (pdf-view-redisplay)
     (pdf-view-set-comfortable-reading-size)
@@ -40,12 +40,13 @@
 (defun klin-delete-other-windows-show-pdf-comfortably-winner-undo ()
   (interactive)
   (let* ((pdf-window (selected-window))
-         (toggle-param (window-parameter (selected-window) 'pdf-toggle-param)))
-    (when toggle-param
-      (set-window-configuration toggle-param)
-      (set-window-parameter (selected-window)
-                            'pdf-toggle-param
-                            nil))
+         (toggle-param (window-parameter (selected-window)
+                                         'pdf-toggle-param)))
+    (set-window-configuration (car toggle-param))
+    (set-window-parameter (selected-window)
+                          'pdf-toggle-param
+                          (list nil
+                                (buffer-file-name)))
 
     (when (eq (selected-window) pdf-window)
       (pdf-view-redisplay)
@@ -58,9 +59,11 @@
     (let* ((pdf-window (selected-window))
            (toggle-param (window-parameter (selected-window)
                                            'pdf-toggle-param)))
-      (if toggle-param
-          (klin-delete-other-windows-show-pdf-comfortably-winner-undo)
-        (klin-delete-other-windows-show-pdf-comfortably))
+      (if (and (not (car toggle-param))
+               (not (nth 1 toggle-param)))
+          (if (car toggle-param)
+              (klin-delete-other-windows-show-pdf-comfortably-winner-undo)
+            (klin-delete-other-windows-show-pdf-comfortably)))
       )))
 
 

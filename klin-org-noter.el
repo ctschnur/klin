@@ -47,7 +47,8 @@ Sometimes it's nice to just write a few notes on the document (e.g. a paper)
 and then directly link to the words (using my custom link),
 without need for the full org-noter behaviour."
   (interactive)
-  (let* ((org-notes-path (klin-utils-pdf-get-org-notes-file-path (if (and (buffer-file-name)
+  (let* ((buffname (buffer-file-name))
+         (org-notes-path (klin-utils-pdf-get-org-notes-file-path (if (and (buffer-file-name)
                                                                           (string-equal "pdf"
                                                                                         (file-name-extension (buffer-file-name))))
                                                                      (buffer-file-name)
@@ -85,13 +86,15 @@ without need for the full org-noter behaviour."
         ;; now write to the file and call this function recursively again to open the notes
         (let* (write-success-p)
           (with-temp-buffer
-            (insert (concat "* Notes on " (file-name-base org-notes-path)))
+            (insert (concat "* Notes on "
+                            (file-name-base buffname)))
             (insert "\n")
-            (setq write-success-p (write-region (point-min) (point-max) org-notes-path nil nil nil t)))
-          (if write-success-p
+            (write-region (point-min)
+                          (point-max)
+                          org-notes-path))
+          (if (file-exists-p org-notes-path)
               (split-and-open-new-window org-notes-path)
-            (user-error "Variable write-success-p is nil!")))))))
-
+            (user-error (concat "File " org-notes-path " still doesn't exist!"))))))))
 
 
 (setq org-noter-always-create-frame t)
