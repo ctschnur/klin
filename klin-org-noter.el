@@ -27,6 +27,73 @@
 (require 'org)
 (require 'org-noter)
 
+
+(defun split-and-open-new-window (filepath-to-find)
+  (interactive)
+  (let* (new-window)
+    (setq new-window (split-window-below))
+    (with-selected-window new-window
+      (find-file filepath-to-find)
+      (if (and (> (window-width nil 't) (* 0.9
+                                           (frame-inner-width)))
+               (> (frame-inner-width) (* 1.2
+                                         (frame-inner-height))))
+          (my-toggle-margins t)))
+    new-window))
+
+(defun cs-open-org-notes ()
+  "Just open the notes file of org noter, without actually calling org-noter.
+Sometimes it's nice to just write a few notes on the document (e.g. a paper)
+and then directly link to the words (using my custom link),
+without need for the full org-noter behaviour."
+  (interactive)
+  (let* ((org-notes-path (klin-utils-pdf-get-org-notes-file-path (if (and (buffer-file-name)
+                                                                          (string-equal "pdf"
+                                                                                        (file-name-extension (buffer-file-name))))
+                                                                     (buffer-file-name)
+                                                                   (user-error "This file is not a pdf file!")))) existing-notes-window)
+    (if (and org-notes-path
+             (file-exists-p org-notes-path))
+        (if (not (member org-notes-path (remove nil
+                                                (mapcar (lambda (window)
+                                                          (let* ((buffilename (buffer-file-name (window-buffer window))))
+                                                            (when (and (char-or-string-p buffilename)
+                                                                       (string-equal org-notes-path buffilename))
+                                                              (setq existing-notes-window window))
+                                                            buffilename))
+                                                        (window-list)))))
+            (split-and-open-new-window org-notes-path)
+          (delete-window existing-notes-window))
+
+      ;; create notes, like in org-noter
+      (let* ((document-path (or buffer-file-name
+                                buffer-file-truename
+                                (error "This buffer does not seem to be visiting any file")))
+             (document-name (file-name-nondirectory document-path))
+             (document-base (file-name-base document-name))
+             (search-names (reverse (list
+                                     ;; the order gets flipped around in the selection dialog,
+                                     ;; that's why I'm flipping it here, too (klin-utils-pdf-get-org-notes-file-path document-path)
+                                     org-notes-path
+                                     ;; (concat  document-base ".org")
+                                     ;; (concat "." document-base ".org")
+                                     )))
+             (new-notes-path (completing-read "What name do you want the notes to have? "
+                                              search-names     nil t)))
+        (klin-utils-ask-to-create-dir (file-name-directory new-notes-path))
+
+        ;; now write to the file and call this function recursively again to open the notes
+        (let* (write-success-p)
+          (with-temp-buffer
+            (insert (concat "* Notes on " (file-name-base org-notes-path)))
+            (insert "\n")
+            (setq write-success-p (write-region (point-min) (point-max) org-notes-path nil nil nil t)))
+          (if write-success-p
+              (split-and-open-new-window org-notes-path)
+            (user-error "Variable write-success-p is nil!")))))))
+
+
+
 (setq org-noter-always-create-frame t)
 
 (defun org-noter (&optional arg)

@@ -37,6 +37,9 @@
 (require 'hydra)
 (require 'pdf-view)
 
+(require 'klin-pdf-toggle)
+(require 'klin-image-toggle)
+
 ;; ------- if not (yet) in org-noter -------
 (require 'klin-org-noter)
 (define-key org-mode-map (kbd "C-S-M-l") 'org-noter)
@@ -374,10 +377,6 @@
      "org-noter headings from pdf links")
     ))
 
-;; ----------
-
-(require 'klin-pdf-toggle)
-(require 'klin-image-toggle)
 ;; -------
 
 ;; ------- within a bibtex buffer

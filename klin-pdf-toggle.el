@@ -81,6 +81,7 @@
   (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'klin-toggle-pdf-only-view)
   (evil-define-key 'normal pdf-view-mode-map (kbd "S") 'klin-clone-into-split-window)
   (evil-define-key 'normal pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
+  (evil-define-key 'normal pdf-view-mode-map (kbd "E") 'cs-open-org-notes)
   (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
   ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
   )

@@ -1305,7 +1305,7 @@ If you then jump to the link, search for this string on the page."
 
 (defun klin-create-physics-note ()
   (interactive)
-  (let* ((physics-notes-path "~/Dropbox/org/notes/grad/")
+  (let* ((physics-notes-path "~/Dropbox/org/notes/academics/grad/")
          (physics-notes-src-path (concat klin-template-dir "physics-notes"))
          (created-folder-path (klin-populate-template (when physics-notes-src-path physics-notes-src-path) physics-notes-path nil))
          (notes-file-path (concat (file-name-as-directory created-folder-path) "note.org")))

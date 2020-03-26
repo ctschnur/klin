@@ -315,13 +315,14 @@ So that it can be compiled into a latex file with references."
     ;; add sth. else than \usepackage{example}, e.g.
     ;; \sthelse{example} it renders
     ;; "example" in front of every latex fragment
-    (insert
-     "#+LATEX_HEADER: \\usepackage[backend=biber, style=alphabetic, sorting=nyt]{biblatex}
+    (insert "#+OPTIONS: tex:dvisvgm
+#+LATEX_HEADER: \\usepackage[backend=biber, style=alphabetic, sorting=nyt]{biblatex}
 #+LATEX_HEADER: \\usepackage[ngerman]{babel}
 #+LATEX_HEADER: \\usepackage[margin=1.15in]{geometry}
 #+LATEX_HEADER: \\usepackage{physics}
 #+LATEX_HEADER: \\usepackage{booktabs}
 #+LATEX_HEADER: \\usepackage{xcolor}
+#+LATEX_HEADER: \\newenvironment*{orgfrag}{}{}
 #+OPTIONS: toc:nil
 #+BEGIN_EXPORT latex
 \\today
