@@ -30,7 +30,8 @@
 
 (defun split-and-open-new-window (filepath-to-find)
   (interactive)
-  (let* (new-window)
+  (let* (new-window
+         old-window-height (window-pixel-height))
     (setq new-window (split-window-below))
     (with-selected-window new-window
       (find-file filepath-to-find)
@@ -39,6 +40,7 @@
                (> (frame-inner-width) (* 1.2
                                          (frame-inner-height))))
           (my-toggle-margins t)))
+    (window-resize new-window (round (* -0.15 (window-size new-window nil t t)))nil nil t)
     new-window))
 
 (defun cs-open-org-notes ()

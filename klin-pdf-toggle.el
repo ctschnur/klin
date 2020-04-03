@@ -61,11 +61,13 @@
                                            'pdf-toggle-param)))
       (if (and (not (car toggle-param))
                (not (nth 1 toggle-param)))
-          (if (car toggle-param)
+          (klin-delete-other-windows-show-pdf-comfortably)
+          (if (and (car toggle-param)
+                   (string-equal (nth 1 toggle-param)
+                                 (buffer-file-name)))
               (klin-delete-other-windows-show-pdf-comfortably-winner-undo)
             (klin-delete-other-windows-show-pdf-comfortably)))
       )))
-
 
 ;; (defun klin-toggle--only-view ()
 ;;   (interactive)

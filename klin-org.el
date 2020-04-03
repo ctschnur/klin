@@ -458,11 +458,20 @@ So that it can be compiled into a latex file with references."
       t)))
 
 (require 'org-ref)
-(org-add-link-type "cite" #'my-open-cited-book-pdf-file #'my-org-cite-export)
+
+;; (org-add-link-type "cite" #'my-open-cited-book-pdf-file #'my-org-cite-export)
+
+(org-link-set-parameters "cite"
+                         :follow #'my-open-cited-book-pdf-file
+                         :export #'my-org-cite-export)
 
 (defun strip-text-properties (txt)
   (set-text-properties 0 (length txt) nil txt)
       txt)
+
+(defun my-org-cite-link-html-export-get-link-jump-target-div-id (bibtex-key)
+  "Jump to a div with an id built from the bibtex-key. "
+  (concat "ref-jump-target-" bibtex-key))
 
 (defun my-org-cite-export (link description format)
   "Export a man page link from Org files."
@@ -478,10 +487,21 @@ So that it can be compiled into a latex file with references."
                        result)))
          (doc-page (when link-info
                      (let* ((result (cdr (assoc 'doc-page link-info))))
-                       result))))
+                       result)))
+         (html-or-my-html-export-str (concat "["
+                                             "<a href="
+                                             (prin1-to-string (concat "#"
+                                                                      (my-org-cite-link-html-export-get-link-jump-target-div-id
+                                                                       bibtex-key)))
+                                             ">"
+                                             bibtex-key
+                                             "</a>"
+                                             (when desc
+                                               (concat ", " desc))
+                                             "]")))
     (pcase format
-      ;; (`html (format "<a target=\"_blank\" href=\"%s\">%s</a>" path desc))
-      ;; (`latex (format "\\href{%s}{%s}" path desc))
+      (`my-html html-or-my-html-export-str)
+      (`html html-or-my-html-export-str)
       (`latex
        ;; (format "\\cite[%s]{%s}" desc bibtex-key)
        (concat "\\cite"

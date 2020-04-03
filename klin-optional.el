@@ -377,7 +377,9 @@ The command would be: echo file.xoj | entr xournalpp file.xoj -p file.pdf"
       (setq ctr (+ ctr 1)))
     matching-candidate-expanded-filepath))
 
-(org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
+;; (org-add-link-type "freehand" #'my-run-freehand-notes-program-with-file)
+(org-link-set-parameters "freehand"
+                         :follow #'my-run-freehand-notes-program-with-file)
 
 (defun org-link-get-description ()
   "With point on a link, get it's description."
@@ -1008,7 +1010,11 @@ suggest a command to be run."
 ;; ----------- add text search to org link ------------
 
 (require 'org-pdfview)
-(org-add-link-type "pdfview" #'pdfview-follow-link #'my-org-pdfview-export)
+;; (org-add-link-type "pdfview" #'pdfview-follow-link #'my-org-pdfview-export)
+(org-link-set-parameters "pdfview"
+                         :follow #'pdfview-follow-link
+                         :export #'my-org-pdfview-export)
+
 
 (defun klin-get-assoc-list-from-pdfview-link-str (link-str)
   "Parse the contents of a pdfview LINK-STR into an association list."
