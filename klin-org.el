@@ -580,5 +580,38 @@ So that it can be compiled into a latex file with references."
     (fmakunbound 'hydra-klin-link-processor/body)
     (setq hydra-klin-link-processor/body nil)))
 
+(defun klin-get-cites-infos ()
+  ""
+  (org-element-map (org-element-parse-buffer)
+              'link
+            (lambda (link)
+              (when (string= (org-element-property :type link)
+                             "cite")
+                (list (org-element-property :path link)
+                      (org-element-property :begin link)
+                      (org-element-property :end link))))))
+
+(defun klin-get-links-infos (type-str)
+  ""
+  (org-element-map (org-element-parse-buffer)
+              'link
+            (lambda (link)
+              (when (string= (org-element-property :type link)
+                             type-str)
+                (list (org-element-property :path link)
+                      (org-element-property :begin link)
+                      (org-element-property :end link))))))
+
+
+;; (org-link-set-parameters "bibliography"
+;; 			 :export (lambda (path desc backend)
+;; 				   (cond
+;; 				    ((or (eq 'html backend)
+;;                          (eq 'my-html backend))
+;;                      ;; this any case where I include a cite link
+;;                      ;; case, I just create footnotes,
+;;                      ;; and I don't print the whole bibliography.
+;;                      (concat "I shall not print " (prin1-to-string path))))))
+
 (provide 'klin-org)
 ;;; klin-org.el ends here

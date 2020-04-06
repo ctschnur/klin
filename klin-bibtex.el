@@ -683,5 +683,15 @@ If KEY is not set, edit entry under cursor."
 
 ;; ----------
 
+(defun klin-bibtex-format-entry-to-string ()
+ "Format bibtex entry under point to a string."
+ (interactive)
+  (save-excursion
+    (bibtex-beginning-of-entry)
+    (let ((authors (bibtex-text-in-field "author"))
+          (year (bibtex-text-in-field "year"))
+          (title (bibtex-text-in-field "title")))
+      (format "%s, %s, /%s/" authors year title))))
+
 (provide 'klin-bibtex)
 ;;; klin-bibtex.el ends here
