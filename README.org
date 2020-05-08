@@ -1,5 +1,4 @@
 * ~klin~ - integration of notetaking tools in emacs
-** What is it?
 This program aims at creating a workflow to efficiently /link together all digital and hand-written notes one may have on a topic/. At the same time, it integrates tools to make all linked notes /editable/, even scanned-in handwritten notes (using open-source freehand drawing tools).
 
 It attempts to mimize the effort needed to jump in-between personal notes (org-mode documents) and specific sections of PDF documents (e.g. referenced books and pages therein, or even specific words within pages of pdfs). An alternative would be a browser-based wiki software. The advantage of this software is the integration with emacs and org-mode. 
