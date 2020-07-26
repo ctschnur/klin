@@ -576,8 +576,6 @@
 
 ;; (global-set-key (kbd "C-M-, p") 'klin-run-link-processor-hydra)
 
-(global-set-key (kbd "C-x C-p") 'counsel-fzf)
-
 (provide 'klin-bindings)
 
 ;;; klin-bindings.el ends here

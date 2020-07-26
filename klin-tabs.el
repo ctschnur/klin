@@ -171,7 +171,9 @@ Ootb limited to only 10 tabs, but probably configurable."
 
     (with-selected-frame frame
       (while (< ctr (length pdf-list))
-        (elscreen-create)
+        (if (fboundp 'elscreen-create)
+            (elscreen-create)
+          (message "Elscreen not available."))
         (find-file (nth ctr pdf-list))
         (setq ctr (+ 1 ctr))
         (pdf-view-fit-page-to-window)))

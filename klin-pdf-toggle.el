@@ -79,22 +79,6 @@
 ;;           (klin-delete-other-windows-show-pdf-comfortably-winner-undo)
 ;;         (klin-delete-other-windows-show-pdf-comfortably)))))
 
-(defun my-add-pdf-view-comfortable-read-key ()
-  (interactive)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "B") 'pdf-history-backward)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "F") 'pdf-history-forward)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "R") 'klin-toggle-pdf-only-view)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "S") 'klin-clone-into-split-window)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
-  (evil-define-key 'normal pdf-view-mode-map (kbd "E") 'cs-open-org-notes)
-  (add-hook 'pdf-view-mode-hook #'evil-normalize-keymaps)
-  ;; (define-key pdf-view-mode-map (kbd "r") 'pdf-view-set-comfortable-reading-size)
-  )
-
-(add-hook 'pdf-view-mode-hook #'my-add-pdf-view-comfortable-read-key)
-;; (add-hook 'pdf-view-mode-hook #'pdf-view-set-comfortable-reading-size t)
-
-
 
 (provide 'klin-pdf-toggle)
 ;;; klin-pdf-toggle.el ends here

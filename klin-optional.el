@@ -43,8 +43,6 @@
 ;; -------- file add watcher in scanner
 (require 'filenotify)
 
-
-
 (defvar my-open-the-annotated-version-first t
   "Normally, the annotated version is not being opened first.
 But it now can be set to be opened first.")
